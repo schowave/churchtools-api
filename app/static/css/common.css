@@ -205,7 +205,8 @@ input[type="submit"] {
 /* Style for the label */
 .appointment-label {
     cursor: pointer;
-    margin-top: 0px;
+    margin-top: 0;
+    text-align: left;
     transition: color 0.2s;
 }
 
