@@ -7,6 +7,12 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-ENV FLASK_APP app.py
+# Set environment variables
+ENV FLASK_APP run.py
+ENV FLASK_RUN_HOST 0.0.0.0
 
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+# The port number the container should expose
+EXPOSE 5000
+
+
+CMD [ "python3", "-m" , "flask", "run"]
