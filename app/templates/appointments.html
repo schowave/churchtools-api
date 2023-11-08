@@ -44,7 +44,7 @@
             {% for appointment in appointments %}
                 <div class="appointment-item">
                     <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id" value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
-                    <label for="appointment-{{ appointment['id'] }}" class="appointment-label">{{ appointment['startDateView'] }} ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }}) <br/>{{ appointment['description'] }} ({{ appointment['meetingAt'] }})</label>
+                    <label for="appointment-{{ appointment['id'] }}" class="appointment-label">{{ appointment['startDateView'] }} ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }}) <br/>{{ appointment['description'] }}</label>
                 </div>
             {% endfor %}
         </div>
