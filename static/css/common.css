@@ -56,7 +56,7 @@ label {
     color: #333;
 }
 
-input[type="text"], input[type="password"] {
+input[type="text"], input[type="password"],input[type="file"] {
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
