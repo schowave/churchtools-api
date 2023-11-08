@@ -6,8 +6,10 @@ from flask import Flask, render_template, request, redirect, url_for, flash, mak
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
 from collections import defaultdict
 from babel.dates import format_date
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'default_secret_key')
@@ -58,19 +60,54 @@ def fetch_appointments(login_token, start_date, end_date):
                 appointment_id = appointment['base']['id']
                 appointment_start_date = appointment['base']['startDate']
                 # Combine the checks for seen ID and date range into a single condition
-                if appointment_id not in seen_ids and start_date_datetime <= parse_iso_datetime(appointment_start_date) <= end_date_replace:
+                if appointment_id not in seen_ids and start_date_datetime <= parse_iso_datetime(
+                        appointment_start_date) <= end_date_replace:
                     seen_ids.add(appointment_id)
                     appointments.append(appointment)
 
     return appointments
 
 
-def create_pdf(appointments):
+def draw_background_image(canvas, image_stream, page_width, page_height):
+    # Load the image
+    image = ImageReader(image_stream)
+    image_width, image_height = image.getSize()
+
+    # Calculate scale factors
+    width_scale = page_width / image_width
+    height_scale = page_height / image_height
+
+    # Choose the smaller of the two scale factors to maintain aspect ratio
+    scale = min(width_scale, height_scale)
+
+    # Calculate the new dimensions of the image
+    scaled_width = image_width * scale
+    scaled_height = image_height * scale
+
+    # Calculate position to center the image on the canvas
+    x_position = (page_width - scaled_width) / 2
+    y_position = (page_height - scaled_height) / 2
+
+    # Draw the image on the canvas with the new dimensions
+    canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+
+
+# Define the 16:9 page size in points
+PAGE_WIDTH = 1152
+PAGE_HEIGHT = 648
+PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
+
+
+def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(FILE_DIRECTORY, filename)
-    c = canvas.Canvas(file_path, pagesize=landscape(letter))
+    c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
     c.setTitle(filename)
+
+    # Draw the background image first
+    if image_stream:
+        draw_background_image(c, image_stream, PAGE_WIDTH, PAGE_HEIGHT)
 
     # Organize appointments by date
     appointments_by_date = defaultdict(list)
@@ -130,8 +167,6 @@ def create_pdf(appointments):
     return filename
 
 
-
-
 @app.route('/appointments', methods=['GET', 'POST'])
 def appointments():
     login_token = get_login_token()
@@ -141,7 +176,14 @@ def appointments():
     start_date, end_date = get_date_range_from_form()
     if request.method == 'POST':
         appointments = fetch_appointments(login_token, start_date, end_date)
-        filename = create_pdf(appointments)
+        background_image_stream = None
+        # Check if the post request has the file part
+        if 'background_image' in request.files:
+            file = request.files['background_image']
+            if file and file.filename != '':
+                # Read the image file into a BytesIO stream
+                background_image_stream = BytesIO(file.read())
+        filename = create_pdf(appointments, background_image_stream)
         return redirect(url_for('download_file', filename=filename))
     return render_template('appointments.html', start_date=start_date, end_date=end_date)
 

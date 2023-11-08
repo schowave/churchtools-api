@@ -25,12 +25,16 @@
 <div class="container">
     <a href="/" class="btn btn-back">Zurück</a>
     <h1>Termine nächste Woche</h1>
-    <form method="POST">
+    <form method="POST" enctype="multipart/form-data">
         <label for="start_date">Startdatum:</label>
         <input type="text" id="start_date" name="start_date" value="{{ start_date }}" required>
 
         <label for="end_date">Enddatum:</label>
         <input type="text" id="end_date" name="end_date" value="{{ end_date }}" required>
+
+        <!-- Input for file upload -->
+        <label for="background_image">Hintergrundbild:</label>
+        <input type="file" id="background_image" name="background_image" accept="image/*">
 
         <input type="submit" value="Generate" class="btn btn-generate">
     </form>
