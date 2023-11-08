@@ -1,0 +1,170 @@
+/* common.css */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 100vh;
+    text-align: center;
+}
+
+.tiles-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.container {
+    max-width: 400px;
+    width: 100%;
+    background: white;
+    padding: 2em;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px; /* Adjusted for spacing from the top */
+}
+
+h1, h2 {
+    color: #333;
+}
+
+h1 {
+    font-size: 2em;
+    margin-bottom: 0.5em;
+}
+
+h2 {
+    font-size: 1.5em;
+    margin-bottom: 2em;
+}
+
+label, input[type="text"], input[type="password"], input[type="submit"] {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+}
+
+label {
+    margin-top: 20px;
+    font-weight: bold;
+    color: #333;
+}
+
+input[type="text"], input[type="password"] {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+input[type="submit"] {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.alert {
+    margin-top: 20px;
+    padding: 10px;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.alert-success {
+    background-color: #5cb85c;
+}
+
+.alert-error {
+    background-color: #d9534f;
+}
+
+.alert-warning {
+    background-color: #f0ad4e;
+}
+
+.card {
+    background: white; /* Set the background color to white */
+    padding: 2em; /* Add some padding */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Box shadow for depth */
+    margin: 20px auto; /* Add some top margin and center it horizontally */
+    width: 30%; /* You can set a width or max-width depending on your layout */
+    max-width: 400px;
+    text-align: center; /* Center the text */
+}
+
+.tile {
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    width: 200px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.tile:hover {
+    background-color: #0056b3;
+    transform: translateY(-5px);
+}
+
+.btn-logout {
+    background-color: #dc3545; /* Red color for logout */
+}
+
+.btn-logout:hover {
+    background-color: #c82333; /* Darker red on hover */
+}
+
+.btn-generate {
+    background-color: #4cae4c; /* Blue color for generate */
+}
+
+.btn-generate:hover {
+    background-color: #398439; /* Darker blue on hover */
+}
+
+.btn-back {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 16px;
+    color: white;
+    background-color: #007bff;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-back:hover {
+    background-color: #0056b3;
+}
+
+
+.btn-login {
+    background-color: #4cae4c;
+}
+
+.btn-login:hover {
+    background-color: #398439;
+}

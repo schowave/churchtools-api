@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Appointments</title>
+    <link rel="stylesheet" href="/static/css/common.css">
+    <!-- Include jQuery UI CSS from a CDN -->
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <!-- Include jQuery from a CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Include jQuery UI from a CDN -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- Initialize the datepicker -->
+    <script>
+        $(function() {
+            $("#start_date").datepicker({
+                dateFormat: "yy-mm-dd" // This format should match the value you're passing from Flask
+            });
+            $("#end_date").datepicker({
+                dateFormat: "yy-mm-dd"
+            });
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <a href="/" class="btn btn-back">Zurück</a>
+    <h1>Termine nächste Woche</h1>
+    <form method="POST">
+        <label for="start_date">Startdatum:</label>
+        <input type="text" id="start_date" name="start_date" value="{{ start_date }}" required>
+
+        <label for="end_date">Enddatum:</label>
+        <input type="text" id="end_date" name="end_date" value="{{ end_date }}" required>
+
+        <input type="submit" value="Generate" class="btn btn-generate">
+    </form>
+</div>
+</body>
+</html>

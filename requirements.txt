@@ -1,0 +1,5 @@
+flask==3.0.0
+requests==2.31.0
+pytz==2023.3.post1
+reportlab==4.0.6
+Babel==2.13.1
