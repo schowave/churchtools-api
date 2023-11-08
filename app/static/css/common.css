@@ -161,6 +161,14 @@ input[type="submit"] {
 }
 
 
+.btn-fetch {
+    background-color: #007bff;
+}
+
+.btn-fetch:hover {
+    background-color: #0056b3;
+}
+
 .btn-login {
     background-color: #4cae4c;
 }
@@ -168,3 +176,45 @@ input[type="submit"] {
 .btn-login:hover {
     background-color: #398439;
 }
+
+/* Container for all appointments */
+.appointments-container {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+/* Individual appointment item */
+.appointment-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+/* Style for the checkbox */
+.appointment-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+/* Style for the label */
+.appointment-label {
+    cursor: pointer;
+    margin-top: 0px;
+    transition: color 0.2s;
+}
+
+/* Hover effect for appointment items */
+.appointment-item:hover {
+    background-color: #e9ecef;
+}
+
+.appointment-item:hover .appointment-label {
+    color: #007bff;
+}
+

@@ -1,7 +1,8 @@
 import requests
 import pytz
 from datetime import datetime, timedelta
-from flask import request, current_app
+from flask import request
+from dateutil.parser import parse
 
 from config import Config
 
@@ -53,6 +54,7 @@ def fetch_appointments(login_token, start_date, end_date):
                     seen_ids.add(appointment_id)
                     appointments.append(appointment)
 
+    appointments.sort(key=lambda x: parse(x['base']['startDate']))
     return appointments
 
 
@@ -63,3 +65,30 @@ def get_date_range_from_form():
     start_date = request.form.get('start_date', next_sunday.strftime('%Y-%m-%d'))
     end_date = request.form.get('end_date', sunday_after_next.strftime('%Y-%m-%d'))
     return start_date, end_date
+
+
+def appointment_to_dict(appointment):
+    start_date_from_appointment = appointment['base']['startDate']
+    start_date_datetime = parse_iso_datetime(start_date_from_appointment)
+
+    end_date_from_appointment = appointment['base']['endDate']
+    end_date_datetime = parse_iso_datetime(end_date_from_appointment)
+
+    address = appointment['base'].get('address', '')
+
+    if address is not None:
+        meeting_at = address.get('meetingAt', '')
+    else:
+        meeting_at = ''  # Or however you'd like to handle a missing address
+
+    return {
+        'id': appointment['base']['id'],
+        'description': appointment['base']['caption'],
+        'startDate': start_date_from_appointment,
+        'endDate': appointment['base']['endDate'],
+        'address': appointment['base'].get('address', ''),
+        'meetingAt': meeting_at,
+        'startDateView': start_date_datetime.strftime('%d.%m.%Y'),
+        'startTimeView': start_date_datetime.strftime('%H:%M'),
+        'endTimeView': end_date_datetime.strftime('%H:%M')
+    }

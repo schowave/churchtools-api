@@ -25,19 +25,39 @@
 <div class="container">
     <a href="/" class="btn btn-back">Zurück</a>
     <h1>Termine nächste Woche</h1>
-    <form method="POST" enctype="multipart/form-data">
+
+
+    <!-- Form to fetch appointments -->
+    <form method="POST">
         <label for="start_date">Startdatum:</label>
         <input type="text" id="start_date" name="start_date" value="{{ start_date }}" required>
 
         <label for="end_date">Enddatum:</label>
         <input type="text" id="end_date" name="end_date" value="{{ end_date }}" required>
 
+        <input type="submit" name="fetch_appointments" value="Termine abholen" class="btn btn-fetch">
+    </form>
+
+    {% if appointments %}
+    <form method="POST" enctype="multipart/form-data">
+        <div class="appointments-container">
+            {% for appointment in appointments %}
+                <div class="appointment-item">
+                    <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id" value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
+                    <label for="appointment-{{ appointment['id'] }}" class="appointment-label">{{ appointment['startDateView'] }} ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }}): <br/>{{ appointment['description'] }}</label>
+                </div>
+            {% endfor %}
+        </div>
+
         <!-- Input for file upload -->
         <label for="background_image">Hintergrundbild:</label>
         <input type="file" id="background_image" name="background_image" accept="image/*">
 
-        <input type="submit" value="Generiere" class="btn btn-generate">
+        <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate">
     </form>
+    {% else %}
+        <p>No appointments found for the selected range.</p>
+    {% endif %}
 </div>
 </body>
 </html>

@@ -1,10 +1,12 @@
 from io import BytesIO
 
 import requests
-from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory, flash, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory, flash, make_response, \
+    session
 
 from config import Config
-from .utils import get_login_token, get_date_range_from_form, make_login_request, fetch_appointments
+from .utils import get_login_token, get_date_range_from_form, make_login_request, fetch_appointments, \
+    parse_iso_datetime, appointment_to_dict
 from .pdf_generator import create_pdf
 
 main_bp = Blueprint('main_bp', __name__)
@@ -17,19 +19,29 @@ def appointments():
         flash('You need to login first.', 'warning')
         return redirect(url_for('main_bp.login'))
     start_date, end_date = get_date_range_from_form()
-    if request.method == 'POST':
+
+    if request.method == 'POST' and 'fetch_appointments' in request.form:
         appointments = fetch_appointments(login_token, start_date, end_date)
+
+        session['fetched_appointments'] = [appointment_to_dict(app) for app in appointments]
+        return render_template('appointments.html', appointments=session['fetched_appointments'], start_date=start_date,
+                               end_date=end_date)
+
+    if request.method == 'POST' and 'generate_pdf' in request.form:
+        selected_appointment_ids = request.form.getlist('appointment_id')
         background_image_stream = None
-        # Check if the post request has the file part
         if 'background_image' in request.files:
             file = request.files['background_image']
             if file and file.filename != '':
-                # Read the image file into a BytesIO stream
                 background_image_stream = BytesIO(file.read())
-        filename = create_pdf(appointments, background_image_stream)
+        selected_appointments = [app for app in session.get('fetched_appointments', []) if
+                                 str(app['id']) in selected_appointment_ids]
+        filename = create_pdf(selected_appointments, background_image_stream)
         return redirect(url_for('main_bp.download_file', filename=filename))
-    return render_template('appointments.html', start_date=start_date, end_date=end_date)
-    pass
+
+    # This else clause is for when there's no GET or POST, which shouldn't normally happen
+    else:
+        return render_template('appointments.html', start_date=start_date, end_date=end_date)
 
 
 @main_bp.route('/', methods=['GET', 'POST'])
@@ -91,8 +103,3 @@ def download_file(filename):
         flash('File not found.', 'error')
         return redirect(url_for('main_bp.appointments'))  # Redirect to appointments page or a 404 page
     pass
-
-
-
-
-

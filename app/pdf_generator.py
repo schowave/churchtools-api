@@ -56,7 +56,7 @@ def create_pdf(appointments, image_stream=None):
     # Organize appointments by date
     appointments_by_date = defaultdict(list)
     for a in appointments:
-        start_dt = parse_iso_datetime(a['base']['startDate'])
+        start_dt = parse_iso_datetime(a['startDate'])
         date_key = start_dt.strftime('%d.%m.%Y')
         appointments_by_date[date_key].append(a)
 
@@ -71,20 +71,17 @@ def create_pdf(appointments, image_stream=None):
         c.setFillColor(colors.black)
 
         # Write the date header
-        start_dt = parse_iso_datetime(appointments_by_date[date_key][0]['base']['startDate'])
+        start_dt = parse_iso_datetime(appointments_by_date[date_key][0]['startDate'])
         german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
         date_header = f"{german_day_of_week}, {date_key}"
         c.drawString(x_positions[column], y_position, date_header)
         y_position -= 20  # Space before the first appointment entry
 
-        for a in sorted(appointments_by_date[date_key], key=lambda a: a['base']['startDate']):
-            base = a['base']
-            start_dt = parse_iso_datetime(base['startDate'])
-            end_dt = parse_iso_datetime(base['endDate'])
-            caption = base.get('caption', 'No Caption')
-            address = base.get('address') or {}
-            meeting_at = address.get('meetingAt', '')
-            # Construct the meeting_at text with conditional comma
+        for a in sorted(appointments_by_date[date_key], key=lambda a: a['startDate']):
+            start_dt = parse_iso_datetime(a['startDate'])
+            end_dt = parse_iso_datetime(a['endDate'])
+            caption = a['description']
+            meeting_at = a['meetingAt']
             meeting_at_text = f", {meeting_at}" if meeting_at else ""
 
             # Format the time and write each appointment with indentation
