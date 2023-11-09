@@ -10,6 +10,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.utils import ImageReader
 from babel.dates import format_date
+from reportlab.lib.colors import lightgrey, black
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -41,17 +42,43 @@ PAGE_WIDTH = 1152
 PAGE_HEIGHT = 648
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import HexColor, black
+from datetime import datetime
+from collections import defaultdict
+
+# ... (other imports and configuration settings)
+
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import HexColor, black, white
+from datetime import datetime
+from collections import defaultdict
+
+
+# ... (other imports and configuration settings)
+
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import HexColor, black, white
+from datetime import datetime
+from collections import defaultdict
+from babel.dates import format_date
+
+# ... (other imports and configuration settings)
 
 def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
-    c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
+    c = canvas.Canvas(file_path, pagesize=landscape(A4))
     c.setTitle(filename)
 
     # Draw the background image first
     if image_stream:
-        draw_background_image(c, image_stream, PAGE_WIDTH, PAGE_HEIGHT)
+        draw_background_image(c, image_stream, *landscape(A4))
 
     # Organize appointments by date
     appointments_by_date = defaultdict(list)
@@ -60,56 +87,53 @@ def create_pdf(appointments, image_stream=None):
         date_key = start_dt.strftime('%d.%m.%Y')
         appointments_by_date[date_key].append(a)
 
-    x_positions = [50, letter[1] / 2 + 50]
-    y_position = letter[0] - 40
-    column = 0
-    indent = 15  # Indent for appointment entries
+    # Define starting positions
+    left_column_x = 100
+    right_column_x = 400  # Adjust as necessary for your layout
+    y_position = landscape(A4)[1] - 100  # Starting from the top
+    indent = 15  # Indent for text inside the rectangle
 
-    for date_key in sorted(appointments_by_date.keys()):
-        # Reset font and fill color at the beginning of each date block
-        c.setFont("Helvetica", 10)
-        c.setFillColor(colors.black)
+    for date_key, events in sorted(appointments_by_date.items()):
+        for event in events:
+            start_dt = parse_iso_datetime(event['startDate'])
+            end_dt = parse_iso_datetime(event['endDate'])
 
-        # Write the date header
-        start_dt = parse_iso_datetime(appointments_by_date[date_key][0]['startDate'])
-        german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
-        date_header = f"{german_day_of_week}, {date_key}"
-        c.drawString(x_positions[column], y_position, date_header)
-        y_position -= 20  # Space before the first appointment entry
+            # Rectangle settings
+            rect_height = 100
+            rect_width = landscape(A4)[0] - 200
+            c.setFillColor(white)
+            c.rect(left_column_x, y_position - rect_height, rect_width, rect_height, stroke=0, fill=1)
 
-        for a in sorted(appointments_by_date[date_key], key=lambda a: a['startDate']):
-            start_dt = parse_iso_datetime(a['startDate'])
-            end_dt = parse_iso_datetime(a['endDate'])
-            caption = a['description']
-            information = a['information']
-            meeting_at = a['meetingAt']
-            meeting_at_text = f", {meeting_at}" if meeting_at else ""
+            # Left column: German Day and Date
+            c.setFillColor(black)
+            c.setFont("Helvetica-Bold", 14)
+            german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
+            day_date_str = f"{german_day_of_week}, {date_key}"
+            c.drawString(left_column_x + indent, y_position - 25, day_date_str)  # German Day and Date
 
-            # Format the time and write each appointment with indentation
-            time_text = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
+            # Time and MeetingAt
+            c.setFont("Helvetica", 12)
+            time_str = f"{start_dt.strftime('%H:%M')} Uhr"
+            time_width = c.stringWidth(time_str, "Helvetica", 12)
+            c.drawString(left_column_x + indent, y_position - 45, time_str)  # Time
+
+            if event['meetingAt']:
+                meeting_at_str = f"{event['meetingAt']}"
+                c.drawString(left_column_x + indent + time_width + 10, y_position - 45, meeting_at_str)  # MeetingAt, adjust spacing as needed
+
+            # Right column: Caption and Information
             c.setFont("Helvetica-Bold", 12)
-            c.drawString(x_positions[column] + indent, y_position, caption)
+            c.drawString(right_column_x, y_position - 25, event['description'])  # Caption
+
             c.setFont("Helvetica", 10)
-            c.setFillColor(colors.grey)
-            c.drawString(x_positions[column] + indent, y_position - 15, f"{time_text}{meeting_at_text}")
-            # Split the 'information' text by newline characters and draw each line
-            info_lines = information.split('\n')
-            for info_line in info_lines:
-                y_position -= 15  # Adjust line spacing for each line of information
-                c.drawString(x_positions[column] + indent, y_position - 15, info_line)
+            details_y_position = y_position - 45
+            for detail in event['information'].split('\n'):
+                c.drawString(right_column_x, details_y_position, detail)
+                details_y_position -= 15  # Adjust line spacing
 
-            c.setFillColor(colors.black)
-
-            # Adjust y_position for the next appointment entry, with additional space
-            y_position -= (15 * len(info_lines)) + 5  # Adjust spacing based on the number of lines
-
-            # Check if we need to switch to the second column or add a new page
-            if y_position < 50:
-                column = 1 - column  # Toggle between 0 and 1 for columns
-                y_position = letter[0] - 40  # Reset y_position for the new column
-
-        # Add extra space after each group of appointments
-        y_position -= 20
+            # Update y_position for next event
+            y_position -= (rect_height + 20)
 
     c.save()
     return filename
+
