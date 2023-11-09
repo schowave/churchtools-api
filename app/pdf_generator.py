@@ -1,16 +1,16 @@
 import os
-from datetime import datetime
 
-from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 
 from config import Config
 from .utils import parse_iso_datetime
-from collections import defaultdict
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib.utils import ImageReader
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import black, white
+from datetime import datetime
+from collections import defaultdict
 from babel.dates import format_date
-from reportlab.lib.colors import lightgrey, black
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -38,36 +38,10 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
 
 
 # Define the 16:9 page size in points
-PAGE_WIDTH = 1152
-PAGE_HEIGHT = 648
+PAGE_WIDTH = 1600
+PAGE_HEIGHT = 900
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor, black
-from datetime import datetime
-from collections import defaultdict
-
-# ... (other imports and configuration settings)
-
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor, black, white
-from datetime import datetime
-from collections import defaultdict
-
-
-# ... (other imports and configuration settings)
-
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import HexColor, black, white
-from datetime import datetime
-from collections import defaultdict
-from babel.dates import format_date
-
-# ... (other imports and configuration settings)
 
 def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
@@ -87,21 +61,29 @@ def create_pdf(appointments, image_stream=None):
         date_key = start_dt.strftime('%d.%m.%Y')
         appointments_by_date[date_key].append(a)
 
-    # Define starting positions
     left_column_x = 100
-    right_column_x = 400  # Adjust as necessary for your layout
-    y_position = landscape(A4)[1] - 100  # Starting from the top
-    indent = 15  # Indent for text inside the rectangle
+    right_column_x = 400
+    y_position = landscape(A4)[1] - 100
+    indent = 15
+    bottom_margin = 50  # Bottom margin before adding a new page
 
     for date_key, events in sorted(appointments_by_date.items()):
         for event in events:
-            start_dt = parse_iso_datetime(event['startDate'])
-            end_dt = parse_iso_datetime(event['endDate'])
-
-            # Rectangle settings
             rect_height = 100
             rect_width = landscape(A4)[0] - 200
-            c.setFillColor(white)
+
+            # Check if we need to start a new page
+            if y_position < (rect_height + bottom_margin):
+                c.showPage()
+                c.setPageSize(landscape(A4))
+                y_position = landscape(A4)[1] - 100
+                if image_stream:
+                    draw_background_image(c, image_stream, *landscape(A4))
+
+            # Define a very light grey for the semi-transparent effect
+            light_grey = colors.Color(0.9, 0.9, 0.9, alpha=1)  # Light grey color
+
+            c.setFillColor(light_grey)
             c.rect(left_column_x, y_position - rect_height, rect_width, rect_height, stroke=0, fill=1)
 
             # Left column: German Day and Date
@@ -119,7 +101,8 @@ def create_pdf(appointments, image_stream=None):
 
             if event['meetingAt']:
                 meeting_at_str = f"{event['meetingAt']}"
-                c.drawString(left_column_x + indent + time_width + 10, y_position - 45, meeting_at_str)  # MeetingAt, adjust spacing as needed
+                c.drawString(left_column_x + indent + time_width + 10, y_position - 45,
+                             meeting_at_str)  # MeetingAt, adjust spacing as needed
 
             # Right column: Caption and Information
             c.setFont("Helvetica-Bold", 12)
@@ -136,4 +119,3 @@ def create_pdf(appointments, image_stream=None):
 
     c.save()
     return filename
-
