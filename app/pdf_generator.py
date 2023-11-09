@@ -106,7 +106,7 @@ def create_pdf(appointments, image_stream=None):
 
             # Left column: German Day and Date
             c.setFillColor(HexColor(0xC1540C))
-            c.setFont("Helvetica-Bold", 14)
+            c.setFont("Helvetica-Bold", 18)
             german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
             day_date_str = f"{german_day_of_week}, {date_key}"
             c.drawString(left_column_x + indent, y_position - 25, day_date_str)  # German Day and Date
@@ -126,7 +126,7 @@ def create_pdf(appointments, image_stream=None):
 
             # Right column: Caption and Information
             c.setFillColor(black)
-            c.setFont("Helvetica-Bold", 14)
+            c.setFont("Helvetica-Bold", 18)
             c.drawString(right_column_x, y_position - 25, event['description'])  # Caption
 
             c.setFillColor(darkgrey_color)
