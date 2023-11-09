@@ -1,10 +1,18 @@
-FROM amd64/python:3.12-slim
+FROM amd64/python:3.12-bookworm
 
 # Install Poppler utilities
 RUN apt-get update && \
     apt-get install -y poppler-utils && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /usr/share/fonts/custom
+
+# Copy Helvetica font files into the container
+COPY helvetica.ttf /usr/share/fonts/custom/
+
+# Update the font cache
+RUN fc-cache -fv
 
 WORKDIR /app
 
