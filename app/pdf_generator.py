@@ -1,7 +1,4 @@
 import os
-
-from reportlab.lib import colors
-
 from config import Config
 from .utils import parse_iso_datetime
 from reportlab.lib.utils import ImageReader
@@ -11,6 +8,8 @@ from reportlab.lib.colors import black, white
 from datetime import datetime
 from collections import defaultdict
 from babel.dates import format_date
+from PIL import Image
+import io
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -41,6 +40,29 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
 PAGE_WIDTH = 1600
 PAGE_HEIGHT = 900
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
+
+
+def create_transparent_image(width, height):
+    # Ensure width and height are integers
+    width = int(width)
+    height = int(height)
+    # Create a transparent image
+    transparent_img = Image.new('RGBA', (width, height), (255, 255, 255, 128))
+
+    # Save the image to a bytes buffer
+    img_buffer = io.BytesIO()
+    transparent_img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)  # Move to the beginning of the buffer
+
+    return img_buffer
+
+
+def draw_transparent_rectangle(canvas, x, y, width, height):
+    # Generate a transparent image
+    transparent_image_stream = create_transparent_image(width, height)
+
+    # Use ReportLab to draw the image
+    canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
 
 
 def create_pdf(appointments, image_stream=None):
@@ -80,11 +102,7 @@ def create_pdf(appointments, image_stream=None):
                 if image_stream:
                     draw_background_image(c, image_stream, *landscape(A4))
 
-            # Define a very light grey for the semi-transparent effect
-            light_grey = colors.Color(0.9, 0.9, 0.9, alpha=1)  # Light grey color
-
-            c.setFillColor(light_grey)
-            c.rect(left_column_x, y_position - rect_height, rect_width, rect_height, stroke=0, fill=1)
+            draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
 
             # Left column: German Day and Date
             c.setFillColor(black)

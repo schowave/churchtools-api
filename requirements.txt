@@ -4,3 +4,4 @@ pytz==2023.3.post1
 reportlab==4.0.6
 Babel==2.13.1
 python-dateutil==2.8.2
+Pillow==10.1.0
