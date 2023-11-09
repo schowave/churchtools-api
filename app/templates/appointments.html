@@ -69,8 +69,10 @@
         <!-- Input for file upload -->
         <label for="background_image">Hintergrundbild:</label>
         <input type="file" id="background_image" name="background_image" accept="image/*">
-
-        <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate">
+        <div style="display: flex; gap: 10px;">
+            <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate" style="display: inline-block;">
+            <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate" style="display: inline-block;">
+        </div>
     </form>
     {% else %}
         <p>...</p>

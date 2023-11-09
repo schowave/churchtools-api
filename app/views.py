@@ -1,8 +1,12 @@
+import os
+import zipfile
 from io import BytesIO
+from pdf2image import convert_from_path
+
 
 import requests
 from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory, flash, make_response, \
-    session
+    session, send_file
 
 from config import Config
 from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict, fetch_calendars
@@ -43,6 +47,40 @@ def appointments():
                                  str(app['id']) in selected_appointment_ids]
         filename = create_pdf(selected_appointments, background_image_stream)
         return redirect(url_for('main_bp.download_file', filename=filename))
+
+    if request.method == 'POST':
+        if 'generate_jpeg' in request.form:
+            # Code to handle PDF creation, conversion to JPEG, and ZIP file creation
+            selected_appointment_ids = request.form.getlist('appointment_id')
+            background_image_stream = None
+            if 'background_image' in request.files:
+                file = request.files['background_image']
+                if file and file.filename != '':
+                    background_image_stream = BytesIO(file.read())
+            selected_appointments = [app for app in session.get('fetched_appointments', []) if
+                                     str(app['id']) in selected_appointment_ids]
+            pdf_filename = create_pdf(selected_appointments, background_image_stream)
+
+            # Convert the PDF to JPEG files
+            full_pdf_path = os.path.join(Config.FILE_DIRECTORY, pdf_filename)
+
+            images = convert_from_path(full_pdf_path)
+            jpeg_files = []
+            for i, image in enumerate(images):
+                jpeg_stream = BytesIO()
+                image.save(jpeg_stream, 'JPEG')
+                jpeg_stream.seek(0)
+                jpeg_files.append((f'page_{i + 1}.jpg', jpeg_stream))
+
+            # Create a ZIP file in memory
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
+                for file_name, file_bytes in jpeg_files:
+                    zip_file.writestr(file_name, file_bytes.read())
+            zip_buffer.seek(0)
+
+            # Send the ZIP file to the client
+            return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='images.zip')
 
     # This else clause is for when there's no GET or POST, which shouldn't normally happen
     else:
