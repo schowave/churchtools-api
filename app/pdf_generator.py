@@ -84,15 +84,14 @@ def create_pdf(appointments, image_stream=None):
         appointments_by_date[date_key].append(a)
 
     indent = 15
-    bottom_margin = 50  # Bottom margin before adding a new page
 
     # Calculate relative positions based on page size
-    left_margin_ratio = 1/30  # example: 1/30th of the page width
-    right_column_ratio = 2/5  # position the right column at 2/5 of the page width
+    left_margin_ratio = 1 / 30  # example: 1/30th of the page width
+    right_column_ratio = 2 / 5  # position the right column at 2/5 of the page width
 
     left_column_x = PAGE_WIDTH * left_margin_ratio
     right_column_x = PAGE_WIDTH * right_column_ratio
-    y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1/10)  # 1/10th from the top of the page
+    y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 20)  # 1/10th from the top of the page
 
     # Calculate the height and width of the rectangle relative to page size
     rect_width = PAGE_WIDTH - (2 * left_column_x)  # width minus double the left margin
@@ -118,10 +117,10 @@ def create_pdf(appointments, image_stream=None):
             rect_height = total_text_height + line_spacing  # Add some padding
 
             # Check if we need to start a new page
-            if y_position < (rect_height + bottom_margin):
+            if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
                 c.showPage()
                 c.setPageSize(landscape(PAGE_SIZE))
-                y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1/10)
+                y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 10)
 
                 if image_stream:
                     draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
@@ -159,11 +158,8 @@ def create_pdf(appointments, image_stream=None):
                 c.drawString(right_column_x, details_y_position, detail)
                 details_y_position -= font_size_small * 1.5  # Adjust line spacing based on font size
 
-
-
             # Update y_position for next event
             y_position -= (rect_height + line_spacing)  # space between rectangles
 
     c.save()
     return filename
-
