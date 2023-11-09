@@ -1,14 +1,35 @@
-FROM amd64/python:3.12-slim
+# Use the builder image to install dependencies and fontconfig
+FROM amd64/python:3.12-slim as builder
 
-# Install Poppler utilities
+WORKDIR /app
+
+# Install Poppler utilities and clean up in one layer to reduce image size
 RUN apt-get update && \
-    apt-get install -y poppler-utils fontconfig && \
+    apt-get install -y --no-install-recommends poppler-utils fontconfig && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /usr/share/fonts/custom
+# Copy only the requirements file first to leverage Docker cache
+COPY requirements.txt .
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Copy Helvetica font files into the container
+# Start the final stage of the build
+FROM amd64/python:3.12-slim
+
+# Install fontconfig in the final image
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends poppler-utils fontconfig && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy installed dependencies from the builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/bin/pdftotext /usr/bin/pdftotext
+COPY --from=builder /usr/bin/pdfinfo /usr/bin/pdfinfo
+COPY --from=builder /usr/share/fontconfig /usr/share/fontconfig
+COPY --from=builder /usr/share/fonts /usr/share/fonts
+
+# Copy the necessary font files
 COPY fonts/helvetica.ttf /usr/share/fonts/custom/
 COPY fonts/helvetica-bold.ttf /usr/share/fonts/custom/
 
@@ -17,17 +38,14 @@ RUN fc-cache -fv
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
-
+# Copy the application source code
 COPY . .
 
 # Set environment variables
-ENV FLASK_APP run.py
-ENV FLASK_RUN_HOST 0.0.0.0
+ENV FLASK_APP=run.py \
+    FLASK_RUN_HOST=0.0.0.0
 
 # The port number the container should expose
 EXPOSE 5000
-
 
 CMD [ "python3", "-m" , "flask", "run"]
