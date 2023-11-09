@@ -2,7 +2,7 @@ import os
 from config import Config
 from .utils import parse_iso_datetime
 from reportlab.lib.utils import ImageReader
-from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.pagesizes import landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import black, white
 from datetime import datetime
@@ -37,8 +37,8 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
 
 
 # Define the 16:9 page size in points
-PAGE_WIDTH = 1600
-PAGE_HEIGHT = 900
+PAGE_WIDTH = 800
+PAGE_HEIGHT = 450
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
 
@@ -69,12 +69,12 @@ def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
-    c = canvas.Canvas(file_path, pagesize=landscape(A4))
+    c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
     c.setTitle(filename)
 
     # Draw the background image first
     if image_stream:
-        draw_background_image(c, image_stream, *landscape(A4))
+        draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
 
     # Organize appointments by date
     appointments_by_date = defaultdict(list)
@@ -85,22 +85,22 @@ def create_pdf(appointments, image_stream=None):
 
     left_column_x = 100
     right_column_x = 400
-    y_position = landscape(A4)[1] - 100
+    y_position = landscape(PAGE_SIZE)[1] - 100
     indent = 15
     bottom_margin = 50  # Bottom margin before adding a new page
 
     for date_key, events in sorted(appointments_by_date.items()):
         for event in events:
             rect_height = 100
-            rect_width = landscape(A4)[0] - 200
+            rect_width = landscape(PAGE_SIZE)[0] - 200
 
             # Check if we need to start a new page
             if y_position < (rect_height + bottom_margin):
                 c.showPage()
-                c.setPageSize(landscape(A4))
-                y_position = landscape(A4)[1] - 100
+                c.setPageSize(landscape(PAGE_SIZE))
+                y_position = landscape(PAGE_SIZE)[1] - 100
                 if image_stream:
-                    draw_background_image(c, image_stream, *landscape(A4))
+                    draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
 
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
 
