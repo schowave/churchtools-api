@@ -4,7 +4,7 @@ from .utils import parse_iso_datetime
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.pagesizes import landscape
 from reportlab.pdfgen import canvas
-from reportlab.lib.colors import black, white
+from reportlab.lib.colors import black, HexColor
 from datetime import datetime
 from collections import defaultdict
 from babel.dates import format_date
@@ -105,13 +105,15 @@ def create_pdf(appointments, image_stream=None):
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
 
             # Left column: German Day and Date
-            c.setFillColor(black)
+            c.setFillColor(HexColor(0xC1540C))
             c.setFont("Helvetica-Bold", 14)
             german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
             day_date_str = f"{german_day_of_week}, {date_key}"
             c.drawString(left_column_x + indent, y_position - 25, day_date_str)  # German Day and Date
 
+            darkgrey_color = HexColor(0x4E4E4E)
             # Time and MeetingAt
+            c.setFillColor(darkgrey_color)
             c.setFont("Helvetica", 12)
             time_str = f"{start_dt.strftime('%H:%M')} Uhr"
             time_width = c.stringWidth(time_str, "Helvetica", 12)
@@ -123,9 +125,11 @@ def create_pdf(appointments, image_stream=None):
                              meeting_at_str)  # MeetingAt, adjust spacing as needed
 
             # Right column: Caption and Information
-            c.setFont("Helvetica-Bold", 12)
+            c.setFillColor(black)
+            c.setFont("Helvetica-Bold", 14)
             c.drawString(right_column_x, y_position - 25, event['description'])  # Caption
 
+            c.setFillColor(darkgrey_color)
             c.setFont("Helvetica", 10)
             details_y_position = y_position - 45
             for detail in event['information'].split('\n'):
