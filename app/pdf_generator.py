@@ -81,6 +81,7 @@ def create_pdf(appointments, image_stream=None):
             start_dt = parse_iso_datetime(a['startDate'])
             end_dt = parse_iso_datetime(a['endDate'])
             caption = a['description']
+            information = a['information']
             meeting_at = a['meetingAt']
             meeting_at_text = f", {meeting_at}" if meeting_at else ""
 
@@ -91,10 +92,16 @@ def create_pdf(appointments, image_stream=None):
             c.setFont("Helvetica", 10)
             c.setFillColor(colors.grey)
             c.drawString(x_positions[column] + indent, y_position - 15, f"{time_text}{meeting_at_text}")
+            # Split the 'information' text by newline characters and draw each line
+            info_lines = information.split('\n')
+            for info_line in info_lines:
+                y_position -= 15  # Adjust line spacing for each line of information
+                c.drawString(x_positions[column] + indent, y_position - 15, info_line)
+
             c.setFillColor(colors.black)
 
             # Adjust y_position for the next appointment entry, with additional space
-            y_position -= 35
+            y_position -= (15 * len(info_lines)) + 5  # Adjust spacing based on the number of lines
 
             # Check if we need to switch to the second column or add a new page
             if y_position < 50:

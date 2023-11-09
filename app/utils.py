@@ -88,6 +88,7 @@ def appointment_to_dict(appointment):
         'endDate': appointment['base']['endDate'],
         'address': appointment['base'].get('address', ''),
         'meetingAt': meeting_at,
+        'information': appointment['base']['information'],
         'startDateView': start_date_datetime.strftime('%d.%m.%Y'),
         'startTimeView': start_date_datetime.strftime('%H:%M'),
         'endTimeView': end_date_datetime.strftime('%H:%M')
