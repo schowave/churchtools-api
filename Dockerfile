@@ -9,7 +9,7 @@ RUN apt-get update && \
 RUN mkdir -p /usr/share/fonts/custom
 
 # Copy Helvetica font files into the container
-COPY helvetica.ttf /usr/share/fonts/custom/
+COPY fonts/helvetica.ttf /usr/share/fonts/custom/
 
 # Update the font cache
 RUN fc-cache -fv
