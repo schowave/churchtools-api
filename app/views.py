@@ -28,19 +28,26 @@ def appointments():
     if request.method == 'POST':
         if 'fetch_appointments' in request.form:
             appointments = get_and_process_appointments(login_token, start_date, end_date)
-            return render_template('appointments.html', calendars=calendars,
-                                   selected_calendar_ids=selected_calendar_ids,
-                                   appointments=session['fetched_appointments'], start_date=start_date,
-                                   end_date=end_date)
+            response = make_response(render_template('appointments.html', calendars=calendars,
+                                                     selected_calendar_ids=selected_calendar_ids,
+                                                     appointments=session['fetched_appointments'], start_date=start_date,
+                                                     end_date=end_date))
+            response.set_cookie('fetchAppointments', 'true', max_age=60, path='/')
+            return response
+
         elif 'generate_pdf' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
             pdf_filename = handle_pdf_generation(selected_appointment_ids)
-            return redirect(url_for('main_bp.download_file', filename=pdf_filename))
+            response = make_response(redirect(url_for('main_bp.download_file', filename=pdf_filename)))
+            response.set_cookie('pdfGenerated', 'true', max_age=60, path='/')
+            return response
         elif 'generate_jpeg' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
             pdf_filename = handle_pdf_generation(selected_appointment_ids)
             zip_buffer = handle_jpeg_generation(pdf_filename)
-            return send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='images.zip')
+            response = make_response(send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='images.zip'))
+            response.set_cookie('jpegGenerated', 'true', max_age=60, path='/')
+            return response
 
     return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
                            start_date=start_date, end_date=end_date)

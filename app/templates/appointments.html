@@ -20,8 +20,49 @@
             });
         });
     </script>
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+    <script>
+        function monitorDownload(cookieName) {
+            var checkCookie = setInterval(function() {
+                if (document.cookie.split(';').some((item) => item.trim().startsWith(cookieName + '='))) {
+                    clearInterval(checkCookie);
+                    document.cookie = cookieName + '=; Max-Age=-99999999;';  // delete the cookie
+                    $('#spinner-overlay').hide();  // hide the spinner
+                }
+            }, 100); // check every 100ms
+        }
+
+        $(document).ready(function(){
+            $('input[name="generate_jpeg"]').click(function(){
+                // Show the spinner
+                $('#spinner-overlay').show();
+                // Start monitoring for the jpegGenerated cookie
+                monitorDownload('jpegGenerated');
+            });
+
+            $('input[name="generate_pdf"]').click(function(){
+                // Show the spinner
+                $('#spinner-overlay').show();
+                // Start monitoring for the pdfGenerated cookie
+                monitorDownload('pdfGenerated');
+            });
+            $('input[name="fetch_appointments"]').click(function(){
+                // Show the spinner
+                $('#spinner-overlay').show();
+                // Start monitoring for the pdfGenerated cookie
+                monitorDownload('fetchAppointments');
+            });
+        });
+    </script>
 </head>
 <body>
+<!-- Spinner Overlay -->
+<div id="spinner-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.9); z-index:1000;">
+    <div class="spinner" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
+        <i class="fas fa-spinner fa-spin" style="font-size:3rem; color: #09f;"></i>
+    </div>
+</div>
+
 <div class="container">
     <a href="/" class="btn btn-back">Zurück</a>
     <h1>Termine nächste Woche</h1>
