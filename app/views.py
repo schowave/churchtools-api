@@ -5,8 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, send_f
     session
 
 from config import Config
-from .utils import get_login_token, get_date_range_from_form, make_login_request, fetch_appointments, \
-    parse_iso_datetime, appointment_to_dict
+from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict
 from .pdf_generator import create_pdf
 
 main_bp = Blueprint('main_bp', __name__)

@@ -3,7 +3,6 @@ import pytz
 from datetime import datetime, timedelta
 from flask import request
 from dateutil.parser import parse
-
 from config import Config
 
 

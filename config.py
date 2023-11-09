@@ -1,6 +1,5 @@
 import os
 
-
 class Config:
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'your_secret_key')
     CHURCHTOOLS_BASE_URL = os.getenv('CHURCHTOOLS_BASE_URL', 'https://evkila.church.tools')

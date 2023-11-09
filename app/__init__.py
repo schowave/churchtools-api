@@ -9,10 +9,10 @@ def create_app():
     os.makedirs(app.config['FILE_DIRECTORY'], exist_ok=True)
 
     with app.app_context():
-            # Include our Routes
-            from . import views
+        # Include our Routes
+        from . import views
 
-            # Register Blueprints
-            app.register_blueprint(views.main_bp)
+        # Register Blueprints
+        app.register_blueprint(views.main_bp)
 
-            return app
+        return app
