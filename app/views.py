@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, send_f
     session
 
 from config import Config
-from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict
+from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict, fetch_calendars
 from .pdf_generator import create_pdf
 
 main_bp = Blueprint('main_bp', __name__)
@@ -18,12 +18,18 @@ def appointments():
         flash('You need to login first.', 'warning')
         return redirect(url_for('main_bp.login'))
     start_date, end_date = get_date_range_from_form()
+    calendars = fetch_calendars(login_token)
+    selected_calendar_ids = [calendar['id'] for calendar in calendars]
 
     if request.method == 'POST' and 'fetch_appointments' in request.form:
-        appointments = fetch_appointments(login_token, start_date, end_date)
+        selected_calendar_ids = request.form.getlist('calendar_ids')
+        selected_calendar_ids = [int(id) for id in selected_calendar_ids if id.isdigit()]
+
+        appointments = fetch_appointments(login_token, start_date, end_date, selected_calendar_ids)
 
         session['fetched_appointments'] = [appointment_to_dict(app) for app in appointments]
-        return render_template('appointments.html', appointments=session['fetched_appointments'], start_date=start_date,
+        return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
+                               appointments=session['fetched_appointments'], start_date=start_date,
                                end_date=end_date)
 
     if request.method == 'POST' and 'generate_pdf' in request.form:
@@ -40,7 +46,8 @@ def appointments():
 
     # This else clause is for when there's no GET or POST, which shouldn't normally happen
     else:
-        return render_template('appointments.html', start_date=start_date, end_date=end_date)
+        return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
+                               start_date=start_date, end_date=end_date)
 
 
 @main_bp.route('/', methods=['GET', 'POST'])

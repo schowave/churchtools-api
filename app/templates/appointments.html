@@ -26,18 +26,35 @@
     <a href="/" class="btn btn-back">Zurück</a>
     <h1>Termine nächste Woche</h1>
 
-
     <!-- Form to fetch appointments -->
     <form method="POST">
+        <!-- Calendars selection -->
+        <div class="calendars-container">
+            {% for calendar in calendars %}
+                <div class="calendar-item">
+                    <input type="checkbox" id="calendar-{{ calendar['id'] }}"
+                           name="calendar_ids" value="{{ calendar['id'] }}"
+                           class="calendar-checkbox" {% if calendar['id'] in selected_calendar_ids %} checked {% endif %}>
+                    <label for="calendar-{{ calendar['id'] }}" class="calendar-label">
+                        {{ calendar['name'] }}
+                    </label>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Date selection -->
         <label for="start_date">Startdatum:</label>
-        <input type="text" id="start_date" name="start_date" value="{{ start_date }}" required>
+        <input type="text" id="start_date" name="start_date"
+               value="{{ start_date }}" required>
 
         <label for="end_date">Enddatum:</label>
-        <input type="text" id="end_date" name="end_date" value="{{ end_date }}" required>
+        <input type="text" id="end_date" name="end_date"
+               value="{{ end_date }}" required>
 
-        <input type="submit" name="fetch_appointments" value="Termine abholen" class="btn btn-fetch">
+        <!-- Submit button for fetching appointments -->
+        <input type="submit" name="fetch_appointments"
+               value="Termine abholen" class="btn btn-fetch">
     </form>
-
     {% if appointments %}
     <form method="POST" enctype="multipart/form-data">
         <div class="appointments-container">

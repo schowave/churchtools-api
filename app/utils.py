@@ -30,7 +30,21 @@ def make_login_request(username, password):
     return requests.post(f'{Config.CHURCHTOOLS_BASE_URL}/api/login', json=data)
 
 
-def fetch_appointments(login_token, start_date, end_date):
+def fetch_calendars(login_token):
+    url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars'
+    headers = {'Authorization': f'Login {login_token}'}
+
+    response = requests.get(url, headers=headers)
+
+    if response.ok:
+        all_calendars = response.json().get('data', [])
+        public_calendars = [calendar for calendar in all_calendars if calendar.get('isPublic') is True]
+        return public_calendars
+    else:
+        response.raise_for_status()
+
+
+def fetch_appointments(login_token, start_date, end_date, calendar_ids):
     berlin_tz = pytz.timezone('Europe/Berlin')
     start_date_datetime = berlin_tz.localize(datetime.strptime(start_date, '%Y-%m-%d'))
     end_date_datetime = berlin_tz.localize(datetime.strptime(end_date, '%Y-%m-%d'))
@@ -40,7 +54,7 @@ def fetch_appointments(login_token, start_date, end_date):
     appointments = []
     seen_ids = set()  # Set to track seen appointment IDs
 
-    for calendar_id in [47, 1, 2]:
+    for calendar_id in calendar_ids:
         url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
         response = requests.get(url, headers=headers)
         if response.ok:

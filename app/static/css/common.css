@@ -178,7 +178,7 @@ input[type="submit"] {
 }
 
 /* Container for all appointments */
-.appointments-container {
+.appointments-container, .calendars-container {
     margin: 20px 0;
     padding: 10px;
     border: 1px solid #ddd;
@@ -187,7 +187,7 @@ input[type="submit"] {
 }
 
 /* Individual appointment item */
-.appointment-item {
+.appointment-item, .calendar-item {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
@@ -197,13 +197,13 @@ input[type="submit"] {
 }
 
 /* Style for the checkbox */
-.appointment-checkbox {
+.appointment-checkbox, .calendar-checkbox {
     margin-right: 10px;
     cursor: pointer;
 }
 
 /* Style for the label */
-.appointment-label {
+.appointment-label, .calendar-label {
     cursor: pointer;
     margin-top: 0;
     text-align: left;
@@ -211,11 +211,11 @@ input[type="submit"] {
 }
 
 /* Hover effect for appointment items */
-.appointment-item:hover {
+.appointment-item:hover, .calendar-item:hover {
     background-color: #e9ecef;
 }
 
-.appointment-item:hover .appointment-label {
+.appointment-item:hover .appointment-label, .calendar-item:hover .calendar-label {
     color: #007bff;
 }
 
