@@ -140,6 +140,9 @@ def create_pdf(appointments, image_stream=None):
             # Left column: German Day and Date
             c.setFillColor(HexColor(0xC1540C))
             c.setFont("Helvetica-Bold", font_size_large)
+
+            start_dt = parse_iso_datetime(event['startDate'])
+            end_dt = parse_iso_datetime(event['endDate'])
             german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
             day_date_str = f"{german_day_of_week}, {date_key}"
             c.drawString(left_column_x + indent, text_y_position - font_size_large, day_date_str)  # German Day and Date
@@ -147,7 +150,7 @@ def create_pdf(appointments, image_stream=None):
             # Time
             c.setFillColor(HexColor(0x4E4E4E))
             c.setFont("Helvetica", font_size_medium)
-            time_str = f"{start_dt.strftime('%H:%M')} Uhr"
+            time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
             c.drawString(left_column_x + indent, y_position - (2 * line_spacing), time_str)  # Time
 
             # MeetingAt - draw this below the Time, on the third row
