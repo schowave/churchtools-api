@@ -10,6 +10,9 @@ from collections import defaultdict
 from babel.dates import format_date
 from PIL import Image
 import io
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.utils import simpleSplit
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -74,6 +77,31 @@ def setup_new_page(canvas_obj, image_stream):
     return new_y_position
 
 
+def wrap_text(text, font_name, font_size, max_width):
+    """
+    Wrap text to fit within a given width when rendered in a given font and size.
+    Returns a list of lines and the total height the text block will require.
+    """
+    lines = []
+    text_height = 0
+
+    # Ensure the font is registered and measured correctly
+    pdfmetrics.registerFont(TTFont(font_name, f'{font_name}.ttf'))
+
+    # Split the text into lines that fit into the specified width
+    words = text.split()
+    while words:
+        line = simpleSplit(' '.join(words), font_name, font_size, max_width)
+        lines.append(line[0])
+        text_height += font_size * 1.2  # Add line height
+        words = words[len(line[0].split()):]
+
+    return lines, text_height
+
+
+font_name = 'Helvetica'
+
+
 def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
@@ -129,6 +157,16 @@ def create_pdf(appointments, image_stream=None):
             # Now set the rectangle height to match the total text height
             rect_height = total_text_height  # Add some padding
 
+            information_font_size = font_size_medium
+
+            # Wrap the information text if it exceeds the width of the rectangle
+            wrapped_info_lines, wrapped_info_height = wrap_text(
+                information, font_name, information_font_size, rect_width-right_column_x
+            )
+
+            # Adjust the rectangle height to accommodate wrapped text
+            rect_height += wrapped_info_height - (font_size_small * details_count)
+
             # Check if we need to start a new page
             if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
                 y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
@@ -150,7 +188,7 @@ def create_pdf(appointments, image_stream=None):
 
             # Time
             c.setFillColor(HexColor(0x4E4E4E))
-            c.setFont("Helvetica", font_size_medium)
+            c.setFont(font_name, font_size_medium)
             time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
             c.drawString(left_column_x + indent, y_position - (2 * line_spacing) - additional_spacing, time_str)  # Time
 
@@ -166,13 +204,12 @@ def create_pdf(appointments, image_stream=None):
             c.drawString(right_column_x, text_y_position - font_size_large, event['description'])  # Caption
 
             c.setFillColor(HexColor(0x4E4E4E))
-            information_font_size = font_size_medium
-            c.setFont("Helvetica", information_font_size)
+            c.setFont(font_name, information_font_size)
 
             # Draw the information text, checking if it is not None
             if information:
                 details_y_position = y_position - (2 * line_spacing) - additional_spacing
-                for detail in information.split('\n'):
+                for detail in wrapped_info_lines:
                     c.drawString(right_column_x, details_y_position, detail)
                     details_y_position -= information_font_size * 1.5
 
