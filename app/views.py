@@ -24,12 +24,13 @@ def appointments():
     start_date, end_date = get_date_range_from_form()
     calendars = fetch_calendars(login_token)
 
-    # Check if selected_calendar_ids is already set in the session, indicating a return visit to the page
-    if 'selected_calendar_ids' in session:
-        selected_calendar_ids = session['selected_calendar_ids']
-    else:
-        # If not, it's the first visit, so preselect all calendars
-        selected_calendar_ids = [calendar['id'] for calendar in calendars]
+    # On first visit, 'selected_calendar_ids' won't be in session
+    if 'selected_calendar_ids' not in session:
+        # Preselect all calendars
+        session['selected_calendar_ids'] = [str(calendar['id']) for calendar in calendars]
+        session.modified = True
+
+    selected_calendar_ids = session.get('selected_calendar_ids', [])
 
     if request.method == 'POST':
         selected_calendar_ids = request.form.getlist('calendar_ids')
