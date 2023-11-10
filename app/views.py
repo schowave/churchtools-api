@@ -26,6 +26,8 @@ def appointments():
     selected_calendar_ids = [calendar['id'] for calendar in calendars]
 
     if request.method == 'POST':
+        selected_calendar_ids = request.form.getlist('calendar_ids')
+        session['selected_calendar_ids'] = selected_calendar_ids
         if 'fetch_appointments' in request.form:
             appointments = get_and_process_appointments(login_token, start_date, end_date)
             response = make_response(render_template('appointments.html', calendars=calendars,

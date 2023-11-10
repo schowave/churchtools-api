@@ -75,7 +75,8 @@
                 <div class="calendar-item">
                     <input type="checkbox" id="calendar-{{ calendar['id'] }}"
                            name="calendar_ids" value="{{ calendar['id'] }}"
-                           class="calendar-checkbox" {% if calendar['id'] in selected_calendar_ids %} checked {% endif %}>
+                           class="calendar-checkbox"
+                            {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
                     <label for="calendar-{{ calendar['id'] }}" class="calendar-label">
                         {{ calendar['name'] }}
                     </label>
