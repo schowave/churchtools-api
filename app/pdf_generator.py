@@ -110,8 +110,9 @@ def create_pdf(appointments, image_stream=None):
             total_text_height = 0
             total_text_height += font_size_large + line_spacing  # For the German Day and Date
             total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
-            details_count = len(event['information'].split('\n'))
-            total_text_height += (font_size_small) * details_count  # For the details with adjusted line spacing
+            information = event.get('information') or ''
+            details_count = len(information.split('\n'))
+            total_text_height += (font_size_small) * details_count
 
             # Now set the rectangle height to match the total text height
             rect_height = total_text_height + line_spacing  # Add some padding
@@ -153,10 +154,13 @@ def create_pdf(appointments, image_stream=None):
 
             c.setFillColor(HexColor(0x4E4E4E))
             c.setFont("Helvetica", font_size_small)
-            details_y_position = y_position - (2 * line_spacing)  # Start below the caption
-            for detail in event['information'].split('\n'):
-                c.drawString(right_column_x, details_y_position, detail)
-                details_y_position -= font_size_small * 1.5  # Adjust line spacing based on font size
+
+            # Draw the information text, checking if it is not None
+            if information:
+                details_y_position = y_position - (2 * line_spacing)
+                for detail in information.split('\n'):
+                    c.drawString(right_column_x, details_y_position, detail)
+                    details_y_position -= font_size_small * 1.5
 
             # Update y_position for next event
             y_position -= (rect_height + line_spacing)  # space between rectangles

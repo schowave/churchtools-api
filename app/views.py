@@ -23,11 +23,17 @@ def appointments():
 
     start_date, end_date = get_date_range_from_form()
     calendars = fetch_calendars(login_token)
-    selected_calendar_ids = [calendar['id'] for calendar in calendars]
+
+    # Check if selected_calendar_ids is already set in the session, indicating a return visit to the page
+    if 'selected_calendar_ids' in session:
+        selected_calendar_ids = session['selected_calendar_ids']
+    else:
+        # If not, it's the first visit, so preselect all calendars
+        selected_calendar_ids = [calendar['id'] for calendar in calendars]
 
     if request.method == 'POST':
         selected_calendar_ids = request.form.getlist('calendar_ids')
-        session['selected_calendar_ids'] = selected_calendar_ids
+        session['selected_calendar_ids'] = selected_calendar_ids  # Update the session
         if 'fetch_appointments' in request.form:
             appointments = get_and_process_appointments(login_token, start_date, end_date)
             response = make_response(render_template('appointments.html', calendars=calendars,
