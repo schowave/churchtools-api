@@ -37,7 +37,7 @@ def appointments():
                                                      selected_calendar_ids=selected_calendar_ids,
                                                      appointments=session['fetched_appointments'],
                                                      start_date=start_date,
-                                                     end_date=end_date))
+                                                     end_date=end_date, base_url=Config.CHURCHTOOLS_BASE))
             response.set_cookie('fetchAppointments', 'true', max_age=60, path='/')
             return response
 
@@ -63,7 +63,7 @@ def appointments():
         selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
 
     return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
-                           start_date=start_date, end_date=end_date)
+                           start_date=start_date, end_date=end_date, base_url=Config.CHURCHTOOLS_BASE)
 
 
 def get_and_process_appointments(login_token, start_date, end_date):
@@ -139,7 +139,7 @@ def login():
         else:
             flash('Invalid username or password.', 'error')
 
-    return render_template('login.html')
+    return render_template('login.html', base_url=Config.CHURCHTOOLS_BASE)
     pass
 
 
@@ -158,7 +158,7 @@ def overview():
         return redirect(url_for('main_bp.login'))
 
     # Add any additional data you want to pass to your template
-    return render_template('overview.html')
+    return render_template('overview.html', base_url=Config.CHURCHTOOLS_BASE)
     pass
 
 
