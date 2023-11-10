@@ -64,6 +64,7 @@ def draw_transparent_rectangle(canvas, x, y, width, height):
     # Use ReportLab to draw the image
     canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
 
+
 def setup_new_page(canvas_obj, image_stream):
     canvas_obj.showPage()
     canvas_obj.setPageSize(landscape(PAGE_SIZE))
