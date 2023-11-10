@@ -111,6 +111,22 @@
         <!-- Input for file upload -->
         <label for="background_image">Hintergrundbild:</label>
         <input type="file" id="background_image" name="background_image" accept="image/*">
+
+        <div>
+            <label for="date_color">Datum:</label>
+            <input type="color" id="date_color" name="date_color" value="#C1540C">
+        </div>
+
+        <div>
+            <label for="background_color">Transparenter Hintergrund:</label>
+            <input type="color" id="background_color" name="background_color" value="#FFFFFF">
+        </div>
+
+        <div>
+            <label for="description_color">Beschreibung:</label>
+            <input type="color" id="description_color" name="description_color" value="#4E4E4E">
+        </div>
+
         <div style="display: flex; gap: 10px;">
             <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate" style="display: inline-block;">
             <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate" style="display: inline-block;">

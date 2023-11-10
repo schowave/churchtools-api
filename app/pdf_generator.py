@@ -8,7 +8,7 @@ from reportlab.lib.colors import black, HexColor
 from datetime import datetime
 from collections import defaultdict
 from babel.dates import format_date
-from PIL import Image
+from PIL import Image, ImageColor
 import io
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -45,12 +45,18 @@ PAGE_HEIGHT = 675
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
 
-def create_transparent_image(width, height):
+def create_transparent_image(width, height, background_color):
     # Ensure width and height are integers
     width = int(width)
     height = int(height)
+
+    rgba_color = ImageColor.getcolor(background_color, "RGBA")
+
+    # Set the alpha value to 128
+    rgba_color = rgba_color[:-1] + (128,)
+
     # Create a transparent image
-    transparent_img = Image.new('RGBA', (width, height), (255, 255, 255, 128))
+    transparent_img = Image.new('RGBA', (width, height), rgba_color)
 
     # Save the image to a bytes buffer
     img_buffer = io.BytesIO()
@@ -60,9 +66,9 @@ def create_transparent_image(width, height):
     return img_buffer
 
 
-def draw_transparent_rectangle(canvas, x, y, width, height):
+def draw_transparent_rectangle(canvas, x, y, width, height, background_color):
     # Generate a transparent image
-    transparent_image_stream = create_transparent_image(width, height)
+    transparent_image_stream = create_transparent_image(width, height, background_color)
 
     # Use ReportLab to draw the image
     canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
@@ -120,11 +126,10 @@ def wrap_text(text, font_name, font_size, max_width):
     return wrapped_lines, text_height
 
 
-
 font_name = 'Helvetica'
 
 
-def create_pdf(appointments, image_stream=None):
+def create_pdf(appointments, date_color, background_color, description_color, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
@@ -183,7 +188,7 @@ def create_pdf(appointments, image_stream=None):
 
             # Wrap the information text if it exceeds the width of the rectangle
             wrapped_info_lines, wrapped_info_height = wrap_text(
-                information, font_name, information_font_size, rect_width-right_column_x
+                information, font_name, information_font_size, rect_width - right_column_x
             )
 
             # Adjust the rectangle height to accommodate wrapped text
@@ -193,13 +198,14 @@ def create_pdf(appointments, image_stream=None):
             if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
                 y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
 
-            draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
+            draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height,
+                                       background_color)
 
             # Set starting position for text, taking into account the top padding
             text_y_position = y_position - top_padding
 
             # Left column: German Day and Date
-            c.setFillColor(HexColor(0xC1540C))
+            c.setFillColor(HexColor(date_color))
             c.setFont("Helvetica-Bold", font_size_large)
 
             start_dt = parse_iso_datetime(event['startDate'])
@@ -209,7 +215,7 @@ def create_pdf(appointments, image_stream=None):
             c.drawString(left_column_x + indent, text_y_position - font_size_large, day_date_str)  # German Day and Date
 
             # Time
-            c.setFillColor(HexColor(0x4E4E4E))
+            c.setFillColor(HexColor(description_color))
             c.setFont(font_name, font_size_medium)
             time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
             c.drawString(left_column_x + indent, y_position - (2 * line_spacing) - additional_spacing, time_str)  # Time
@@ -225,7 +231,7 @@ def create_pdf(appointments, image_stream=None):
             c.setFont("Helvetica-Bold", font_size_large)
             c.drawString(right_column_x, text_y_position - font_size_large, event['description'])  # Caption
 
-            c.setFillColor(HexColor(0x4E4E4E))
+            c.setFillColor(HexColor(description_color))
             c.setFont(font_name, information_font_size)
 
             # Draw the information text, checking if it is not None
