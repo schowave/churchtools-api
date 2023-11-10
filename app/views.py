@@ -24,14 +24,6 @@ def appointments():
     start_date, end_date = get_date_range_from_form()
     calendars = fetch_calendars(login_token)
 
-    # On first visit, 'selected_calendar_ids' won't be in session
-    if 'selected_calendar_ids' not in session:
-        # Preselect all calendars
-        session['selected_calendar_ids'] = [str(calendar['id']) for calendar in calendars]
-        session.modified = True
-
-    selected_calendar_ids = session.get('selected_calendar_ids', [])
-
     if request.method == 'POST':
         # Retrieve color values
         date_color = request.form.get('date_color')
@@ -65,6 +57,10 @@ def appointments():
                 send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='images.zip'))
             response.set_cookie('jpegGenerated', 'true', max_age=60, path='/')
             return response
+    else:
+        # On the first GET request, preselect all calendars
+        # This also handles the case when the page is visited for the first time
+        selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
 
     return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
                            start_date=start_date, end_date=end_date)
