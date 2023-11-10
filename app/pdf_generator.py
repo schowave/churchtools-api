@@ -112,7 +112,7 @@ def create_pdf(appointments, image_stream=None):
             total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
             information = event.get('information') or ''
             details_count = len(information.split('\n'))
-            total_text_height += (font_size_small) * details_count
+            total_text_height += font_size_small * details_count
 
             # Now set the rectangle height to match the total text height
             rect_height = total_text_height + line_spacing  # Add some padding
@@ -135,17 +135,17 @@ def create_pdf(appointments, image_stream=None):
             day_date_str = f"{german_day_of_week}, {date_key}"
             c.drawString(left_column_x + indent, y_position - line_spacing, day_date_str)  # German Day and Date
 
-            # Time and MeetingAt
+            # Time
             c.setFillColor(HexColor(0x4E4E4E))
             c.setFont("Helvetica", font_size_medium)
             time_str = f"{start_dt.strftime('%H:%M')} Uhr"
-            time_width = c.stringWidth(time_str, "Helvetica", font_size_medium)
             c.drawString(left_column_x + indent, y_position - (2 * line_spacing), time_str)  # Time
 
+            # MeetingAt - draw this below the Time, on the third row
             if event['meetingAt']:
-                meeting_at_str = f"{event['meetingAt']}"
-                c.drawString(left_column_x + indent + time_width + 10, y_position - (2 * line_spacing),
-                             meeting_at_str)  # MeetingAt, adjust spacing as needed
+                meeting_at_str = f"{event['meetingAt']}"  # Add prefix for clarity
+                # Move this to the third row by subtracting an additional line_spacing
+                c.drawString(left_column_x + indent, y_position - (3 * line_spacing), meeting_at_str)
 
             # Right column: Caption and Information
             c.setFillColor(black)
