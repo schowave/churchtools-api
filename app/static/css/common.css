@@ -20,15 +20,7 @@ body {
     width: 100%;
 }
 
-.container {
-    max-width: 400px;
-    width: 100%;
-    background: white;
-    padding: 2em;
-    border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-top: 20px; /* Adjusted for spacing from the top */
-}
+
 
 h1, h2 {
     color: #333;
@@ -94,15 +86,14 @@ input[type="submit"] {
     background-color: #f0ad4e;
 }
 
-.card {
-    background: white; /* Set the background color to white */
-    padding: 2em; /* Add some padding */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Box shadow for depth */
-    margin: 20px auto; /* Add some top margin and center it horizontally */
-    width: 30%; /* You can set a width or max-width depending on your layout */
+.container {
+    background: white;
+    padding: 2em;
+    border-radius: 10px;
     max-width: 400px;
-    text-align: center; /* Center the text */
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px; /* Adjusted for spacing from the top */
 }
 
 .tile {
@@ -217,5 +208,56 @@ input[type="submit"] {
 
 .appointment-item:hover .appointment-label, .calendar-item:hover .calendar-label {
     color: #007bff;
+}
+
+/* Color Picker Container Styles */
+.color-picker-container {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    display: grid;
+    gap: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    grid-template-columns: 1fr; /* Stack label and input on small screens */
+}
+
+.color-picker-container div {
+    display: contents; /* Let the label and input take grid positions */
+}
+
+.color-picker-container label {
+    grid-column: 1; /* Place label in the first column */
+    font-weight: bold;
+    color: #333;
+    align-self: center; /* Vertically center the label */
+    text-align: left;
+    margin-right: 0;
+}
+
+.color-picker-container input[type="file"] {
+    grid-column: 2; /* Place input in the second column */
+    width: auto; /* Adjust width as needed */
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.color-picker-container input[type="color"] {
+    grid-column: 2; /* Place input in the second column */
+    width: revert; /* Adjust width as needed */
+    height: 40px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-picker-title {
+    font-size: 1.5em; /* Adjust size as needed */
+    color: #333; /* Adjust color as needed */
+    margin-bottom: 10px; /* Space between title and first item */
+    text-align: left; /* Align text to left */
+    width: 100%; /* Ensure title takes full width */
 }
 
