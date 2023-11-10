@@ -48,26 +48,27 @@ def fetch_appointments(login_token, start_date, end_date, calendar_ids):
     berlin_tz = pytz.timezone('Europe/Berlin')
     start_date_datetime = berlin_tz.localize(datetime.strptime(start_date, '%Y-%m-%d'))
     end_date_datetime = berlin_tz.localize(datetime.strptime(end_date, '%Y-%m-%d'))
-    end_date_replace = end_date_datetime.replace(hour=23, minute=59, second=59)
 
     headers = {'Authorization': f'Login {login_token}'}
+    query_params = {
+        'from': (start_date_datetime.strftime('%Y-%m-%d')),
+        'to': (end_date_datetime.strftime('%Y-%m-%d'))
+    }
     appointments = []
     seen_ids = set()  # Set to track seen appointment IDs
 
     for calendar_id in calendar_ids:
         url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, params=query_params)
         if response.ok:
             for appointment in response.json()['data']:
                 appointment_id = appointment['base']['id']
-                appointment_start_date = appointment['base']['startDate']
                 # Combine the checks for seen ID and date range into a single condition
-                if appointment_id not in seen_ids and start_date_datetime <= parse_iso_datetime(
-                        appointment_start_date) <= end_date_replace:
+                if appointment_id not in seen_ids:
                     seen_ids.add(appointment_id)
                     appointments.append(appointment)
 
-    appointments.sort(key=lambda x: parse(x['base']['startDate']))
+    appointments.sort(key=lambda x: parse(x['calculated']['startDate']))
     return appointments
 
 
@@ -81,10 +82,10 @@ def get_date_range_from_form():
 
 
 def appointment_to_dict(appointment):
-    start_date_from_appointment = appointment['base']['startDate']
+    start_date_from_appointment = appointment['calculated']['startDate']
     start_date_datetime = parse_iso_datetime(start_date_from_appointment)
 
-    end_date_from_appointment = appointment['base']['endDate']
+    end_date_from_appointment = appointment['calculated']['endDate']
     end_date_datetime = parse_iso_datetime(end_date_from_appointment)
 
     address = appointment['base'].get('address', '')
@@ -98,7 +99,7 @@ def appointment_to_dict(appointment):
         'id': appointment['base']['id'],
         'description': appointment['base']['caption'],
         'startDate': start_date_from_appointment,
-        'endDate': appointment['base']['endDate'],
+        'endDate': appointment['calculated']['endDate'],
         'address': appointment['base'].get('address', ''),
         'meetingAt': meeting_at,
         'information': appointment['base']['information'],
