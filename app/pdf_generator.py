@@ -102,12 +102,14 @@ def create_pdf(appointments, image_stream=None):
     font_size_medium = base_font_size * 1.2  # Medium font for subheaders
     font_size_small = base_font_size  # Small font for details
     line_spacing = font_size_medium * 1.5  # Dynamic line spacing based on font size
+    top_padding = base_font_size * 0.5  # Adjust multiplier as needed for desired padding
 
     for date_key, events in sorted(appointments_by_date.items()):
         for event in events:
 
             # Calculate the total text block height for each appointment
             total_text_height = 0
+            total_text_height += top_padding  # Add top padding
             total_text_height += font_size_large + line_spacing  # For the German Day and Date
             total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
             information = event.get('information') or ''
@@ -115,7 +117,7 @@ def create_pdf(appointments, image_stream=None):
             total_text_height += font_size_small * details_count
 
             # Now set the rectangle height to match the total text height
-            rect_height = total_text_height + line_spacing  # Add some padding
+            rect_height = total_text_height  # Add some padding
 
             # Check if we need to start a new page
             if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
@@ -128,12 +130,15 @@ def create_pdf(appointments, image_stream=None):
 
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
 
+            # Set starting position for text, taking into account the top padding
+            text_y_position = y_position - top_padding
+
             # Left column: German Day and Date
             c.setFillColor(HexColor(0xC1540C))
             c.setFont("Helvetica-Bold", font_size_large)
             german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
             day_date_str = f"{german_day_of_week}, {date_key}"
-            c.drawString(left_column_x + indent, y_position - line_spacing, day_date_str)  # German Day and Date
+            c.drawString(left_column_x + indent, text_y_position - font_size_large, day_date_str)  # German Day and Date
 
             # Time
             c.setFillColor(HexColor(0x4E4E4E))
@@ -150,7 +155,7 @@ def create_pdf(appointments, image_stream=None):
             # Right column: Caption and Information
             c.setFillColor(black)
             c.setFont("Helvetica-Bold", font_size_large)
-            c.drawString(right_column_x, y_position - line_spacing, event['description'])  # Caption
+            c.drawString(right_column_x, text_y_position - font_size_large, event['description'])  # Caption
 
             c.setFillColor(HexColor(0x4E4E4E))
             c.setFont("Helvetica", font_size_small)
