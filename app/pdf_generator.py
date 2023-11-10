@@ -64,6 +64,14 @@ def draw_transparent_rectangle(canvas, x, y, width, height):
     # Use ReportLab to draw the image
     canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
 
+def setup_new_page(canvas_obj, image_stream):
+    canvas_obj.showPage()
+    canvas_obj.setPageSize(landscape(PAGE_SIZE))
+    new_y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 20)  # consistent with the initial y_position
+    if image_stream:
+        draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+    return new_y_position
+
 
 def create_pdf(appointments, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
@@ -121,12 +129,7 @@ def create_pdf(appointments, image_stream=None):
 
             # Check if we need to start a new page
             if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
-                c.showPage()
-                c.setPageSize(landscape(PAGE_SIZE))
-                y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 10)
-
-                if image_stream:
-                    draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+                y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
 
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height)
 
