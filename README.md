@@ -4,21 +4,39 @@ This repository makes it possible to access the churchtools api via User Interfa
 
 It was created due to the request to show all appointments of [evkila.de](https://www.evkila.de/) on a single pdf file or multiple jpegs.
 
-Just run the run.sh file which will build the flask application as docker container and provide access to the api.
+## What does it do?
 
-`./run.sh`
+### Overview to provide 1..n functionalities
+![overview](images/overview.png)
 
-The application will be available on 
+### Select 1..n public calendars for appointments
+![appointments](images/calendars.png)
 
-[http://localhost:5005](http://localhost:5005)
+### Generate PDF or JPEG
+![generate](images/formatting.png)
 
-![img.png](images/overview.png)
+### Result
+![result](images/result.png)
 
-![img_1.png](images/calendars.png)
+## Setup
 
-![img_2.png](images/formatting.png)
+1. Edit the `.env` file and set it to your churchtools instance.
 
-Result: 
+    ```
+    CHURCHTOOLS_BASE=evkila.church.tools
+    ```
 
-![img.png](images/result.png)
+2. Run the `run.sh` shell script, which will build a docker container and run the container.
+
+    ```
+    ./run.sh
+    ```
+
+3. Open in Browser
+
+    [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
+
+
+
+
 
