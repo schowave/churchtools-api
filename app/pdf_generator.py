@@ -81,22 +81,44 @@ def wrap_text(text, font_name, font_size, max_width):
     """
     Wrap text to fit within a given width when rendered in a given font and size.
     Returns a list of lines and the total height the text block will require.
+    Preserves original line breaks and wraps text that exceeds max_width.
     """
-    lines = []
+    # Register the font if it hasn't been registered yet
+    if not pdfmetrics.getRegisteredFontNames():
+        pdfmetrics.registerFont(TTFont(font_name, f'{font_name}.ttf'))
+
+    wrapped_lines = []
     text_height = 0
 
-    # Ensure the font is registered and measured correctly
-    pdfmetrics.registerFont(TTFont(font_name, f'{font_name}.ttf'))
+    # Split the text by original line breaks first
+    original_lines = text.split('\n')
 
-    # Split the text into lines that fit into the specified width
-    words = text.split()
-    while words:
-        line = simpleSplit(' '.join(words), font_name, font_size, max_width)
-        lines.append(line[0])
-        text_height += font_size * 1.2  # Add line height
-        words = words[len(line[0].split()):]
+    for line in original_lines:
+        # If the line fits within the maximum width, add it directly
+        if pdfmetrics.stringWidth(line, font_name, font_size) <= max_width:
+            wrapped_lines.append(line)
+            text_height += font_size * 1.2  # Line height
+        else:
+            # If the line is too wide, split it further
+            words = line.split()
+            wrapped_line = []
+            while words:
+                # Keep adding words until the line is too wide
+                wrapped_line.append(words.pop(0))
+                test_line = ' '.join(wrapped_line + words[:1])
+                if pdfmetrics.stringWidth(test_line, font_name, font_size) > max_width:
+                    # When the next word would make it too wide,
+                    # the line is done and should be appended
+                    wrapped_lines.append(' '.join(wrapped_line))
+                    text_height += font_size * 1.2  # Line height
+                    wrapped_line = []
+            # Add any remaining words as a new line
+            if wrapped_line:
+                wrapped_lines.append(' '.join(wrapped_line))
+                text_height += font_size * 1.2  # Line height
 
-    return lines, text_height
+    return wrapped_lines, text_height
+
 
 
 font_name = 'Helvetica'
