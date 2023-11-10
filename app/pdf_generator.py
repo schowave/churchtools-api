@@ -111,6 +111,7 @@ def create_pdf(appointments, image_stream=None):
     font_size_medium = base_font_size * 1.2  # Medium font for subheaders
     font_size_small = base_font_size  # Small font for details
     line_spacing = font_size_medium * 1.5  # Dynamic line spacing based on font size
+    additional_spacing = base_font_size * 0.1
     top_padding = base_font_size * 0.5  # Adjust multiplier as needed for desired padding
 
     for date_key, events in sorted(appointments_by_date.items()):
@@ -151,7 +152,7 @@ def create_pdf(appointments, image_stream=None):
             c.setFillColor(HexColor(0x4E4E4E))
             c.setFont("Helvetica", font_size_medium)
             time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
-            c.drawString(left_column_x + indent, y_position - (2 * line_spacing), time_str)  # Time
+            c.drawString(left_column_x + indent, y_position - (2 * line_spacing) - additional_spacing, time_str)  # Time
 
             # MeetingAt - draw this below the Time, on the third row
             if event['meetingAt']:
@@ -165,14 +166,15 @@ def create_pdf(appointments, image_stream=None):
             c.drawString(right_column_x, text_y_position - font_size_large, event['description'])  # Caption
 
             c.setFillColor(HexColor(0x4E4E4E))
-            c.setFont("Helvetica", font_size_small)
+            information_font_size = font_size_medium
+            c.setFont("Helvetica", information_font_size)
 
             # Draw the information text, checking if it is not None
             if information:
-                details_y_position = y_position - (2 * line_spacing)
+                details_y_position = y_position - (2 * line_spacing) - additional_spacing
                 for detail in information.split('\n'):
                     c.drawString(right_column_x, details_y_position, detail)
-                    details_y_position -= font_size_small * 1.5
+                    details_y_position -= information_font_size * 1.5
 
             # Update y_position for next event
             y_position -= (rect_height + line_spacing)  # space between rectangles
