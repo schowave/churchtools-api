@@ -29,6 +29,7 @@ def appointments():
         date_color = request.form.get('date_color')
         description_color = request.form.get('description_color')
         background_color = request.form.get('background_color')
+        alpha = request.form.get('alpha')
         selected_calendar_ids = request.form.getlist('calendar_ids')
         session['selected_calendar_ids'] = selected_calendar_ids
         if 'fetch_appointments' in request.form:
@@ -43,14 +44,14 @@ def appointments():
 
         elif 'generate_pdf' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,alpha,
                                                  description_color)
             response = make_response(redirect(url_for('main_bp.download_file', filename=pdf_filename)))
             response.set_cookie('pdfGenerated', 'true', max_age=60, path='/')
             return response
         elif 'generate_jpeg' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,alpha,
                                                  description_color)
             zip_buffer = handle_jpeg_generation(pdf_filename)
             response = make_response(
@@ -75,11 +76,11 @@ def get_and_process_appointments(login_token, start_date, end_date):
     return appointments
 
 
-def handle_pdf_generation(appointment_ids, date_color, background_color, description_color):
+def handle_pdf_generation(appointment_ids, date_color, background_color, alpha, description_color):
     background_image_stream = get_background_image_stream()
     selected_appointments = [app for app in session.get('fetched_appointments', []) if
                              str(app['id']) in appointment_ids]
-    filename = create_pdf(selected_appointments, date_color, background_color, description_color,
+    filename = create_pdf(selected_appointments, date_color, background_color, description_color,alpha,
                           background_image_stream)
     return filename
 

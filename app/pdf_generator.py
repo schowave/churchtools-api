@@ -45,18 +45,20 @@ PAGE_HEIGHT = 675
 PAGE_SIZE = (PAGE_WIDTH, PAGE_HEIGHT)
 
 
-def create_transparent_image(width, height, background_color):
+def create_transparent_image(width, height, background_color, alpha):
     # Ensure width and height are integers
     width = int(width)
     height = int(height)
 
+    # Convert the color string to an RGBA tuple
     rgba_color = ImageColor.getcolor(background_color, "RGBA")
 
-    # Set the alpha value to 128
-    rgba_color = rgba_color[:-1] + (128,)
+    # Replace the alpha component with the specified alpha value
+    rgba_color = rgba_color[:-1] + (int(alpha),)
 
-    # Create a transparent image
-    transparent_img = Image.new('RGBA', (width, height), rgba_color)
+    # Create and return the transparent image
+    return Image.new('RGBA', (width, height), rgba_color)
+
 
     # Save the image to a bytes buffer
     img_buffer = io.BytesIO()
@@ -66,9 +68,9 @@ def create_transparent_image(width, height, background_color):
     return img_buffer
 
 
-def draw_transparent_rectangle(canvas, x, y, width, height, background_color):
+def draw_transparent_rectangle(canvas, x, y, width, height, background_color,alpha):
     # Generate a transparent image
-    transparent_image_stream = create_transparent_image(width, height, background_color)
+    transparent_image_stream = create_transparent_image(width, height, background_color,alpha)
 
     # Use ReportLab to draw the image
     canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
@@ -129,7 +131,7 @@ def wrap_text(text, font_name, font_size, max_width):
 font_name = 'Helvetica'
 
 
-def create_pdf(appointments, date_color, background_color, description_color, image_stream=None):
+def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
@@ -199,7 +201,7 @@ def create_pdf(appointments, date_color, background_color, description_color, im
                 y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
 
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height,
-                                       background_color)
+                                       background_color,alpha)
 
             # Set starting position for text, taking into account the top padding
             text_y_position = y_position - top_padding
