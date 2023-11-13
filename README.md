@@ -20,10 +20,11 @@ It was created due to the request to show all appointments of [evkila.de](https:
 
 ## Setup
 
-1. Edit the `.env` file and set it to your churchtools instance.
+1. Edit the `Dockerfile` file and set it to your churchtools instance.
 
     ```
-    CHURCHTOOLS_BASE=evkila.church.tools
+    ENV  CHURCHTOOLS_BASE=evkila.church.tools \
+         DB_PATH=/app/data/evkila.db
     ```
 
 2. Run the `run.sh` shell script, which will build a docker container and run the container.
