@@ -68,8 +68,6 @@ def appointments():
             # Fetch additional information for each appointment
             for appointment in session['fetched_appointments']:
                 appointment['additional_info'] = get_additional_info(appointment['id'])
-            session['selected_appointments'] = current_appointments
-
             response = make_response(render_template('appointments.html', calendars=calendars,
                                                      selected_calendar_ids=selected_calendar_ids,
                                                      appointments=session['fetched_appointments'],
