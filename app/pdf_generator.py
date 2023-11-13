@@ -177,7 +177,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
             total_text_height += top_padding  # Add top padding
             total_text_height += font_size_large + line_spacing  # For the German Day and Date
             total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
-            information = event.get('additional_info') or event.get('information', '')
+            information = event.get('additional_info') or event.get('information') or ''
             details_count = len(information.split('\n'))
             total_text_height += font_size_small * details_count
 
