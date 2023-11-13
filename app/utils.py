@@ -1,3 +1,5 @@
+import sqlite3
+
 import requests
 import pytz
 from datetime import datetime, timedelta
@@ -79,6 +81,40 @@ def get_date_range_from_form():
     start_date = request.form.get('start_date', next_sunday.strftime('%Y-%m-%d'))
     end_date = request.form.get('end_date', sunday_after_next.strftime('%Y-%m-%d'))
     return start_date, end_date
+
+
+def normalize_newlines(text):
+    return text.replace('\r\n', '\n')
+
+
+def save_additional_infos(appointment_info_list):
+    try:
+        with sqlite3.connect(Config.DB_PATH) as conn:
+            cursor = conn.cursor()
+            sql = '''INSERT OR REPLACE INTO appointments (id, additional_info) VALUES (?, ?)'''
+            cursor.executemany(sql, appointment_info_list)
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def get_additional_infos(appointment_ids):
+    try:
+        with sqlite3.connect(Config.DB_PATH) as conn:
+            cursor = conn.cursor()
+            # Use SQL's "IN" clause to fetch multiple records at once
+            placeholders = ','.join('?' for _ in appointment_ids)
+            sql = f'SELECT id, additional_info FROM appointments WHERE id IN ({placeholders})'
+            cursor.execute(sql, appointment_ids)
+            results = cursor.fetchall()
+            # Convert list of tuples into a dictionary
+            info_dict = {id: info for id, info in results}
+            return info_dict
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return {}
 
 
 def appointment_to_dict(appointment):
