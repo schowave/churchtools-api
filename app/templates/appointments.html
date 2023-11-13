@@ -54,6 +54,14 @@
             });
         });
     </script>
+    <script>
+        const alphaSlider = document.getElementById('alpha');
+        const alphaValueDisplay = document.getElementById('alphaValue');
+
+        alphaSlider.addEventListener('input', function() {
+        alphaValueDisplay.textContent = this.value;
+        });
+    </script>
 </head>
 <body>
 <!-- Spinner Overlay -->
@@ -134,8 +142,9 @@
                     <input type="color" id="background_color" name="background_color" value="#FFFFFF">
                 </div>
                 <div>
-                    <label for="alpha">Tranzparenz:</label>
-                    <input type="range" id="alpha" name="alpha" min="0" max="255" step="1" value="128">
+                    <label for="alpha">Transparenz:</label>
+                    <input type="range" id="alpha" name="alpha" min="0" max="255" step="1" value="128" oninput="document.getElementById('alphaValue').textContent = this.value">
+                    <span id="alphaValue">128</span>
                 </div>
             </div>
 
