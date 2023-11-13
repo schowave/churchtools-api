@@ -105,5 +105,6 @@ def appointment_to_dict(appointment):
         'information': appointment['base']['information'],
         'startDateView': start_date_datetime.strftime('%d.%m.%Y'),
         'startTimeView': start_date_datetime.strftime('%H:%M'),
-        'endTimeView': end_date_datetime.strftime('%H:%M')
+        'endTimeView': end_date_datetime.strftime('%H:%M'),
+        'additional_info': ""
     }

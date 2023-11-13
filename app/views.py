@@ -1,5 +1,6 @@
 import os
 import zipfile
+import sqlite3
 from io import BytesIO
 from pdf2image import convert_from_path
 
@@ -12,6 +13,36 @@ from .utils import get_login_token, get_date_range_from_form, fetch_appointments
 from .pdf_generator import create_pdf
 
 main_bp = Blueprint('main_bp', __name__)
+
+
+def normalize_newlines(text):
+    return text.replace('\r\n', '\n')
+
+
+def save_additional_info(appointment_id, additional_info):
+    try:
+        with sqlite3.connect(Config.DB_PATH) as conn:
+            cursor = conn.cursor()
+            sql = '''INSERT OR REPLACE INTO appointments (id, additional_info) VALUES (?, ?)'''
+            cursor.execute(sql, (int(appointment_id), normalize_newlines(additional_info)))
+            conn.commit()
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+def get_additional_info(appointment_id):
+    try:
+        with sqlite3.connect(Config.DB_PATH) as conn:
+            cursor = conn.cursor()
+            sql = '''SELECT additional_info FROM appointments WHERE id = ?'''
+            cursor.execute(sql, (int(appointment_id),))
+            result = cursor.fetchone()
+            return result[0] if result else ""
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return ""
 
 
 @main_bp.route('/appointments', methods=['GET', 'POST'])
@@ -33,25 +64,37 @@ def appointments():
         selected_calendar_ids = request.form.getlist('calendar_ids')
         session['selected_calendar_ids'] = selected_calendar_ids
         if 'fetch_appointments' in request.form:
-            appointments = get_and_process_appointments(login_token, start_date, end_date)
+            current_appointments = get_and_process_appointments(login_token, start_date, end_date)
+            # Fetch additional information for each appointment
+            for appointment in session['fetched_appointments']:
+                appointment['additional_info'] = get_additional_info(appointment['id'])
+            session['selected_appointments'] = current_appointments
+
             response = make_response(render_template('appointments.html', calendars=calendars,
                                                      selected_calendar_ids=selected_calendar_ids,
                                                      appointments=session['fetched_appointments'],
-                                                     start_date=start_date,
-                                                     end_date=end_date, base_url=Config.CHURCHTOOLS_BASE))
+                                                     start_date=start_date, end_date=end_date,
+                                                     base_url=Config.CHURCHTOOLS_BASE))
             response.set_cookie('fetchAppointments', 'true', max_age=60, path='/')
             return response
 
         elif 'generate_pdf' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,alpha,
+            # Verarbeiten der zusätzlichen Informationen
+            for appointmentId in selected_appointment_ids:
+                additional_info = request.form.get(f'additional_info_{appointmentId}')
+                save_additional_info(appointmentId, additional_info)
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color, alpha,
                                                  description_color)
             response = make_response(redirect(url_for('main_bp.download_file', filename=pdf_filename)))
             response.set_cookie('pdfGenerated', 'true', max_age=60, path='/')
             return response
         elif 'generate_jpeg' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color,alpha,
+            for appointmentId in selected_appointment_ids:
+                additional_info = request.form.get(f'additional_info_{appointmentId}')
+                save_additional_info(appointmentId, additional_info)
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color, alpha,
                                                  description_color)
             zip_buffer = handle_jpeg_generation(pdf_filename)
             response = make_response(
@@ -80,7 +123,10 @@ def handle_pdf_generation(appointment_ids, date_color, background_color, alpha, 
     background_image_stream = get_background_image_stream()
     selected_appointments = [app for app in session.get('fetched_appointments', []) if
                              str(app['id']) in appointment_ids]
-    filename = create_pdf(selected_appointments, date_color, background_color, description_color,alpha,
+    # Fetch additional information for each appointment
+    for appointment in selected_appointments:
+        appointment['additional_info'] = get_additional_info(appointment['id'])
+    filename = create_pdf(selected_appointments, date_color, background_color, description_color, alpha,
                           background_image_stream)
     return filename
 

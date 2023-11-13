@@ -1,5 +1,8 @@
 from flask import Flask
 import os
+import sqlite3
+
+from config import Config
 
 
 def create_app():
@@ -16,3 +19,23 @@ def create_app():
         app.register_blueprint(views.main_bp)
 
         return app
+
+
+def create_schema():
+    db_path = Config.DB_PATH
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    sql = '''
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY,
+        additional_info TEXT
+    )
+    '''
+    try:
+        cursor.execute(sql)
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"An error occured: {e}")
+    finally:
+        conn.close()

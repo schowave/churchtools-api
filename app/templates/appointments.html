@@ -106,10 +106,13 @@
                     <div class="appointment-item">
                         <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id"
                                value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
-                        <label for="appointment-{{ appointment['id'] }}"
-                               class="appointment-label">{{ appointment['startDateView'] }}
+                        <label for="appointment-{{ appointment['id'] }}" class="appointment-label">
+                            {{ appointment['startDateView'] }}
                             ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
-                            <br/>{{ appointment['description'] }}</label>
+                            <br/>{{ appointment['description'] }}
+                        </label>
+                        <textarea name="additional_info_{{ appointment['id'] }}"
+                                  placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
                     </div>
                 {% endfor %}
             </div>

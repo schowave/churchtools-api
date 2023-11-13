@@ -48,4 +48,10 @@ ENV FLASK_APP=run.py \
 # The port number the container should expose
 EXPOSE 5000
 
+# this is where the sqlite database should be mounted
+VOLUME /app/data
+
+ENV CHURCHTOOLS_BASE=evkila.church.tools \
+    DB_PATH=/app/data/evkila.db
+
 CMD [ "python3", "-m" , "flask", "run"]

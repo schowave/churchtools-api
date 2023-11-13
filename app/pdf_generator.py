@@ -12,7 +12,6 @@ from PIL import Image, ImageColor
 import io
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.lib.utils import simpleSplit
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -59,7 +58,6 @@ def create_transparent_image(width, height, background_color, alpha):
     # Create and return the transparent image
     return Image.new('RGBA', (width, height), rgba_color)
 
-
     # Save the image to a bytes buffer
     img_buffer = io.BytesIO()
     transparent_img.save(img_buffer, format='PNG')
@@ -68,9 +66,9 @@ def create_transparent_image(width, height, background_color, alpha):
     return img_buffer
 
 
-def draw_transparent_rectangle(canvas, x, y, width, height, background_color,alpha):
+def draw_transparent_rectangle(canvas, x, y, width, height, background_color, alpha):
     # Generate a transparent image
-    transparent_image_stream = create_transparent_image(width, height, background_color,alpha)
+    transparent_image_stream = create_transparent_image(width, height, background_color, alpha)
 
     # Use ReportLab to draw the image
     canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
@@ -179,7 +177,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
             total_text_height += top_padding  # Add top padding
             total_text_height += font_size_large + line_spacing  # For the German Day and Date
             total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
-            information = event.get('information') or ''
+            information = event.get('additional_info') or event.get('information', '')
             details_count = len(information.split('\n'))
             total_text_height += font_size_small * details_count
 
@@ -201,7 +199,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
                 y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
 
             draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height,
-                                       background_color,alpha)
+                                       background_color, alpha)
 
             # Set starting position for text, taking into account the top padding
             text_y_position = y_position - top_padding
