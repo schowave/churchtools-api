@@ -32,6 +32,7 @@ COPY --from=builder /usr/share/fonts /usr/share/fonts
 # Copy the necessary font files
 COPY fonts/helvetica.ttf /usr/share/fonts/custom/
 COPY fonts/helvetica-bold.ttf /usr/share/fonts/custom/
+COPY fonts/Bahnschrift.ttf /usr/share/fonts/custom/
 
 # Update the font cache
 RUN fc-cache -fv

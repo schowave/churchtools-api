@@ -2,6 +2,9 @@ from flask import Flask
 import os
 import sqlite3
 
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+
 from config import Config
 
 
@@ -10,6 +13,9 @@ def create_app():
     app.config.from_object('config.Config')
 
     os.makedirs(app.config['FILE_DIRECTORY'], exist_ok=True)
+
+    pdfmetrics.registerFont(TTFont('Bahnschrift', 'Bahnschrift.ttf'))
+    pdfmetrics.registerFont(TTFont('Bahnschrift-Bold', 'Bahnschrift.ttf'))
 
     with app.app_context():
         # Include our Routes

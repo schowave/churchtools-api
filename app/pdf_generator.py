@@ -83,7 +83,7 @@ def setup_new_page(canvas_obj, image_stream):
     return new_y_position
 
 
-def wrap_text(text, font_name, font_size, max_width):
+def wrap_text(text, font_name, line_height, max_width):
     """
     Wrap text to fit within a given width when rendered in a given font and size.
     Returns a list of lines and the total height the text block will require.
@@ -101,9 +101,9 @@ def wrap_text(text, font_name, font_size, max_width):
 
     for line in original_lines:
         # If the line fits within the maximum width, add it directly
-        if pdfmetrics.stringWidth(line, font_name, font_size) <= max_width:
+        if pdfmetrics.stringWidth(line, font_name, line_height) <= max_width:
             wrapped_lines.append(line)
-            text_height += font_size * 1.2  # Line height
+            text_height += line_height
         else:
             # If the line is too wide, split it further
             words = line.split()
@@ -112,24 +112,23 @@ def wrap_text(text, font_name, font_size, max_width):
                 # Keep adding words until the line is too wide
                 wrapped_line.append(words.pop(0))
                 test_line = ' '.join(wrapped_line + words[:1])
-                if pdfmetrics.stringWidth(test_line, font_name, font_size) > max_width:
+                if pdfmetrics.stringWidth(test_line, font_name, line_height) > max_width:
                     # When the next word would make it too wide,
                     # the line is done and should be appended
                     wrapped_lines.append(' '.join(wrapped_line))
-                    text_height += font_size * 1.2  # Line height
+                    text_height += line_height
                     wrapped_line = []
             # Add any remaining words as a new line
             if wrapped_line:
                 wrapped_lines.append(' '.join(wrapped_line))
-                text_height += font_size * 1.2  # Line height
+                text_height += line_height
 
     return wrapped_lines, text_height
 
 
-font_name = 'Helvetica'
-
-
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
+    font_name = 'Helvetica'
+    font_name_bold = font_name+'-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
@@ -147,10 +146,10 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         date_key = start_dt.strftime('%d.%m.%Y')
         appointments_by_date[date_key].append(a)
 
-    indent = 15
+    indent = PAGE_WIDTH * 1 / 40
 
     # Calculate relative positions based on page size
-    left_margin_ratio = 1 / 30  # example: 1/30th of the page width
+    left_margin_ratio = 1 / 20  # example: 1/30th of the page width
     right_column_ratio = 2 / 5  # position the right column at 2/5 of the page width
 
     left_column_x = PAGE_WIDTH * left_margin_ratio
@@ -162,12 +161,15 @@ def create_pdf(appointments, date_color, background_color, description_color, al
 
     # Define font sizes relative to page height
     base_font_size = PAGE_HEIGHT / 35  # Base font size is set relative to page height
+    line_height_factor = 1.4
     font_size_large = base_font_size * 1.5  # Large font for headers
+    line_height_large = font_size_large * line_height_factor
     font_size_medium = base_font_size * 1.2  # Medium font for subheaders
+    line_height_medium = font_size_medium * line_height_factor
     font_size_small = base_font_size  # Small font for details
-    line_spacing = font_size_medium * 1.5  # Dynamic line spacing based on font size
-    additional_spacing = base_font_size * 0.1
-    top_padding = base_font_size * 0.5  # Adjust multiplier as needed for desired padding
+    line_height_small = font_size_small * line_height_factor
+    line_spacing = base_font_size * 1.5  # Dynamic line spacing based on font size
+    top_padding = base_font_size * 0.8  # Adjust multiplier as needed for desired padding
 
     for date_key, events in sorted(appointments_by_date.items()):
         for event in events:
@@ -175,24 +177,26 @@ def create_pdf(appointments, date_color, background_color, description_color, al
             # Calculate the total text block height for each appointment
             total_text_height = 0
             total_text_height += top_padding  # Add top padding
-            total_text_height += font_size_large + line_spacing  # For the German Day and Date
-            total_text_height += font_size_medium + line_spacing  # For the Time and MeetingAt
+            total_text_height += line_height_large  # For the German Day and Date and Caption
+
             information = event.get('additional_info') or event.get('information') or ''
             details_count = len(information.split('\n'))
-            total_text_height += font_size_small * details_count
-
-            # Now set the rectangle height to match the total text height
-            rect_height = total_text_height  # Add some padding
-
-            information_font_size = font_size_medium
 
             # Wrap the information text if it exceeds the width of the rectangle
             wrapped_info_lines, wrapped_info_height = wrap_text(
-                information, font_name, information_font_size, rect_width - right_column_x
+                information, font_name, line_height_medium, rect_width - right_column_x * 0.5
             )
 
-            # Adjust the rectangle height to accommodate wrapped text
-            rect_height += wrapped_info_height - (font_size_small * details_count)
+            time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
+            wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != '' else 0
+
+            # Get the maximum of the Time and MeetingAt and the WrappedInfoHeight
+            max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
+
+            # Now set the rectangle height to match the total text height
+            rect_height = total_text_height + max_height + line_height_medium  # Add some padding
+
+            information_font_size = font_size_medium
 
             # Check if we need to start a new page
             if y_position < (rect_height + PAGE_HEIGHT * 1 / 20):
@@ -206,37 +210,41 @@ def create_pdf(appointments, date_color, background_color, description_color, al
 
             # Left column: German Day and Date
             c.setFillColor(HexColor(date_color))
-            c.setFont("Helvetica-Bold", font_size_large)
+            c.setFont(font_name_bold, font_size_large)
 
             start_dt = parse_iso_datetime(event['startDate'])
             end_dt = parse_iso_datetime(event['endDate'])
             german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
             day_date_str = f"{german_day_of_week}, {date_key}"
-            c.drawString(left_column_x + indent, text_y_position - font_size_large, day_date_str)  # German Day and Date
+            c.drawString(left_column_x + indent, text_y_position - line_height_large,
+                         day_date_str)  # German Day and Date
 
             # Time
             c.setFillColor(HexColor(description_color))
             c.setFont(font_name, font_size_medium)
             time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
-            c.drawString(left_column_x + indent, y_position - (2 * line_spacing) - additional_spacing, time_str)  # Time
+            c.drawString(left_column_x + indent, text_y_position - line_height_large - line_height_medium,
+                         time_str)  # Time
 
             # MeetingAt - draw this below the Time, on the third row
             if event['meetingAt']:
                 meeting_at_str = f"{event['meetingAt']}"  # Add prefix for clarity
                 # Move this to the third row by subtracting an additional line_spacing
-                c.drawString(left_column_x + indent, y_position - (3 * line_spacing), meeting_at_str)
+                c.drawString(left_column_x + indent,
+                             text_y_position - line_height_large - line_height_medium - line_height_medium,
+                             meeting_at_str)
 
             # Right column: Caption and Information
             c.setFillColor(black)
-            c.setFont("Helvetica-Bold", font_size_large)
-            c.drawString(right_column_x, text_y_position - font_size_large, event['description'])  # Caption
+            c.setFont(font_name_bold, font_size_large)
+            c.drawString(right_column_x, text_y_position - line_height_large, event['description'])  # Caption
 
             c.setFillColor(HexColor(description_color))
             c.setFont(font_name, information_font_size)
 
             # Draw the information text, checking if it is not None
             if information:
-                details_y_position = y_position - (2 * line_spacing) - additional_spacing
+                details_y_position = text_y_position - line_height_large - line_height_medium
                 for detail in wrapped_info_lines:
                     c.drawString(right_column_x, details_y_position, detail)
                     details_y_position -= information_font_size * 1.5
