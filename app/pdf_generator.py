@@ -127,7 +127,7 @@ def wrap_text(text, font_name, line_height, max_width):
 
 
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
-    font_name = 'Helvetica'
+    font_name = 'Bahnschrift'
     font_name_bold = font_name+'-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
