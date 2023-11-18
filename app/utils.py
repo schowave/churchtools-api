@@ -63,12 +63,22 @@ def fetch_appointments(login_token, start_date, end_date, calendar_ids):
         url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
         response = requests.get(url, headers=headers, params=query_params)
         if response.ok:
+            appointment_counts = {}  # Dictionary to keep track of appointment counts
+
             for appointment in response.json()['data']:
-                appointment_id = calendar_id+appointment['base']['id']
-                # Combine the checks for seen ID and date range into a single condition
+                base_id = str(appointment['base']['id'])
+                appointment_id = str(calendar_id) + "_" + base_id
+
+                # Check if the appointment_id already exists, and increment the count
+                if appointment_id in appointment_counts:
+                    appointment_counts[appointment_id] += 1
+                    appointment_id += f"_{appointment_counts[appointment_id]}"
+                else:
+                    appointment_counts[appointment_id] = 0  # Initialize count for new ID
+
                 if appointment_id not in seen_ids:
                     seen_ids.add(appointment_id)
-                    appointment['base']['id']=appointment_id
+                    appointment['base']['id'] = appointment_id
                     appointments.append(appointment)
 
     appointments.sort(key=lambda x: parse(x['calculated']['startDate']))
