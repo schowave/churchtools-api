@@ -64,10 +64,11 @@ def fetch_appointments(login_token, start_date, end_date, calendar_ids):
         response = requests.get(url, headers=headers, params=query_params)
         if response.ok:
             for appointment in response.json()['data']:
-                appointment_id = appointment['base']['id']
+                appointment_id = calendar_id+appointment['base']['id']
                 # Combine the checks for seen ID and date range into a single condition
                 if appointment_id not in seen_ids:
                     seen_ids.add(appointment_id)
+                    appointment['base']['id']=appointment_id
                     appointments.append(appointment)
 
     appointments.sort(key=lambda x: parse(x['calculated']['startDate']))
