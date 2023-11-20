@@ -81,7 +81,7 @@ def fetch_appointments(login_token, start_date, end_date, calendar_ids):
                     appointment['base']['id'] = appointment_id
                     appointments.append(appointment)
 
-    appointments.sort(key=lambda x: parse(x['calculated']['startDate']))
+    appointments.sort(key=lambda x: parse_iso_datetime(x['calculated']['startDate']))
     return appointments
 
 
