@@ -128,6 +128,67 @@ def get_additional_infos(appointment_ids):
         return {}
 
 
+def save_color_settings(settings):
+    db_path = Config.DB_PATH
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    sql = '''
+    INSERT INTO color_settings (setting_name, background_color, background_alpha, date_color, description_color)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(setting_name) DO UPDATE SET 
+        background_color = excluded.background_color,
+        background_alpha = excluded.background_alpha,
+        date_color = excluded.date_color,
+        description_color = excluded.description_color
+    '''
+    try:
+        cursor.execute(sql, (
+            settings['name'], settings['background_color'], settings['background_alpha'], settings['date_color'],
+            settings['description_color']))
+        conn.commit()
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+    finally:
+        conn.close()
+
+
+def load_color_settings(setting_name):
+    db_path = Config.DB_PATH
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # SQL query to load the settings
+    sql = 'SELECT * FROM color_settings WHERE setting_name = ?'
+    try:
+        cursor.execute(sql, (setting_name,))
+        data = cursor.fetchone()
+
+        # Define the keys for the settings object
+        keys = ['name', 'background_color', 'background_alpha', 'date_color', 'description_color']
+
+        # If data is found, return it as a dictionary
+        if data:
+            return dict(zip(keys, data))
+
+        # Default settings to return if no data is found
+        default_settings = {
+            'name': setting_name,
+            'background_color': '#ffffff',
+            'background_alpha': 128,
+            'date_color': '#c1540c',
+            'description_color': '#4e4e4e'
+        }
+        return default_settings
+
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        # Return default settings in case of an error
+        return default_settings
+    finally:
+        conn.close()
+
+
 def appointment_to_dict(appointment):
     start_date_from_appointment = appointment['calculated']['startDate']
     start_date_datetime = parse_iso_datetime(start_date_from_appointment)

@@ -9,7 +9,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, send_f
 
 from config import Config
 from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict, fetch_calendars, \
-    get_additional_infos, normalize_newlines, save_additional_infos
+    get_additional_infos, normalize_newlines, save_additional_infos, save_color_settings, load_color_settings
 from .pdf_generator import create_pdf
 
 main_bp = Blueprint('main_bp', __name__)
@@ -31,9 +31,17 @@ def appointments():
         description_color = request.form.get('description_color')
         background_color = request.form.get('background_color')
         alpha = request.form.get('alpha')
+        color_settings = {
+            'name': 'default',  # Assuming a default name for settings
+            'background_color': background_color,
+            'background_alpha': alpha,
+            'date_color': date_color,
+            'description_color': description_color
+        }
         selected_calendar_ids = request.form.getlist('calendar_ids')
         session['selected_calendar_ids'] = selected_calendar_ids
         if 'fetch_appointments' in request.form:
+            color_settings = load_color_settings('default')
             current_appointments = get_and_process_appointments(login_token, start_date, end_date)
             additional_infos = get_additional_infos(
                 [appointment['id'] for appointment in session['fetched_appointments']])
@@ -43,22 +51,23 @@ def appointments():
                                                      selected_calendar_ids=selected_calendar_ids,
                                                      appointments=session['fetched_appointments'],
                                                      start_date=start_date, end_date=end_date,
-                                                     base_url=Config.CHURCHTOOLS_BASE))
+                                                     base_url=Config.CHURCHTOOLS_BASE,
+                                                     color_settings=color_settings))
             response.set_cookie('fetchAppointments', 'true', max_age=1, path='/')
             return response
         elif 'generate_pdf' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
             save_additional_infos_from_form(selected_appointment_ids)
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color, alpha,
-                                                 description_color)
+            save_color_settings(color_settings)
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, color_settings)
             response = make_response(redirect(url_for('main_bp.download_file', filename=pdf_filename)))
             response.set_cookie('pdfGenerated', 'true', max_age=1, path='/')
             return response
         elif 'generate_jpeg' in request.form:
             selected_appointment_ids = request.form.getlist('appointment_id')
             save_additional_infos_from_form(selected_appointment_ids)
-            pdf_filename = handle_pdf_generation(selected_appointment_ids, date_color, background_color, alpha,
-                                                 description_color)
+            save_color_settings(color_settings)
+            pdf_filename = handle_pdf_generation(selected_appointment_ids, color_settings)
             zip_buffer = handle_jpeg_generation(pdf_filename)
             response = make_response(
                 send_file(zip_buffer, mimetype='application/zip', as_attachment=True, download_name='images.zip'))
@@ -68,9 +77,11 @@ def appointments():
         # On the first GET request, preselect all calendars
         # This also handles the case when the page is visited for the first time
         selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
+        color_settings = load_color_settings('default')
 
     return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
-                           start_date=start_date, end_date=end_date, base_url=Config.CHURCHTOOLS_BASE)
+                           start_date=start_date, end_date=end_date, base_url=Config.CHURCHTOOLS_BASE,
+                           color_settings=color_settings)
 
 
 def save_additional_infos_from_form(selected_appointment_ids):
@@ -95,14 +106,16 @@ def get_and_process_appointments(login_token, start_date, end_date):
     return appointments
 
 
-def handle_pdf_generation(appointment_ids, date_color, background_color, alpha, description_color):
+def handle_pdf_generation(appointment_ids, color_settings):
+    # date_color, background_color, alpha, description_color):
     background_image_stream = get_background_image_stream()
     selected_appointments = [app for app in session.get('fetched_appointments', []) if
                              str(app['id']) in appointment_ids]
     additional_infos = get_additional_infos([appointment['id'] for appointment in selected_appointments])
     for appointment in selected_appointments:
         appointment['additional_info'] = additional_infos.get(appointment['id'], "")
-    filename = create_pdf(selected_appointments, date_color, background_color, description_color, alpha,
+    filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
+                          color_settings['description_color'], color_settings['background_alpha'],
                           background_image_stream)
     return filename
 

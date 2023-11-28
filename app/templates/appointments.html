@@ -81,6 +81,42 @@
             });
         });
     </script>
+    <script>
+        // Ensure the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            var applyButton = document.getElementById('applyPreset');
+            var colorPresetsSelect = document.getElementById('color_presets');
+
+            // Define presets
+            var presets = {
+                'preset1': {
+                    'date_color': '#c1540c',
+                    'description_color': '#4e4e4e',
+                    'background_color': '#ffffff',
+                    'background_alpha': 128
+                },
+                'preset2': {
+                    // Add your preset2 values
+                }
+                // Add more presets as needed
+            };
+
+            // Event listener for the Apply button
+            if (applyButton) {
+                applyButton.addEventListener('click', function() {
+                    var selectedPreset = colorPresetsSelect.value;
+                    if (presets[selectedPreset]) {
+                        document.getElementById('date_color').value = presets[selectedPreset].date_color;
+                        document.getElementById('description_color').value = presets[selectedPreset].description_color;
+                        document.getElementById('background_color').value = presets[selectedPreset].background_color;
+                        document.getElementById('alpha').value = presets[selectedPreset].background_alpha;
+                        document.getElementById('alphaValue').textContent = presets[selectedPreset].background_alpha;
+                    }
+                });
+            }
+        });
+    </script>
+
 </head>
 <body>
 <!-- Spinner Overlay -->
@@ -148,26 +184,33 @@
                 {% endfor %}
             </div>
             <div class="color-picker-container">
+                <div style="display: none;">
+                    <label for="color_presets">Farbvoreinstellungen:</label>
+                    <select id="color_presets" name="color_presets">
+                        <option value="preset1">Herbst '23</option>
+                    </select>
+                    <button type="button" id="applyPreset">Anwenden</button>
+                </div>
                 <div>
                     <label for="background_image">Hintergrundbild:</label>
                     <input type="file" id="background_image" name="background_image" accept="image/*">
                 </div>
                 <div>
                     <label for="date_color">Datum:</label>
-                    <input type="color" id="date_color" name="date_color" value="#C1540C">
+                    <input type="color" id="date_color" name="date_color" value="{{ color_settings['date_color'] }}">
                 </div>
                 <div>
                     <label for="description_color">Beschreibung:</label>
-                    <input type="color" id="description_color" name="description_color" value="#4E4E4E">
+                    <input type="color" id="description_color" name="description_color" value="{{ color_settings['description_color'] }}">
                 </div>
                 <div>
                     <label for="background_color">Hintergrund:</label>
-                    <input type="color" id="background_color" name="background_color" value="#FFFFFF">
+                    <input type="color" id="background_color" name="background_color" value="{{ color_settings['background_color'] }}">
                 </div>
                 <div>
                     <label for="alpha">Transparenz:</label>
-                    <input type="range" id="alpha" name="alpha" min="0" max="255" step="1" value="128" oninput="document.getElementById('alphaValue').textContent = this.value">
-                    <span id="alphaValue">128</span>
+                    <input type="range" id="alpha" name="alpha" min="0" max="255" step="1" value="{{ color_settings['background_alpha'] }}" oninput="document.getElementById('alphaValue').textContent = this.value">
+                    <span id="alphaValue">{{ color_settings['background_alpha'] }}</span>
                 </div>
             </div>
 

@@ -31,15 +31,24 @@ def create_schema():
     db_path = Config.DB_PATH
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-
-    sql = '''
+    sql_appointments = '''
     CREATE TABLE IF NOT EXISTS appointments (
         id TEXT PRIMARY KEY,
         additional_info TEXT
     )
     '''
+    sql_color_settings = '''
+    CREATE TABLE IF NOT EXISTS color_settings (
+        setting_name TEXT PRIMARY KEY,
+        background_color TEXT,
+        background_alpha INTEGER,
+        date_color TEXT,
+        description_color TEXT
+    )
+    '''
     try:
-        cursor.execute(sql)
+        cursor.execute(sql_appointments)
+        cursor.execute(sql_color_settings)
         conn.commit()
     except sqlite3.Error as e:
         print(f"An error occured: {e}")
