@@ -80,7 +80,7 @@ def save_additional_infos_from_form(selected_appointment_ids):
         additional_info = request.form.get(f'additional_info_{appointmentId}')
         # Normalize newlines if necessary
         normalized_info = normalize_newlines(additional_info)
-        appointment_info_list.append((int(appointmentId), normalized_info))
+        appointment_info_list.append((appointmentId, normalized_info))
 
     # Bulk save
     save_additional_infos(appointment_info_list)

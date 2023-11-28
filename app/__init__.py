@@ -34,7 +34,7 @@ def create_schema():
 
     sql = '''
     CREATE TABLE IF NOT EXISTS appointments (
-        id INTEGER PRIMARY KEY,
+        id TEXT PRIMARY KEY,
         additional_info TEXT
     )
     '''
