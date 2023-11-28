@@ -62,6 +62,25 @@
         alphaValueDisplay.textContent = this.value;
         });
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllButton = document.getElementById('selectAllAppointments');
+            const deselectAllButton = document.getElementById('deselectAllAppointments');
+            const checkboxes = document.querySelectorAll('.appointment-checkbox');
+
+            selectAllButton.addEventListener('click', function() {
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = true;
+                });
+            });
+
+            deselectAllButton.addEventListener('click', function() {
+                checkboxes.forEach(function(checkbox) {
+                    checkbox.checked = false;
+                });
+            });
+        });
+    </script>
 </head>
 <body>
 <!-- Spinner Overlay -->
@@ -109,6 +128,10 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
+            <div class="appointments-actions">
+                <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
+                <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
+            </div>
             <div class="appointments-container">
                 {% for appointment in appointments %}
                     <div class="appointment-item">

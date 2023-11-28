@@ -154,6 +154,7 @@ input[type="submit"] {
 
 .btn-fetch {
     background-color: #007bff;
+    margin-bottom: 1.5rem;
 }
 
 .btn-fetch:hover {
@@ -261,3 +262,50 @@ input[type="submit"] {
     width: 100%; /* Ensure title takes full width */
 }
 
+/* Style for the appointment actions container */
+.appointments-actions {
+    margin-bottom: 20px;
+}
+
+/* General style for action buttons */
+.appointments-actions button {
+    background-color: #007bff; /* Primary color */
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.appointments-actions button:hover {
+    background-color: #0056b3; /* Darker shade on hover */
+}
+
+/* Additional styling for the appointments container */
+.appointments-container {
+    width: 100%; /* Adjust width as needed */
+    max-width: 600px; /* Set a max width */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add some shadow for depth */
+    overflow: hidden; /* In case of overflowing content */
+}
+
+/* Style for the Select All button */
+.appointments-actions .select-all-btn {
+    background-color: #28a745; /* Green color */
+}
+
+.appointments-actions .select-all-btn:hover {
+    background-color: #218838; /* Darker green on hover */
+}
+
+/* Style for the Deselect All button */
+.appointments-actions .deselect-all-btn {
+    background-color: #dc3545; /* Red color */
+}
+
+.appointments-actions .deselect-all-btn:hover {
+    background-color: #c82333; /* Darker red on hover */
+}
