@@ -172,11 +172,11 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         wrapped_description_lines, wrapped_description_height = wrap_text(
             event['description'], font_name_bold, font_size_large, PAGE_WIDTH - right_column_x - indent
         )
-        information = event.get('additional_info') or event.get('information') or ''
 
         # Wrap the information text if it exceeds the width of the rectangle
+        information = event.get('additional_info') or event.get('information') or ''
         wrapped_info_lines, wrapped_info_height = wrap_text(
-            information, font_name, line_height_medium, rect_width - right_column_x * 0.5
+            information, font_name, line_height_medium, rect_width - right_column_x * 0.4
         )
 
         time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
@@ -239,11 +239,6 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         # Update y_position after description to start information text
         # Ensure there's a gap between description and information
         information_y_position = description_y_position
-
-        # Wrap the information text
-        wrapped_info_lines, wrapped_info_height = wrap_text(
-            information, font_name, font_size_medium, rect_width - right_column_x * 0.5
-        )
 
         c.setFillColor(HexColor(description_color))
         c.setFont(font_name, information_font_size)
