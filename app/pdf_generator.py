@@ -153,7 +153,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
     rect_width = PAGE_WIDTH - (2 * left_column_x)  # width minus double the left margin
 
     # Define font sizes relative to page height
-    base_font_size = PAGE_HEIGHT / 35  # Base font size is set relative to page height
+    base_font_size = PAGE_HEIGHT / 30  # Base font size is set relative to page height
     line_height_factor = 1.4
     font_size_large = base_font_size * 1.5  # Large font for headers
     line_height_large = font_size_large * line_height_factor
@@ -171,11 +171,15 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         total_text_height += line_height_large  # For the German Day and Date and Caption
 
         information = event.get('additional_info') or event.get('information') or ''
-        details_count = len(information.split('\n'))
 
         # Wrap the information text if it exceeds the width of the rectangle
         wrapped_info_lines, wrapped_info_height = wrap_text(
             information, font_name, line_height_medium, rect_width - right_column_x * 0.5
+        )
+
+        # Wrap the description text if it exceeds the width of the page
+        wrapped_description_lines, wrapped_description_height = wrap_text(
+            event['description'], font_name_bold, font_size_large, PAGE_WIDTH - right_column_x - indent
         )
 
         time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
@@ -228,20 +232,33 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         # Right column: Caption and Information
         c.setFillColor(black)
         c.setFont(font_name_bold, font_size_large)
-        c.drawString(right_column_x, text_y_position - line_height_large, event['description'])  # Caption
+        # Drawing the wrapped description text
+        description_y_position = text_y_position - line_height_large  # Start position for the description
+        for line in wrapped_description_lines:
+            c.drawString(right_column_x, description_y_position, line)
+            description_y_position -= font_size_large * 1.5  # Adjust for spacing between lines
+
+        # Update y_position after description to start information text
+        # Ensure there's a gap between description and information
+        information_y_position = description_y_position
+
+
+        # Wrap the information text
+        wrapped_info_lines, wrapped_info_height = wrap_text(
+            information, font_name, font_size_medium, rect_width - right_column_x * 0.5
+        )
 
         c.setFillColor(HexColor(description_color))
         c.setFont(font_name, information_font_size)
 
-        # Draw the information text, checking if it is not None
-        if information:
-            details_y_position = text_y_position - line_height_large - line_height_medium
-            for detail in wrapped_info_lines:
-                c.drawString(right_column_x, details_y_position, detail)
-                details_y_position -= information_font_size * 1.5
+        # Draw the wrapped information text
+        for detail in wrapped_info_lines:
+            c.drawString(right_column_x, information_y_position, detail)
+            information_y_position -= font_size_medium * 1.5  # Adjust for spacing between lines
+
 
         # Update y_position for next event
-        y_position -= (rect_height + line_spacing)  # space between rectangles
+        y_position = min(information_y_position, y_position - rect_height - line_spacing)
 
     c.save()
     return filename
