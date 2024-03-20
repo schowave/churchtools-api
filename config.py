@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
     CHURCHTOOLS_BASE = os.getenv('CHURCHTOOLS_BASE', '<SET CHURCHTOOLS_BASE IN .ENV FILE>')
     DB_PATH = os.getenv('DB_PATH', '<SET DB_PATH IN .ENV FILE>')

@@ -20,7 +20,14 @@ It was created due to the request to show all appointments of [evkila.de](https:
 
 ## Setup
 
-1. Edit the `Dockerfile` file and set it to your churchtools instance.
+1. Local Setup
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+2. Edit the `Dockerfile` file and set it to your churchtools instance.
 
     ```
     ENV  CHURCHTOOLS_BASE=evkila.church.tools \
