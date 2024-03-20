@@ -128,7 +128,7 @@ def wrap_text(text, font_name, line_height, max_width):
 
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
     font_name = 'Bahnschrift'
-    font_name_bold = font_name+'-Bold'
+    font_name_bold = font_name + '-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
@@ -141,19 +141,17 @@ def create_pdf(appointments, date_color, background_color, description_color, al
 
     indent = PAGE_WIDTH * 1 / 40
 
-    # Calculate relative positions based on page size
-    left_margin_ratio = 1 / 20  # example: 1/30th of the page width
-    right_column_ratio = 2 / 5  # position the right column at 2/5 of the page width
-
-    left_column_x = PAGE_WIDTH * left_margin_ratio
-    right_column_x = PAGE_WIDTH * right_column_ratio
-    y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 20)  # 1/10th from the top of the page
-
-    # Calculate the height and width of the rectangle relative to page size
-    rect_width = PAGE_WIDTH - (2 * left_column_x)  # width minus double the left margin
-
     # Define font sizes relative to page height
-    base_font_size = PAGE_HEIGHT / 30  # Base font size is set relative to page height
+    base_font_size = PAGE_HEIGHT / 27
+    scale_factor = base_font_size / 27
+
+    left_column_x = PAGE_WIDTH / 27
+    right_column_x = PAGE_WIDTH * 2 / 5
+
+    # Adjusted rect_width calculation using the scale_factor
+    rect_width = PAGE_WIDTH * scale_factor  # Adjusted width based on scale factor
+    y_position = PAGE_HEIGHT - (PAGE_HEIGHT / 15)
+
     line_height_factor = 1.4
     font_size_large = base_font_size * 1.5  # Large font for headers
     line_height_large = font_size_large * line_height_factor
@@ -170,16 +168,15 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         total_text_height += top_padding  # Add top padding
         total_text_height += line_height_large  # For the German Day and Date and Caption
 
+        # Wrap the caption text if it exceeds the width of the page
+        wrapped_description_lines, wrapped_description_height = wrap_text(
+            event['description'], font_name_bold, font_size_large, PAGE_WIDTH - right_column_x - indent
+        )
         information = event.get('additional_info') or event.get('information') or ''
 
         # Wrap the information text if it exceeds the width of the rectangle
         wrapped_info_lines, wrapped_info_height = wrap_text(
             information, font_name, line_height_medium, rect_width - right_column_x * 0.5
-        )
-
-        # Wrap the description text if it exceeds the width of the page
-        wrapped_description_lines, wrapped_description_height = wrap_text(
-            event['description'], font_name_bold, font_size_large, PAGE_WIDTH - right_column_x - indent
         )
 
         time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
@@ -232,6 +229,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         # Right column: Caption and Information
         c.setFillColor(black)
         c.setFont(font_name_bold, font_size_large)
+
         # Drawing the wrapped description text
         description_y_position = text_y_position - line_height_large  # Start position for the description
         for line in wrapped_description_lines:
@@ -241,7 +239,6 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         # Update y_position after description to start information text
         # Ensure there's a gap between description and information
         information_y_position = description_y_position
-
 
         # Wrap the information text
         wrapped_info_lines, wrapped_info_height = wrap_text(
@@ -255,7 +252,6 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         for detail in wrapped_info_lines:
             c.drawString(right_column_x, information_y_position, detail)
             information_y_position -= font_size_medium * 1.5  # Adjust for spacing between lines
-
 
         # Update y_position for next event
         y_position = min(information_y_position, y_position - rect_height - line_spacing)
