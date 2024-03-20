@@ -6,7 +6,6 @@ from reportlab.lib.pagesizes import landscape
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import black, HexColor
 from datetime import datetime
-from collections import defaultdict
 from babel.dates import format_date
 from PIL import Image, ImageColor
 import io
@@ -57,14 +56,6 @@ def create_transparent_image(width, height, background_color, alpha):
 
     # Create and return the transparent image
     return Image.new('RGBA', (width, height), rgba_color)
-
-    # Save the image to a bytes buffer
-    img_buffer = io.BytesIO()
-    transparent_img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)  # Move to the beginning of the buffer
-
-    return img_buffer
-
 
 def draw_transparent_rectangle(canvas, x, y, width, height, background_color, alpha):
     # Generate a transparent image
