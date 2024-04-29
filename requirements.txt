@@ -1,4 +1,4 @@
-flask==3.0.2
+flask==3.0.3
 requests==2.31.0
 pytz==2023.3.post1
 reportlab==4.2.0
