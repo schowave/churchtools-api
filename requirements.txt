@@ -2,7 +2,7 @@ flask==3.0.2
 requests==2.31.0
 pytz==2023.3.post1
 reportlab==4.2.0
-Babel==2.14.0
+Babel==2.15.0
 python-dateutil==2.9.0
 Pillow==10.3.0
 pdf2image==1.17.0
