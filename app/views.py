@@ -39,17 +39,16 @@ def appointments():
             'description_color': description_color
         }
         selected_calendar_ids = request.form.getlist('calendar_ids')
-        session['selected_calendar_ids'] = selected_calendar_ids
         if 'fetch_appointments' in request.form:
             color_settings = load_color_settings('default')
             current_appointments = get_and_process_appointments(login_token, start_date, end_date)
             additional_infos = get_additional_infos(
-                [appointment['id'] for appointment in session['fetched_appointments']])
-            for appointment in session['fetched_appointments']:
+                [appointment['id'] for appointment in current_appointments])
+            for appointment in current_appointments:
                 appointment['additional_info'] = additional_infos.get(appointment['id'], "")
             response = make_response(render_template('appointments.html', calendars=calendars,
                                                      selected_calendar_ids=selected_calendar_ids,
-                                                     appointments=session['fetched_appointments'],
+                                                     appointments=current_appointments,
                                                      start_date=start_date, end_date=end_date,
                                                      base_url=Config.CHURCHTOOLS_BASE,
                                                      color_settings=color_settings))
@@ -102,8 +101,7 @@ def get_and_process_appointments(login_token, start_date, end_date):
     selected_calendar_ids = [int(id) for id in selected_calendar_ids if id.isdigit()]
 
     appointments = fetch_appointments(login_token, start_date, end_date, selected_calendar_ids)
-    session['fetched_appointments'] = [appointment_to_dict(app) for app in appointments]
-    return appointments
+    return [appointment_to_dict(app) for app in appointments]
 
 
 def handle_pdf_generation(appointment_ids, color_settings):
