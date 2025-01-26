@@ -1,4 +1,4 @@
-VERSION=1.5.1
+VERSION=1.5.2
 
 # Build the Docker image
 docker build --platform=linux/amd64 -t schowave/churchtools:$VERSION .
