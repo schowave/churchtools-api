@@ -8,6 +8,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, send_f
     session, send_file
 
 from config import Config
+
+def get_version():
+    with open('version.txt', 'r') as f:
+        return f.read().strip()
 from .utils import get_login_token, get_date_range_from_form, fetch_appointments, appointment_to_dict, fetch_calendars, \
     get_additional_infos, normalize_newlines, save_additional_infos, save_color_settings, load_color_settings
 from .pdf_generator import create_pdf
@@ -51,7 +55,8 @@ def appointments():
                                                      appointments=current_appointments,
                                                      start_date=start_date, end_date=end_date,
                                                      base_url=Config.CHURCHTOOLS_BASE,
-                                                     color_settings=color_settings))
+                                                     color_settings=color_settings,
+                                                     version=get_version()))
             response.set_cookie('fetchAppointments', 'true', max_age=1, path='/')
             return response
         elif 'generate_pdf' in request.form:
@@ -80,7 +85,7 @@ def appointments():
 
     return render_template('appointments.html', calendars=calendars, selected_calendar_ids=selected_calendar_ids,
                            start_date=start_date, end_date=end_date, base_url=Config.CHURCHTOOLS_BASE,
-                           color_settings=color_settings)
+                           color_settings=color_settings, version=get_version())
 
 
 def save_additional_infos_from_form(selected_appointment_ids):
@@ -173,7 +178,7 @@ def login():
         else:
             flash('Invalid username or password.', 'error')
 
-    return render_template('login.html', base_url=Config.CHURCHTOOLS_BASE)
+    return render_template('login.html', base_url=Config.CHURCHTOOLS_BASE, version=get_version())
     pass
 
 
@@ -192,7 +197,7 @@ def overview():
         return redirect(url_for('main_bp.login'))
 
     # Add any additional data you want to pass to your template
-    return render_template('overview.html', base_url=Config.CHURCHTOOLS_BASE)
+    return render_template('overview.html', base_url=Config.CHURCHTOOLS_BASE, version=get_version())
     pass
 
 
