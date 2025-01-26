@@ -45,6 +45,10 @@ pip install -r requirements.txt
     [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
 
 
+4. Build and push to docker hub
 
+   Run the build-and-ush-docker-image.sh.
+
+   You need to login via docker login -u ****
 
 
