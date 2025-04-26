@@ -97,10 +97,10 @@
     transition: box-shadow var(--transition-speed);
 }
 
-/* Zweispaltiges Layout für Kalendereinträge */
+/* Dreispaltiges Layout für Kalendereinträge */
 .calendars-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-xs);
     padding: var(--spacing-sm);
 }
