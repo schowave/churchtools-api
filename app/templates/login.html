@@ -5,13 +5,9 @@
     <link rel="stylesheet" href="/static/css/common.css">
 </head>
 <body>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-{% for category, message in messages %}
-<div class="alert alert-{{ category }}">{{ message }}</div>
-{% endfor %}
+{% if error %}
+<div class="alert alert-error">{{ error }}</div>
 {% endif %}
-{% endwith %}
 
 <div class="container">
     <h1>API-Zugriff</h1>
