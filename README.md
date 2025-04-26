@@ -1,54 +1,58 @@
-# Churchtools API
+# ChurchTools API
 
-This repository makes it possible to access the churchtools api via User Interface. 
+This repository provides a user-friendly interface to access the ChurchTools API.
 
-It was created due to the request to show all appointments of [evkila.de](https://www.evkila.de/) on a single pdf file or multiple jpegs.
+It was created to fulfill the need of displaying all appointments from [evkila.de](https://www.evkila.de/) on a single PDF file or as multiple JPEG images.
 
-## What does it do?
+## Features
 
-### Overview to provide 1..n functionalities
-![overview](images/overview.png)
+### Main Dashboard with Multiple Functions
+![Overview Dashboard](images/overview.png)
 
-### Select 1..n public calendars for appointments
-![appointments](images/calendars.png)
+### Calendar Selection
+Select one or more public calendars to view and manage appointments:
+![Calendar Selection](images/calendars.png)
 
-### Generate PDF or JPEG
-![generate](images/formatting.png)
+### Export Options
+Generate formatted PDF documents or JPEG images with customizable styling:
+![Export Options](images/formatting.png)
 
-### Result
-![result](images/result.png)
+### Output Example
+Example of a generated appointment list:
+![Result Example](images/result.png)
 
-## Setup
+## Setup Instructions
 
-1. Local Setup
+### Local Development Setup
+
+1. Create and activate a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. Edit the `Dockerfile` to configure your ChurchTools instance:
+   ```dockerfile
+   ENV  CHURCHTOOLS_BASE=evkila.church.tools \
+        DB_PATH=/app/data/evkila.db
+   ```
+
+3. Run the application using the provided shell script:
+   ```bash
+   ./run.sh
+   ```
+
+4. Access the application in your browser:
+   [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
+
+## Docker Deployment
+
+To build and push a Docker image with the latest changes:
+
+```bash
+./build-and-push-docker-image.sh
 ```
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
 
-2. Edit the `Dockerfile` file and set it to your churchtools instance.
-
-    ```
-    ENV  CHURCHTOOLS_BASE=evkila.church.tools \
-         DB_PATH=/app/data/evkila.db
-    ```
-
-2. Run the `run.sh` shell script, which will build a docker container and run the container.
-
-    ```
-    ./run.sh
-    ```
-
-3. Open in Browser
-
-    [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
-
-
-4. Build and push to docker hub
-
-   Run the build-and-ush-docker-image.sh.
-
-   You need to login via docker login -u ****
-
+This script will run all tests before building the Docker image to ensure code quality.
 

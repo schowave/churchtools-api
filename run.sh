@@ -2,4 +2,4 @@
 docker build -t schowave/churchtools .
 
 # Run the Docker container
-docker run -p 5005:5000 -v .:/app/data schowave/churchtools
+docker run -p 5005:5005 -v .:/app/data schowave/churchtools

@@ -1,13 +1,14 @@
-VERSION=1.5.3
+#!/bin/bash
 
-# Write version to file
-echo $VERSION > version.txt
+VERSION=2.0.2
 
-# Build the Docker image
-docker build --platform=linux/amd64 -t schowave/churchtools:$VERSION .
+# Set -e to exit on error for the build and push steps
+set -e  # Exit immediately if a command exits with a non-zero status
+echo "Building Docker image..."
 
-docker tag schowave/churchtools:$VERSION schowave/churchtools:latest
+# Build and push multi-architecture Docker image
+echo "Building and pushing multi-architecture Docker image..."
+docker buildx create --use --name multi-platform-builder || true
+docker buildx build --platform linux/amd64,linux/arm64 --tag schowave/churchtools:$VERSION --push .
 
-# Push the docker image
-docker push schowave/churchtools:$VERSION
-docker push schowave/churchtools:latest
+echo "Docker image schowave/churchtools:$VERSION built and pushed successfully."

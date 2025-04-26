@@ -3,13 +3,9 @@
 <head>
     <title>Appointments</title>
     <link rel="stylesheet" href="/static/css/common.css">
-    <!-- Include jQuery UI CSS from a CDN -->
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-    <!-- Include jQuery from a CDN -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <!-- Include jQuery UI from a CDN -->
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <!-- Initialize the datepicker -->
     <script>
         $(function () {
             $("#start_date").datepicker({
@@ -131,6 +127,10 @@
     <h1>Terminübersicht</h1>
     <h2>{{ base_url }}</h2>
     <a href="/" class="btn btn-back">Zurück</a>
+    
+    {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
 
     <!-- Form to fetch appointments -->
     <form method="POST">

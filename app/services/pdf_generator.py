@@ -1,6 +1,12 @@
 import os
-from config import Config
-from .utils import parse_iso_datetime
+import logging
+import sys
+
+# Logger konfigurieren
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+from app.config import Config
+from app.utils import parse_iso_datetime, normalize_newlines
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.pagesizes import landscape
 from reportlab.pdfgen import canvas
@@ -13,28 +19,41 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
+# Logger konfigurieren
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 def draw_background_image(canvas, image_stream, page_width, page_height):
-    # Load the image
-    image = ImageReader(image_stream)
-    image_width, image_height = image.getSize()
+    # Wenn kein Bild vorhanden ist, nichts tun
+    if image_stream is None:
+        return
+    
+    try:
+        # Load the image
+        image = ImageReader(image_stream)
+        image_width, image_height = image.getSize()
 
-    # Calculate scale factors
-    width_scale = page_width / image_width
-    height_scale = page_height / image_height
+        # Calculate scale factors
+        width_scale = page_width / image_width
+        height_scale = page_height / image_height
 
-    # Choose the smaller of the two scale factors to maintain aspect ratio
-    scale = min(width_scale, height_scale)
+        # Choose the smaller of the two scale factors to maintain aspect ratio
+        scale = min(width_scale, height_scale)
 
-    # Calculate the new dimensions of the image
-    scaled_width = image_width * scale
-    scaled_height = image_height * scale
+        # Calculate the new dimensions of the image
+        scaled_width = image_width * scale
+        scaled_height = image_height * scale
 
-    # Calculate position to center the image on the canvas
-    x_position = (page_width - scaled_width) / 2
-    y_position = (page_height - scaled_height) / 2
+        # Calculate position to center the image on the canvas
+        x_position = (page_width - scaled_width) / 2
+        y_position = (page_height - scaled_height) / 2
 
-    # Draw the image on the canvas with the new dimensions
-    canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+        # Draw the image on the canvas with the new dimensions
+        canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+    except Exception as e:
+        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
+        # Bei einem Fehler einfach kein Bild zeichnen
 
 
 # Define the 16:9 page size in points
@@ -59,18 +78,26 @@ def create_transparent_image(width, height, background_color, alpha):
 
 def draw_transparent_rectangle(canvas, x, y, width, height, background_color, alpha):
     # Generate a transparent image
-    transparent_image_stream = create_transparent_image(width, height, background_color, alpha)
+    transparent_image = create_transparent_image(width, height, background_color, alpha)
+    
+    # Convert PIL Image to BytesIO for ReportLab
+    img_byte_arr = io.BytesIO()
+    transparent_image.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
 
     # Use ReportLab to draw the image
-    canvas.drawImage(ImageReader(transparent_image_stream), x, y, width, height, mask='auto')
+    canvas.drawImage(ImageReader(img_byte_arr), x, y, width, height, mask='auto')
 
 
 def setup_new_page(canvas_obj, image_stream):
     canvas_obj.showPage()
     canvas_obj.setPageSize(landscape(PAGE_SIZE))
     new_y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 20)  # consistent with the initial y_position
-    if image_stream:
-        draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+    try:
+        if image_stream:
+            draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+    except Exception as e:
+        logger.error(f"Fehler beim Einrichten einer neuen Seite: {e}")
     return new_y_position
 
 
@@ -81,8 +108,27 @@ def wrap_text(text, font_name, line_height, max_width):
     Preserves original line breaks and wraps text that exceeds max_width.
     """
     # Register the font if it hasn't been registered yet
-    if not pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont(font_name, f'{font_name}.ttf'))
+    try:
+        if font_name not in pdfmetrics.getRegisteredFontNames():
+            try:
+                # Versuche, die angegebene Schriftart zu registrieren
+                pdfmetrics.registerFont(TTFont(font_name, f'fonts/{font_name}.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der Schriftart {font_name}: {e}")
+                # Fallback auf Helvetica
+                font_name = 'Helvetica'
+            
+            try:
+                # Versuche, die fette Variante der Schriftart zu registrieren
+                pdfmetrics.registerFont(TTFont(font_name + '-Bold', f'fonts/{font_name}-Bold.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der fetten Schriftart {font_name}-Bold: {e}")
+                # Fallback auf Helvetica-Bold
+                pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
+    except Exception as e:
+        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
+        # Verwende die eingebauten Standardschriftarten
+        font_name = 'Helvetica'
 
     wrapped_lines = []
     text_height = 0
@@ -118,8 +164,46 @@ def wrap_text(text, font_name, line_height, max_width):
 
 
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
-    font_name = 'Bahnschrift'
-    font_name_bold = font_name + '-Bold'
+    # Versuche, die Schriftart zu registrieren und verwende Fallback, wenn nicht verfügbar
+    try:
+        # Versuche, Bahnschrift zu registrieren
+        if 'Bahnschrift' not in pdfmetrics.getRegisteredFontNames():
+            try:
+                pdfmetrics.registerFont(TTFont('Bahnschrift', 'fonts/Bahnschrift.ttf'))
+                font_name = 'Bahnschrift'
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der Schriftart Bahnschrift: {e}")
+                # Fallback auf Helvetica
+                font_name = 'Helvetica'
+        else:
+            font_name = 'Bahnschrift'
+        
+        # Versuche, die fette Variante zu registrieren
+        bold_font_name = font_name + '-Bold'
+        if bold_font_name not in pdfmetrics.getRegisteredFontNames():
+            try:
+                if font_name == 'Bahnschrift':
+                    pdfmetrics.registerFont(TTFont(bold_font_name, 'fonts/Bahnschrift.ttf'))
+                else:
+                    pdfmetrics.registerFont(TTFont(bold_font_name, f'fonts/{font_name}-Bold.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der fetten Schriftart {bold_font_name}: {e}")
+                # Fallback auf Helvetica-Bold
+                bold_font_name = 'Helvetica-Bold'
+                if 'Helvetica-Bold' not in pdfmetrics.getRegisteredFontNames():
+                    try:
+                        pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
+                    except Exception as e:
+                        logger.error(f"Fehler beim Registrieren der Schriftart Helvetica-Bold: {e}")
+                        # Verwende eingebaute Standardschriftart
+                        bold_font_name = 'Helvetica'
+        
+        font_name_bold = bold_font_name
+    except Exception as e:
+        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
+        # Verwende eingebaute Standardschriftarten
+        font_name = 'Helvetica'
+        font_name_bold = 'Helvetica-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
@@ -127,8 +211,11 @@ def create_pdf(appointments, date_color, background_color, description_color, al
     c.setTitle(filename)
 
     # Draw the background image first
-    if image_stream:
-        draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+    try:
+        if image_stream:
+            draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+    except Exception as e:
+        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
 
     indent = PAGE_WIDTH * 1 / 40
 
@@ -165,7 +252,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         )
 
         # Wrap the information text if it exceeds the width of the rectangle
-        information = event.get('additional_info') or event.get('information') or ''
+        information = normalize_newlines(event.get('additional_info') or event.get('information') or '')
         wrapped_info_lines, wrapped_info_height = wrap_text(
             information, font_name, line_height_medium, rect_width - right_column_x * 0.4
         )
@@ -186,7 +273,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
             y_position = setup_new_page(c, image_stream)  # Reset y_position for the new page
 
         draw_transparent_rectangle(c, left_column_x, y_position - rect_height, rect_width, rect_height,
-                                   background_color, alpha)
+                                background_color, alpha)
 
         # Set starting position for text, taking into account the top padding
         text_y_position = y_position - top_padding
@@ -200,22 +287,22 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
         day_date_str = f"{german_day_of_week}, {start_dt.strftime('%d.%m.%Y')}"
         c.drawString(left_column_x + indent, text_y_position - line_height_large,
-                     day_date_str)  # German Day and Date
+                    day_date_str)  # German Day and Date
 
         # Time
         c.setFillColor(HexColor(description_color))
         c.setFont(font_name, font_size_medium)
         time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
         c.drawString(left_column_x + indent, text_y_position - line_height_large - line_height_medium,
-                     time_str)  # Time
+                    time_str)  # Time
 
         # MeetingAt - draw this below the Time, on the third row
         if event['meetingAt']:
             meeting_at_str = f"{event['meetingAt']}"  # Add prefix for clarity
             # Move this to the third row by subtracting an additional line_spacing
             c.drawString(left_column_x + indent,
-                         text_y_position - line_height_large - line_height_medium - line_height_medium,
-                         meeting_at_str)
+                        text_y_position - line_height_large - line_height_medium - line_height_medium,
+                        meeting_at_str)
 
         # Right column: Caption and Information
         c.setFillColor(black)
@@ -243,4 +330,5 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         y_position = min(information_y_position, y_position - rect_height - line_spacing)
 
     c.save()
+    logger.info(f"PDF erfolgreich erstellt: {filename} mit {len(appointments)} Terminen")
     return filename
