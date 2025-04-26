@@ -1,4 +1,5 @@
 import os
+import logging
 from app.config import Config
 from app.utils import parse_iso_datetime
 from reportlab.lib.utils import ImageReader
@@ -13,28 +14,41 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
+# Logger konfigurieren
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 def draw_background_image(canvas, image_stream, page_width, page_height):
-    # Load the image
-    image = ImageReader(image_stream)
-    image_width, image_height = image.getSize()
+    # Wenn kein Bild vorhanden ist, nichts tun
+    if image_stream is None:
+        return
+    
+    try:
+        # Load the image
+        image = ImageReader(image_stream)
+        image_width, image_height = image.getSize()
 
-    # Calculate scale factors
-    width_scale = page_width / image_width
-    height_scale = page_height / image_height
+        # Calculate scale factors
+        width_scale = page_width / image_width
+        height_scale = page_height / image_height
 
-    # Choose the smaller of the two scale factors to maintain aspect ratio
-    scale = min(width_scale, height_scale)
+        # Choose the smaller of the two scale factors to maintain aspect ratio
+        scale = min(width_scale, height_scale)
 
-    # Calculate the new dimensions of the image
-    scaled_width = image_width * scale
-    scaled_height = image_height * scale
+        # Calculate the new dimensions of the image
+        scaled_width = image_width * scale
+        scaled_height = image_height * scale
 
-    # Calculate position to center the image on the canvas
-    x_position = (page_width - scaled_width) / 2
-    y_position = (page_height - scaled_height) / 2
+        # Calculate position to center the image on the canvas
+        x_position = (page_width - scaled_width) / 2
+        y_position = (page_height - scaled_height) / 2
 
-    # Draw the image on the canvas with the new dimensions
-    canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+        # Draw the image on the canvas with the new dimensions
+        canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+    except Exception as e:
+        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
+        # Bei einem Fehler einfach kein Bild zeichnen
 
 
 # Define the 16:9 page size in points
@@ -74,8 +88,11 @@ def setup_new_page(canvas_obj, image_stream):
     canvas_obj.showPage()
     canvas_obj.setPageSize(landscape(PAGE_SIZE))
     new_y_position = PAGE_HEIGHT - (PAGE_HEIGHT * 1 / 20)  # consistent with the initial y_position
-    if image_stream:
-        draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+    try:
+        if image_stream:
+            draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+    except Exception as e:
+        logger.error(f"Fehler beim Einrichten einer neuen Seite: {e}")
     return new_y_position
 
 
@@ -133,8 +150,11 @@ def create_pdf(appointments, date_color, background_color, description_color, al
     c.setTitle(filename)
 
     # Draw the background image first
-    if image_stream:
-        draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+    try:
+        if image_stream:
+            draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+    except Exception as e:
+        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
 
     indent = PAGE_WIDTH * 1 / 40
 
@@ -249,4 +269,5 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         y_position = min(information_y_position, y_position - rect_height - line_spacing)
 
     c.save()
+    logger.info(f"PDF erfolgreich erstellt: {filename} mit {len(appointments)} Terminen")
     return filename

@@ -1,8 +1,9 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, File, UploadFile, Cookie
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import zipfile
 from io import BytesIO
@@ -13,6 +14,10 @@ from app.database import get_db, save_additional_infos, get_additional_infos, sa
 from app.config import Config
 from app.services.pdf_generator import create_pdf
 from app.utils import parse_iso_datetime, normalize_newlines
+
+# Logger konfigurieren
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -117,15 +122,7 @@ def get_date_range_from_form(start_date: str = None, end_date: str = None):
         
     return start_date, end_date
 
-def handle_pdf_generation(appointment_ids, color_settings, background_image_stream=None):
-    selected_appointments = [app for app in appointments if str(app['id']) in appointment_ids]
-    additional_infos = get_additional_infos(db, [appointment['id'] for appointment in selected_appointments])
-    for appointment in selected_appointments:
-        appointment['additional_info'] = additional_infos.get(appointment['id'], "")
-    filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
-                        color_settings['description_color'], color_settings['background_alpha'],
-                        background_image_stream)
-    return filename
+# Diese Funktion wurde entfernt, da sie nicht verwendet wird
 
 def handle_jpeg_generation(pdf_filename):
     full_pdf_path = os.path.join(Config.FILE_DIRECTORY, pdf_filename)
@@ -143,6 +140,7 @@ def handle_jpeg_generation(pdf_filename):
         for file_name, file_bytes in jpeg_files:
             zip_file.writestr(file_name, file_bytes.read())
     zip_buffer.seek(0)
+    logger.info(f"JPEG-Bilder erfolgreich erstellt und in ZIP-Datei gepackt")
     return zip_buffer
 
 @router.get("/appointments")
@@ -183,32 +181,45 @@ async def process_appointments(
     fetch_appointments_btn: Optional[str] = Form(None, alias="fetch_appointments"),
     generate_pdf_btn: Optional[str] = Form(None, alias="generate_pdf"),
     generate_jpeg_btn: Optional[str] = Form(None, alias="generate_jpeg"),
-    start_date: str = Form(...),
-    end_date: str = Form(...),
-    calendar_ids: List[str] = Form(...),
+    start_date: Optional[str] = Form(None),
+    end_date: Optional[str] = Form(None),
+    calendar_ids: Optional[List[str]] = Form(None),
     appointment_id: Optional[List[str]] = Form(None),
     background_image: Optional[UploadFile] = File(None),
-    date_color: Optional[str] = Form("#c1540c"),
-    description_color: Optional[str] = Form("#4e4e4e"),
-    background_color: Optional[str] = Form("#ffffff"),
-    alpha: Optional[int] = Form(128)
+    date_color: Optional[str] = Form(None),
+    description_color: Optional[str] = Form(None),
+    background_color: Optional[str] = Form(None),
+    alpha: Optional[int] = Form(None)
 ):
     login_token = request.cookies.get("login_token")
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
+    # Standardwerte für Datumsbereich, falls nicht im Formular
+    if not start_date or not end_date:
+        start_date_default, end_date_default = get_date_range_from_form()
+        start_date = start_date or start_date_default
+        end_date = end_date or end_date_default
+    
     calendars = await fetch_calendars(login_token)
     
-    # Konvertiere calendar_ids zu Integers
-    calendar_ids_int = [int(id) for id in calendar_ids if id.isdigit()]
+    # Konvertiere calendar_ids zu Integers, falls vorhanden
+    calendar_ids_int = []
+    if calendar_ids:
+        calendar_ids_int = [int(id) for id in calendar_ids if id.isdigit()]
     
-    color_settings = {
-        'name': 'default',
-        'background_color': background_color,
-        'background_alpha': alpha,
-        'date_color': date_color,
-        'description_color': description_color
-    }
+    # Standardwerte für Farbeinstellungen
+    color_settings = load_color_settings(db, "default")
+    
+    # Überschreibe mit Formulardaten, falls vorhanden
+    if background_color:
+        color_settings['background_color'] = background_color
+    if alpha is not None:
+        color_settings['background_alpha'] = alpha
+    if date_color:
+        color_settings['date_color'] = date_color
+    if description_color:
+        color_settings['description_color'] = description_color
     
     if fetch_appointments_btn:
         # Termine abholen
@@ -239,11 +250,28 @@ async def process_appointments(
         response.set_cookie(key="fetchAppointments", value="true", max_age=1, path='/')
         return response
     
-    elif generate_pdf_btn and appointment_id:
+    elif generate_pdf_btn:
+        if not appointment_id:
+            # Wenn keine Termine ausgewählt wurden, zurück zur Terminübersicht
+            return templates.TemplateResponse(
+                "appointments.html",
+                {
+                    "request": request,
+                    "calendars": calendars,
+                    "selected_calendar_ids": calendar_ids,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "base_url": Config.CHURCHTOOLS_BASE,
+                    "color_settings": color_settings,
+                    "error": "Bitte wählen Sie mindestens einen Termin aus."
+                }
+            )
+            
         # Zusätzliche Informationen speichern
         appointment_info_list = []
+        form_data = await request.form()
         for app_id in appointment_id:
-            additional_info = request.form.get(f'additional_info_{app_id}')
+            additional_info = form_data.get(f'additional_info_{app_id}', "")
             normalized_info = normalize_newlines(additional_info)
             appointment_info_list.append((app_id, normalized_info))
         
@@ -252,8 +280,13 @@ async def process_appointments(
         
         # Hintergrundbild verarbeiten
         background_image_stream = None
-        if background_image:
-            background_image_stream = BytesIO(await background_image.read())
+        if background_image and background_image.filename:
+            try:
+                content = await background_image.read()
+                if content:  # Nur verarbeiten, wenn Inhalt vorhanden ist
+                    background_image_stream = BytesIO(content)
+            except Exception as e:
+                print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
         # PDF generieren
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
@@ -267,6 +300,16 @@ async def process_appointments(
         # Nur ausgewählte Termine verwenden
         selected_appointments = [app for app in appointments if app['id'] in appointment_id]
         
+        # Logging für ausgewählte Termine
+        logger.info(f"Generiere JPEG für {len(selected_appointments)} Termine:")
+        for idx, app in enumerate(selected_appointments, 1):
+            logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
+        
+        # Logging für ausgewählte Termine
+        logger.info(f"Generiere PDF für {len(selected_appointments)} Termine:")
+        for idx, app in enumerate(selected_appointments, 1):
+            logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
+        
         # PDF erstellen
         filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
                             color_settings['description_color'], color_settings['background_alpha'],
@@ -276,11 +319,28 @@ async def process_appointments(
         response.set_cookie(key="pdfGenerated", value="true", max_age=1, path='/')
         return response
     
-    elif generate_jpeg_btn and appointment_id:
+    elif generate_jpeg_btn:
+        if not appointment_id:
+            # Wenn keine Termine ausgewählt wurden, zurück zur Terminübersicht
+            return templates.TemplateResponse(
+                "appointments.html",
+                {
+                    "request": request,
+                    "calendars": calendars,
+                    "selected_calendar_ids": calendar_ids,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "base_url": Config.CHURCHTOOLS_BASE,
+                    "color_settings": color_settings,
+                    "error": "Bitte wählen Sie mindestens einen Termin aus."
+                }
+            )
+            
         # Ähnlich wie bei PDF, aber mit JPEG-Konvertierung
         appointment_info_list = []
+        form_data = await request.form()
         for app_id in appointment_id:
-            additional_info = request.form.get(f'additional_info_{app_id}')
+            additional_info = form_data.get(f'additional_info_{app_id}', "")
             normalized_info = normalize_newlines(additional_info)
             appointment_info_list.append((app_id, normalized_info))
         
@@ -289,8 +349,13 @@ async def process_appointments(
         
         # Hintergrundbild verarbeiten
         background_image_stream = None
-        if background_image:
-            background_image_stream = BytesIO(await background_image.read())
+        if background_image and background_image.filename:
+            try:
+                content = await background_image.read()
+                if content:  # Nur verarbeiten, wenn Inhalt vorhanden ist
+                    background_image_stream = BytesIO(content)
+            except Exception as e:
+                print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
         # PDF generieren und dann in JPEG konvertieren
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
