@@ -293,30 +293,22 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # Verwende die ausgewählten Termin-IDs direkt
+        # Hole die tatsächlichen Termine von der API
         logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
+        logger.info(f"Rufe Termine ab für Zeitraum {start_date} bis {end_date} und Kalender {calendar_ids_int}")
         
-        # Erstelle Dummy-Termine für die ausgewählten IDs
-        appointments = []
-        for app_id in appointment_id:
-            # Extrahiere Informationen aus dem Formular
-            description = form_data.get(f'description_{app_id}', f"Termin {app_id}")
+        # Hole alle Termine für den angegebenen Zeitraum
+        appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+        logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
+        
+        # Konvertiere die Termine in das richtige Format
+        appointments = [appointment_to_dict(app) for app in appointments_data]
+        
+        # Füge zusätzliche Informationen aus dem Formular hinzu
+        for appointment in appointments:
+            app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
-            
-            # Erstelle ein einfaches Termin-Objekt
-            appointment = {
-                'id': app_id,
-                'description': description,
-                'startDate': start_date,
-                'endDate': end_date,
-                'meetingAt': "",
-                'information': "",
-                'startDateView': start_date,
-                'startTimeView': "00:00",
-                'endTimeView': "23:59",
-                'additional_info': additional_info
-            }
-            appointments.append(appointment)
+            appointment['additional_info'] = additional_info
         
         logger.info(f"Anzahl der Termine für PDF: {len(appointments)}")
         
@@ -384,30 +376,22 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # Verwende die ausgewählten Termin-IDs direkt
+        # Hole die tatsächlichen Termine von der API
         logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
+        logger.info(f"Rufe Termine ab für Zeitraum {start_date} bis {end_date} und Kalender {calendar_ids_int}")
         
-        # Erstelle Dummy-Termine für die ausgewählten IDs
-        appointments = []
-        for app_id in appointment_id:
-            # Extrahiere Informationen aus dem Formular
-            description = form_data.get(f'description_{app_id}', f"Termin {app_id}")
+        # Hole alle Termine für den angegebenen Zeitraum
+        appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+        logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
+        
+        # Konvertiere die Termine in das richtige Format
+        appointments = [appointment_to_dict(app) for app in appointments_data]
+        
+        # Füge zusätzliche Informationen aus dem Formular hinzu
+        for appointment in appointments:
+            app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
-            
-            # Erstelle ein einfaches Termin-Objekt
-            appointment = {
-                'id': app_id,
-                'description': description,
-                'startDate': start_date,
-                'endDate': end_date,
-                'meetingAt': "",
-                'information': "",
-                'startDateView': start_date,
-                'startTimeView': "00:00",
-                'endTimeView': "23:59",
-                'additional_info': additional_info
-            }
-            appointments.append(appointment)
+            appointment['additional_info'] = additional_info
         
         logger.info(f"Anzahl der Termine für JPEG: {len(appointments)}")
         
