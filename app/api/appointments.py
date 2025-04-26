@@ -170,7 +170,8 @@ async def appointments_page(
             "start_date": start_date,
             "end_date": end_date,
             "base_url": Config.CHURCHTOOLS_BASE,
-            "color_settings": color_settings
+            "color_settings": color_settings,
+            "version": Config.VERSION
         }
     )
 
@@ -249,7 +250,8 @@ async def process_appointments(
                 "start_date": start_date,
                 "end_date": end_date,
                 "base_url": Config.CHURCHTOOLS_BASE,
-                "color_settings": color_settings
+                "color_settings": color_settings,
+                "version": Config.VERSION
             }
         )
         response.set_cookie(key="fetchAppointments", value="true", max_age=1, path='/')
@@ -268,7 +270,8 @@ async def process_appointments(
                     "end_date": end_date,
                     "base_url": Config.CHURCHTOOLS_BASE,
                     "color_settings": color_settings,
-                    "error": "Bitte wählen Sie mindestens einen Termin aus."
+                    "error": "Bitte wählen Sie mindestens einen Termin aus.",
+                    "version": Config.VERSION
                 }
             )
             
@@ -351,7 +354,8 @@ async def process_appointments(
                     "end_date": end_date,
                     "base_url": Config.CHURCHTOOLS_BASE,
                     "color_settings": color_settings,
-                    "error": "Bitte wählen Sie mindestens einen Termin aus."
+                    "error": "Bitte wählen Sie mindestens einen Termin aus.",
+                    "version": Config.VERSION
                 }
             )
             
@@ -439,7 +443,8 @@ async def process_appointments(
             "start_date": start_date,
             "end_date": end_date,
             "base_url": Config.CHURCHTOOLS_BASE,
-            "color_settings": color_settings
+            "color_settings": color_settings,
+            "version": Config.VERSION
         }
     )
 

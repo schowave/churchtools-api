@@ -35,7 +35,7 @@ async def root(request: Request):
     login_token = request.cookies.get("login_token")
     if login_token:
         return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-    return templates.TemplateResponse("login.html", {"request": request, "base_url": Config.CHURCHTOOLS_BASE})
+    return templates.TemplateResponse("login.html", {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "version": Config.VERSION})
 
 # Datenbank-Schema erstellen
 create_schema()

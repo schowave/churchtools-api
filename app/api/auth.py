@@ -10,7 +10,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/")
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "base_url": Config.CHURCHTOOLS_BASE})
+    return templates.TemplateResponse("login.html", {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "version": Config.VERSION})
 
 @router.post("/")
 async def login(
@@ -38,12 +38,12 @@ async def login(
             else:
                 return templates.TemplateResponse(
                     "login.html",
-                    {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "error": "Failed to retrieve login token."}
+                    {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "error": "Failed to retrieve login token.", "version": Config.VERSION}
                 )
         else:
             return templates.TemplateResponse(
                 "login.html",
-                {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "error": "Invalid username or password."}
+                {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "error": "Invalid username or password.", "version": Config.VERSION}
             )
 
 @router.post("/logout")
@@ -60,5 +60,5 @@ async def overview(request: Request):
     
     return templates.TemplateResponse(
         "overview.html",
-        {"request": request, "base_url": Config.CHURCHTOOLS_BASE}
+        {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "version": Config.VERSION}
     )

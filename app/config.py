@@ -1,7 +1,22 @@
 import os
+import re
 from pathlib import Path
 
+# Version aus build-and-push-docker-image.sh lesen
+def get_version_from_script():
+    try:
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'build-and-push-docker-image.sh')
+        with open(script_path, 'r') as file:
+            content = file.read()
+            match = re.search(r'VERSION=(\d+\.\d+\.\d+)', content)
+            if match:
+                return match.group(1)
+    except Exception as e:
+        print(f"Fehler beim Lesen der Version: {e}")
+    return "0.0.0"  # Fallback-Version
+
 class Config:
+    VERSION = get_version_from_script()
     CHURCHTOOLS_BASE = os.getenv('CHURCHTOOLS_BASE', '<SET CHURCHTOOLS_BASE IN .ENV FILE>')
     DB_PATH = os.getenv('DB_PATH', '<SET DB_PATH IN .ENV FILE>')
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', f'{CHURCHTOOLS_BASE}-tpjOUrHAAcbJtDxNCgM5St7SWmEs0kmAJ5htjiqL')
