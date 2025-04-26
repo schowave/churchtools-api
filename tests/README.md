@@ -1,80 +1,62 @@
 # ChurchTools API Tests
 
-Diese Datei enthält Informationen zur Ausführung der Unit-Tests für die ChurchTools API-Anwendung.
+Dieses Verzeichnis enthält Unit-Tests für die ChurchTools API-Anwendung.
 
-## Teststruktur
+## Testausführung
 
-Die Tests sind in folgende Kategorien unterteilt:
+### Lokale Ausführung
 
-1. **Utils Tests** (`test_utils.py`): Tests für die Hilfsfunktionen wie Datumsverarbeitung und Textformatierung.
-2. **Database Tests** (`test_database.py`): Tests für die Datenbankoperationen.
-3. **Auth Tests** (`test_auth.py`): Tests für die Authentifizierungsfunktionen.
-4. **Appointments Tests** (`test_appointments.py`): Tests für die Terminverwaltungsfunktionen.
-5. **PDF Generator Tests** (`test_pdf_generator.py`): Tests für den PDF-Generator.
-
-Zusätzlich gibt es eine Test-Suite (`test_suite.py`), die alle Tests zusammenfasst.
-
-## Voraussetzungen
-
-Um die Tests auszuführen, benötigen Sie:
-
-1. Python 3.7 oder höher
-2. Die in `requirements.txt` aufgeführten Abhängigkeiten
-3. pytest und pytest-asyncio (bereits in requirements.txt enthalten)
-
-## Tests ausführen
-
-### Alle Tests ausführen
-
-Um alle Tests auszuführen, verwenden Sie:
+Um die Tests lokal auszuführen, verwenden Sie den folgenden Befehl:
 
 ```bash
 python -m pytest tests/
 ```
 
-### Einzelne Testdateien ausführen
+### Ausführung mit Codeabdeckungsbericht
 
-Um eine bestimmte Testdatei auszuführen, verwenden Sie:
-
-```bash
-python -m pytest tests/test_utils.py
-```
-
-### Test-Suite ausführen
-
-Um die Test-Suite auszuführen, verwenden Sie:
+Um die Tests mit einem Codeabdeckungsbericht auszuführen:
 
 ```bash
-python tests/test_suite.py
+python -m pytest --cov=app tests/ --cov-report=term
 ```
 
-Hinweis: Die Test-Suite verwendet pytest, um alle Tests auszuführen, einschließlich der asynchronen Tests.
-
-### Tests mit Berichterstattung ausführen
-
-Um Tests mit Berichterstattung zur Codeabdeckung auszuführen, installieren Sie zuerst `pytest-cov`:
+Für einen HTML-Bericht:
 
 ```bash
-pip install pytest-cov
+python -m pytest --cov=app tests/ --cov-report=html
 ```
 
-Dann führen Sie die Tests mit Abdeckungsbericht aus:
+### IntelliJ Run-Konfigurationen
 
-```bash
-python -m pytest --cov=app tests/
-```
+Es wurden zwei IntelliJ Run-Konfigurationen erstellt:
 
-Um einen HTML-Bericht zu generieren:
+1. **Run Tests with Coverage**: Führt alle Tests aus und zeigt einen Codeabdeckungsbericht im Terminal an
+2. **Run Tests with HTML Coverage**: Führt alle Tests aus und generiert einen HTML-Codeabdeckungsbericht
 
-```bash
-python -m pytest --cov=app --cov-report=html tests/
-```
+## Teststruktur
 
-Der HTML-Bericht wird im Verzeichnis `htmlcov` erstellt.
+Die Tests sind in folgende Kategorien unterteilt:
 
-## Hinweise
+1. **Utils Tests**: Testen Hilfsfunktionen mit 97% Codeabdeckung
+2. **Database Tests**: Testen Datenbankoperationen mit 84% Codeabdeckung
+3. **Auth Tests**: Testen Authentifizierungsfunktionen mit 43% Codeabdeckung
+4. **Appointments Tests**: Testen Terminverwaltungsfunktionen mit 23% Codeabdeckung
+5. **PDF Generator Tests**: Testen PDF-Erstellungsfunktionen mit 82% Codeabdeckung
 
-- Die Tests verwenden Mock-Objekte, um externe Abhängigkeiten wie die ChurchTools API zu simulieren.
-- Für die Datenbanktests wird eine temporäre SQLite-Datenbank erstellt.
-- Einige Tests erfordern möglicherweise Anpassungen an Ihre lokale Umgebung.
-- Für asynchrone Tests wird pytest-asyncio verwendet, das die Ausführung von async/await-Funktionen in Tests ermöglicht.
+Die Gesamtcodeabdeckung beträgt 51%.
+
+## CI/CD-Pipeline
+
+Die Tests werden automatisch in der GitHub Actions-Pipeline ausgeführt. Es gibt zwei Workflows:
+
+1. **test-and-build.yml**: Wird bei jedem Push und Pull Request ausgeführt
+   - Führt alle Tests mit Codeabdeckungsbericht aus
+   - Lädt den Codeabdeckungsbericht zu Codecov hoch
+   - Baut das Docker-Image (ohne Push)
+
+2. **release.yml**: Wird nur manuell über den GitHub Actions UI ausgeführt
+   - Erfordert die Eingabe einer Version (z.B. v1.0.0)
+   - Führt alle Tests mit Codeabdeckungsbericht aus
+   - Lädt den Codeabdeckungsbericht zu Codecov hoch
+   - Baut das Docker-Image und pusht es zur GitHub Container Registry (GHCR)
+   - Taggt das Image mit der angegebenen Version und "latest"
