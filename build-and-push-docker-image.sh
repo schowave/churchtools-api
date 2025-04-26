@@ -13,12 +13,10 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
     set -e  # Exit immediately if a command exits with a non-zero status
     echo "Tests passed successfully. Building Docker image..."
     
-    # Build the Docker image
-    docker build -t schowave/churchtools:$VERSION .
-    
-    # Push the docker image
-    echo "Pushing Docker image to registry..."
-    docker push schowave/churchtools:$VERSION
+    # Build and push multi-architecture Docker image
+    echo "Building and pushing multi-architecture Docker image..."
+    docker buildx create --use --name multi-platform-builder || true
+    docker buildx build --platform linux/amd64,linux/arm64 --tag schowave/churchtools:$VERSION --push .
     
     echo "Docker image schowave/churchtools:$VERSION built and pushed successfully."
 else
