@@ -6,3 +6,5 @@ evkila.db
 /__pycache__/
 app/__pycache__/
 
+.aider*
+.env
