@@ -1,5 +1,10 @@
 import os
 import logging
+import sys
+
+# Logger konfigurieren
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 from app.config import Config
 from app.utils import parse_iso_datetime
 from reportlab.lib.utils import ImageReader
@@ -103,9 +108,27 @@ def wrap_text(text, font_name, line_height, max_width):
     Preserves original line breaks and wraps text that exceeds max_width.
     """
     # Register the font if it hasn't been registered yet
-    if font_name not in pdfmetrics.getRegisteredFontNames():
-        pdfmetrics.registerFont(TTFont(font_name, f'fonts/{font_name}.ttf'))
-        pdfmetrics.registerFont(TTFont(font_name + '-Bold', f'fonts/{font_name}.ttf'))
+    try:
+        if font_name not in pdfmetrics.getRegisteredFontNames():
+            try:
+                # Versuche, die angegebene Schriftart zu registrieren
+                pdfmetrics.registerFont(TTFont(font_name, f'fonts/{font_name}.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der Schriftart {font_name}: {e}")
+                # Fallback auf Helvetica
+                font_name = 'Helvetica'
+            
+            try:
+                # Versuche, die fette Variante der Schriftart zu registrieren
+                pdfmetrics.registerFont(TTFont(font_name + '-Bold', f'fonts/{font_name}-Bold.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der fetten Schriftart {font_name}-Bold: {e}")
+                # Fallback auf Helvetica-Bold
+                pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
+    except Exception as e:
+        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
+        # Verwende die eingebauten Standardschriftarten
+        font_name = 'Helvetica'
 
     wrapped_lines = []
     text_height = 0
@@ -141,8 +164,46 @@ def wrap_text(text, font_name, line_height, max_width):
 
 
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
-    font_name = 'Bahnschrift'
-    font_name_bold = font_name + '-Bold'
+    # Versuche, die Schriftart zu registrieren und verwende Fallback, wenn nicht verfügbar
+    try:
+        # Versuche, Bahnschrift zu registrieren
+        if 'Bahnschrift' not in pdfmetrics.getRegisteredFontNames():
+            try:
+                pdfmetrics.registerFont(TTFont('Bahnschrift', 'fonts/Bahnschrift.ttf'))
+                font_name = 'Bahnschrift'
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der Schriftart Bahnschrift: {e}")
+                # Fallback auf Helvetica
+                font_name = 'Helvetica'
+        else:
+            font_name = 'Bahnschrift'
+        
+        # Versuche, die fette Variante zu registrieren
+        bold_font_name = font_name + '-Bold'
+        if bold_font_name not in pdfmetrics.getRegisteredFontNames():
+            try:
+                if font_name == 'Bahnschrift':
+                    pdfmetrics.registerFont(TTFont(bold_font_name, 'fonts/Bahnschrift.ttf'))
+                else:
+                    pdfmetrics.registerFont(TTFont(bold_font_name, f'fonts/{font_name}-Bold.ttf'))
+            except Exception as e:
+                logger.error(f"Fehler beim Registrieren der fetten Schriftart {bold_font_name}: {e}")
+                # Fallback auf Helvetica-Bold
+                bold_font_name = 'Helvetica-Bold'
+                if 'Helvetica-Bold' not in pdfmetrics.getRegisteredFontNames():
+                    try:
+                        pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
+                    except Exception as e:
+                        logger.error(f"Fehler beim Registrieren der Schriftart Helvetica-Bold: {e}")
+                        # Verwende eingebaute Standardschriftart
+                        bold_font_name = 'Helvetica'
+        
+        font_name_bold = bold_font_name
+    except Exception as e:
+        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
+        # Verwende eingebaute Standardschriftarten
+        font_name = 'Helvetica'
+        font_name_bold = 'Helvetica-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
     filename = f'{current_day}_Termine.pdf'
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)

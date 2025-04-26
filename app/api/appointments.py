@@ -208,6 +208,11 @@ async def process_appointments(
     if calendar_ids:
         calendar_ids_int = [int(id) for id in calendar_ids if id.isdigit()]
     
+    # Wenn keine Kalender ausgewählt sind, alle verfügbaren Kalender verwenden
+    if not calendar_ids_int and calendars:
+        calendar_ids_int = [calendar['id'] for calendar in calendars]
+        logger.info(f"Keine Kalender ausgewählt, verwende alle verfügbaren Kalender: {calendar_ids_int}")
+    
     # Standardwerte für Farbeinstellungen
     color_settings = load_color_settings(db, "default")
     
@@ -288,22 +293,44 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # PDF generieren
-        appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-        appointments = [appointment_to_dict(app) for app in appointments_data]
+        # Verwende die ausgewählten Termin-IDs direkt
+        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
         
-        # Zusätzliche Informationen laden
-        additional_infos = get_additional_infos(db, [appointment['id'] for appointment in appointments])
-        for appointment in appointments:
-            appointment['additional_info'] = additional_infos.get(appointment['id'], "")
+        # Erstelle Dummy-Termine für die ausgewählten IDs
+        appointments = []
+        for app_id in appointment_id:
+            # Extrahiere Informationen aus dem Formular
+            description = form_data.get(f'description_{app_id}', f"Termin {app_id}")
+            additional_info = form_data.get(f'additional_info_{app_id}', "")
+            
+            # Erstelle ein einfaches Termin-Objekt
+            appointment = {
+                'id': app_id,
+                'description': description,
+                'startDate': start_date,
+                'endDate': end_date,
+                'meetingAt': "",
+                'information': "",
+                'startDateView': start_date,
+                'startTimeView': "00:00",
+                'endTimeView': "23:59",
+                'additional_info': additional_info
+            }
+            appointments.append(appointment)
         
-        # Nur ausgewählte Termine verwenden
-        selected_appointments = [app for app in appointments if app['id'] in appointment_id]
+        logger.info(f"Anzahl der Termine für PDF: {len(appointments)}")
         
-        # Logging für ausgewählte Termine
-        logger.info(f"Generiere JPEG für {len(selected_appointments)} Termine:")
-        for idx, app in enumerate(selected_appointments, 1):
-            logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
+        # Debug-Logging für IDs
+        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
+        logger.info(f"Verfügbare Termin-IDs: {[app['id'] for app in appointments]}")
+        
+        # Nur ausgewählte Termine verwenden - mit Stringvergleich
+        selected_appointments = []
+        for app in appointments:
+            for app_id in appointment_id:
+                if str(app['id']) == str(app_id):
+                    selected_appointments.append(app)
+                    break
         
         # Logging für ausgewählte Termine
         logger.info(f"Generiere PDF für {len(selected_appointments)} Termine:")
@@ -357,17 +384,49 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # PDF generieren und dann in JPEG konvertieren
-        appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-        appointments = [appointment_to_dict(app) for app in appointments_data]
+        # Verwende die ausgewählten Termin-IDs direkt
+        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
         
-        # Zusätzliche Informationen laden
-        additional_infos = get_additional_infos(db, [appointment['id'] for appointment in appointments])
-        for appointment in appointments:
-            appointment['additional_info'] = additional_infos.get(appointment['id'], "")
+        # Erstelle Dummy-Termine für die ausgewählten IDs
+        appointments = []
+        for app_id in appointment_id:
+            # Extrahiere Informationen aus dem Formular
+            description = form_data.get(f'description_{app_id}', f"Termin {app_id}")
+            additional_info = form_data.get(f'additional_info_{app_id}', "")
+            
+            # Erstelle ein einfaches Termin-Objekt
+            appointment = {
+                'id': app_id,
+                'description': description,
+                'startDate': start_date,
+                'endDate': end_date,
+                'meetingAt': "",
+                'information': "",
+                'startDateView': start_date,
+                'startTimeView': "00:00",
+                'endTimeView': "23:59",
+                'additional_info': additional_info
+            }
+            appointments.append(appointment)
         
-        # Nur ausgewählte Termine verwenden
-        selected_appointments = [app for app in appointments if app['id'] in appointment_id]
+        logger.info(f"Anzahl der Termine für JPEG: {len(appointments)}")
+        
+        # Debug-Logging für IDs
+        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
+        logger.info(f"Verfügbare Termin-IDs: {[app['id'] for app in appointments]}")
+        
+        # Nur ausgewählte Termine verwenden - mit Stringvergleich
+        selected_appointments = []
+        for app in appointments:
+            for app_id in appointment_id:
+                if str(app['id']) == str(app_id):
+                    selected_appointments.append(app)
+                    break
+        
+        # Logging für ausgewählte Termine
+        logger.info(f"Generiere JPEG für {len(selected_appointments)} Termine:")
+        for idx, app in enumerate(selected_appointments, 1):
+            logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
         
         # PDF erstellen
         filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
