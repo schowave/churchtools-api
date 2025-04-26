@@ -6,10 +6,63 @@ Dieses Verzeichnis enthält Unit-Tests für die ChurchTools API-Anwendung.
 
 ### Lokale Ausführung
 
+#### Für Linux/Windows:
+
 Um die Tests lokal auszuführen, verwenden Sie den folgenden Befehl:
 
 ```bash
+# Installiere die Abhängigkeiten
+pip install -r requirements.txt
+
+# Führe die Tests aus
 python -m pytest tests/
+```
+
+#### Für macOS:
+
+macOS-Benutzer können auf Probleme mit der reportlab-Installation stoßen. Hier sind drei Lösungsansätze:
+
+**Option 1: Verwende das Installationsskript (empfohlen)**
+
+```bash
+# Mache das Skript ausführbar
+chmod +x install-macos.sh
+
+# Führe das Installationsskript aus
+./install-macos.sh
+
+# Aktiviere die virtuelle Umgebung (falls noch nicht aktiviert)
+source venv/bin/activate
+
+# Führe die Tests aus
+python -m pytest tests/
+```
+
+**Option 2: Manuelle Installation**
+
+```bash
+# Erstelle eine virtuelle Umgebung
+python -m venv venv
+source venv/bin/activate
+
+# Installiere reportlab ohne C-Erweiterungen
+pip install --no-binary=reportlab reportlab==3.5.68
+
+# Installiere die restlichen Abhängigkeiten
+pip install -r requirements-macos.txt
+
+# Führe die Tests aus
+python -m pytest tests/
+```
+
+**Option 3: Verwende Docker**
+
+```bash
+# Baue das Docker-Image
+docker build -t churchtools-api:test .
+
+# Führe die Tests im Container aus
+docker run --rm churchtools-api:test python -m pytest tests/
 ```
 
 ### Ausführung mit Codeabdeckungsbericht
