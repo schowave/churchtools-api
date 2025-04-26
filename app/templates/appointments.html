@@ -25,6 +25,11 @@
                     clearInterval(checkCookie);
                     document.cookie = cookieName + '=; Max-Age=-99999999;';  // delete the cookie
                     $('#spinner-overlay').hide();  // hide the spinner
+                    
+                    // Löse ein benutzerdefiniertes Event aus, wenn der Cookie gefunden wurde
+                    document.dispatchEvent(new CustomEvent('cookieChanged', {
+                        detail: { name: cookieName }
+                    }));
                 }
             }, 100); // check every 100ms
         }
@@ -46,8 +51,28 @@
             $('input[name="fetch_appointments"]').click(function () {
                 // Show the spinner
                 $('#spinner-overlay').show();
-                // Start monitoring for the pdfGenerated cookie
+                // Start monitoring for the fetchAppointments cookie
                 monitorDownload('fetchAppointments');
+                
+                // Direktes Scrollen nach dem Absenden des Formulars
+                localStorage.setItem('scrollToAppointments', 'true');
+            });
+            
+            // Beim Laden der Seite prüfen, ob gescrollt werden soll
+            $(document).ready(function() {
+                // Wenn Termine vorhanden sind und das Flag gesetzt ist
+                if ($('.appointments-container').length > 0 && localStorage.getItem('scrollToAppointments') === 'true') {
+                    // Flag zurücksetzen
+                    localStorage.removeItem('scrollToAppointments');
+                    
+                    // Mit Verzögerung scrollen, um sicherzustellen, dass die Seite vollständig geladen ist
+                    setTimeout(function() {
+                        // Zu fetch_appointments scrollen (Button oder Input mit diesem Namen)
+                        $('html, body').animate({
+                            scrollTop: $('input[name="fetch_appointments"]').offset().top - 20
+                        }, 1000);
+                    }, 500);
+                }
             });
         });
     </script>
