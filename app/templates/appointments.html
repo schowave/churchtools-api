@@ -138,6 +138,53 @@
             }
         });
     </script>
+    
+    <!-- Script für automatische Höhenanpassung der Textareas -->
+    <script>
+        function autoResizeTextarea(textarea) {
+            // Aktuelle Höhe speichern
+            var originalHeight = textarea.style.height;
+            
+            // Höhe zurücksetzen, um die tatsächliche Scrollhöhe zu ermitteln
+            textarea.style.height = '24px';
+            
+            // Höhe auf die Scrollhöhe setzen, wenn Text vorhanden ist
+            if (textarea.value.trim().length > 0) {
+                if (textarea.scrollHeight > 24) {
+                    textarea.style.height = textarea.scrollHeight + 'px';
+                }
+            }
+        }
+        
+        // Warten auf vollständiges Laden der Seite
+        window.addEventListener('load', function() {
+            // Alle Textareas auswählen
+            const textareas = document.querySelectorAll('textarea[name^="additional_info_"]');
+            
+            // Für jede Textarea
+            textareas.forEach(function(textarea) {
+                // Kurze Verzögerung für korrekte Berechnung
+                setTimeout(function() {
+                    autoResizeTextarea(textarea);
+                }, 100);
+                
+                // Bei Eingabe anpassen
+                textarea.addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                });
+                
+                // Bei Fokus anpassen
+                textarea.addEventListener('focus', function() {
+                    autoResizeTextarea(this);
+                });
+                
+                // Bei Blur (Verlassen des Feldes) anpassen
+                textarea.addEventListener('blur', function() {
+                    autoResizeTextarea(this);
+                });
+            });
+        });
+    </script>
 
 </head>
 <body>

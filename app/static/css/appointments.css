@@ -206,14 +206,19 @@
 /* Zusätzliche Informationen Textarea */
 textarea {
     width: 100%;
-    padding: var(--spacing-sm);
+    padding: 4px 8px; /* Reduziertes Padding für kompaktere Darstellung */
     margin-top: var(--spacing-xs);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    resize: vertical;
-    min-height: 60px;
+    resize: none; /* Deaktiviere manuelles Resize für bessere Auto-Resize-Funktionalität */
+    min-height: 24px; /* Höhe für eine Textzeile */
+    height: 24px; /* Initial nur eine Zeile hoch */
+    overflow-y: hidden; /* Verstecke Scrollbar für sauberes Auto-Resize */
     font-family: var(--font-family);
+    font-size: 14px; /* Kleinere Schriftgröße */
+    line-height: 1.2; /* Kompaktere Zeilenhöhe */
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    box-sizing: border-box;
 }
 
 textarea:focus {
