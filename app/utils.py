@@ -44,7 +44,16 @@ def get_date_range_from_form(start_date: str = None, end_date: str = None) -> Tu
 def normalize_newlines(text: str) -> str:
     """
     Normalisiert Zeilenumbrüche in einem Text.
+    Ersetzt alle Arten von Zeilenumbrüchen (\r\n, \r) durch \n.
+    Entfernt auch spezielle Unicode-Zeichen, die manchmal in Textfeldern erscheinen können.
     """
     if text is None:
         return ""
-    return text.replace('\r\n', '\n')
+    # Zuerst \r\n durch \n ersetzen
+    text = text.replace('\r\n', '\n')
+    # Dann einzelne \r durch \n ersetzen
+    text = text.replace('\r', '\n')
+    # Entfernen von speziellen Unicode-Zeichen, die manchmal in Textfeldern erscheinen können
+    text = text.replace('\u2028', '\n')  # Line Separator
+    text = text.replace('\u2029', '\n')  # Paragraph Separator
+    return text

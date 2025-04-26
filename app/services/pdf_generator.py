@@ -6,7 +6,7 @@ import sys
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from app.config import Config
-from app.utils import parse_iso_datetime
+from app.utils import parse_iso_datetime, normalize_newlines
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.pagesizes import landscape
 from reportlab.pdfgen import canvas
@@ -252,7 +252,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         )
 
         # Wrap the information text if it exceeds the width of the rectangle
-        information = event.get('additional_info') or event.get('information') or ''
+        information = normalize_newlines(event.get('additional_info') or event.get('information') or '')
         wrapped_info_lines, wrapped_info_height = wrap_text(
             information, font_name, line_height_medium, rect_width - right_column_x * 0.4
         )
