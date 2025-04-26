@@ -32,7 +32,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(result.year, 2023)
         self.assertEqual(result.month, 1)
         self.assertEqual(result.day, 15)
-        self.assertEqual(result.hour, 14)
+        self.assertEqual(result.hour, 15)  # 14 UTC = 15 Berlin (assuming standard time)
         self.assertEqual(result.minute, 30)
     
     def test_normalize_newlines(self):
