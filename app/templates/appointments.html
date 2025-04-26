@@ -67,9 +67,9 @@
                     
                     // Mit Verzögerung scrollen, um sicherzustellen, dass die Seite vollständig geladen ist
                     setTimeout(function() {
-                        // Zu fetch_appointments scrollen (Button oder Input mit diesem Namen)
+                        // Zu den Appointments-Actions scrollen (Buttons über den Terminen)
                         $('html, body').animate({
-                            scrollTop: $('input[name="fetch_appointments"]').offset().top - 20
+                            scrollTop: $('.appointments-actions').offset().top - 20
                         }, 1000);
                     }, 500);
                 }
@@ -207,6 +207,21 @@
 
     <!-- Form to fetch appointments -->
     <form method="POST">
+        <div class="controls-header">
+            <!-- Date selection -->
+            <label for="start_date">Startdatum:</label>
+            <input type="text" id="start_date" name="start_date"
+                   value="{{ start_date }}" required>
+    
+            <label for="end_date">Enddatum:</label>
+            <input type="text" id="end_date" name="end_date"
+                   value="{{ end_date }}" required>
+    
+            <!-- Submit button for fetching appointments -->
+            <input type="submit" name="fetch_appointments"
+                   value="Termine abholen" class="btn btn-fetch">
+        </div>
+        
         <!-- Calendars selection -->
         <div class="calendars-container">
             {% for calendar in calendars %}
@@ -221,19 +236,6 @@
                 </div>
             {% endfor %}
         </div>
-
-        <!-- Date selection -->
-        <label for="start_date">Startdatum:</label>
-        <input type="text" id="start_date" name="start_date"
-               value="{{ start_date }}" required>
-
-        <label for="end_date">Enddatum:</label>
-        <input type="text" id="end_date" name="end_date"
-               value="{{ end_date }}" required>
-
-        <!-- Submit button for fetching appointments -->
-        <input type="submit" name="fetch_appointments"
-               value="Termine abholen" class="btn btn-fetch">
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
@@ -247,9 +249,11 @@
                         <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id"
                                value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
                         <label for="appointment-{{ appointment['id'] }}" class="appointment-label">
-                            {{ appointment['startDateView'] }}
-                            ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
-                            <br/>{{ appointment['description'] }}
+                            <span class="appointment-date">
+                                {{ appointment['startDateView'] }}
+                                ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
+                            </span>
+                            <span class="appointment-description">{{ appointment['description'] }}</span>
                         </label>
                         <textarea name="additional_info_{{ appointment['id'] }}"
                                   placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
