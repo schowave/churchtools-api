@@ -239,63 +239,107 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
-            <div class="appointments-actions">
-                <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
-                <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
-            </div>
-            <div class="appointments-container">
-                {% for appointment in appointments %}
-                    <div class="appointment-item">
-                        <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id"
-                               value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
-                        <label for="appointment-{{ appointment['id'] }}" class="appointment-label">
-                            <span class="appointment-date">
-                                {{ appointment['startDateView'] }}
-                                ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
-                            </span>
-                            <span class="appointment-description">{{ appointment['description'] }}</span>
-                        </label>
-                        <textarea name="additional_info_{{ appointment['id'] }}"
-                                  placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
+            <!-- Zweispaltiges Layout für Termine und Formatierungsoptionen -->
+            <div class="appointments-layout">
+                <!-- Linke Spalte: Termine -->
+                <div class="appointments-main">
+                    <div class="appointments-actions">
+                        <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
+                        <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
                     </div>
-                {% endfor %}
-            </div>
-            <div class="color-picker-container">
-                <div style="display: none;">
-                    <label for="color_presets">Farbvoreinstellungen:</label>
-                    <select id="color_presets" name="color_presets">
-                        <option value="preset1">Herbst '23</option>
-                    </select>
-                    <button type="button" id="applyPreset">Anwenden</button>
+                    <div class="appointments-container">
+                        {% for appointment in appointments %}
+                            <div class="appointment-item">
+                                <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id"
+                                       value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
+                                <label for="appointment-{{ appointment['id'] }}" class="appointment-label">
+                                    <span class="appointment-date">
+                                        {{ appointment['startDateView'] }}
+                                        ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
+                                    </span>
+                                    <span class="appointment-description">{{ appointment['description'] }}</span>
+                                </label>
+                                <textarea name="additional_info_{{ appointment['id'] }}"
+                                          placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
-                <div>
-                    <label for="background_image">Hintergrundbild:</label>
-                    <input type="file" id="background_image" name="background_image" accept="image/*">
+                
+                <!-- Rechte Spalte: Formatierungsoptionen -->
+                <div class="appointments-sidebar">
+                    <!-- Hintergrund-Sektion -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Formatierung</div>
+                        <div class="format-options">
+                            <!-- Hintergrundfarbe -->
+                            <div class="format-option">
+                                <div class="format-option-label">Hintergrundfarbe</div>
+                                <input type="color" id="background_color" name="background_color"
+                                       value="{{ color_settings['background_color'] }}" class="color-input">
+                            </div>
+                            
+                            <!-- Datumsfarbe -->
+                            <div class="format-option">
+                                <div class="format-option-label">Datumsfarbe</div>
+                                <input type="color" id="date_color" name="date_color"
+                                       value="{{ color_settings['date_color'] }}" class="color-input">
+                            </div>
+                            
+                            <!-- Beschreibungsfarbe -->
+                            <div class="format-option">
+                                <div class="format-option-label">Beschreibungsfarbe</div>
+                                <input type="color" id="description_color" name="description_color"
+                                       value="{{ color_settings['description_color'] }}" class="color-input">
+                            </div>
+                            
+                            <!-- Transparenz -->
+                            <div class="format-option">
+                                <div class="format-option-label">Transparenz</div>
+                                <div class="transparency-container">
+                                    <input type="range" id="alpha" name="alpha" class="transparency-slider"
+                                           min="0" max="255" step="1" value="{{ color_settings['background_alpha'] }}"
+                                           oninput="document.getElementById('alphaValue').textContent = this.value">
+                                    <span id="alphaValue" class="transparency-value">{{ color_settings['background_alpha'] }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Hintergrundbild -->
+                            <div class="format-option format-option-full">
+                                <div class="format-option-label">Hintergrundbild</div>
+                                <input type="file" id="background_image" name="background_image"
+                                       accept="image/*" class="file-input">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Textfarben-Sektion -->
+                    <div class="sidebar-section">
+                    </div>
+                    
+                    <!-- Voreinstellungen (versteckt) -->
+                    <div class="sidebar-section" style="display: none;">
+                        <div class="sidebar-section-title">Voreinstellungen</div>
+                        <div class="color-picker-container">
+                            <div class="color-picker-row">
+                                <label for="color_presets">Preset:</label>
+                                <select id="color_presets" name="color_presets" style="flex: 1; height: 26px; font-size: 0.8rem;">
+                                    <option value="preset1">Herbst '23</option>
+                                </select>
+                                <button type="button" id="applyPreset" style="padding: 2px 5px; font-size: 0.8rem; height: 26px;">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate-Buttons-Sektion -->
+                    <div class="sidebar-section">
+                        <div class="sidebar-section-title">Ausgabe generieren</div>
+                        <div class="generate-buttons">
+                            <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate">
+                            <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate">
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label for="date_color">Datum:</label>
-                    <input type="color" id="date_color" name="date_color" value="{{ color_settings['date_color'] }}">
-                </div>
-                <div>
-                    <label for="description_color">Beschreibung:</label>
-                    <input type="color" id="description_color" name="description_color" value="{{ color_settings['description_color'] }}">
-                </div>
-                <div>
-                    <label for="background_color">Hintergrund:</label>
-                    <input type="color" id="background_color" name="background_color" value="{{ color_settings['background_color'] }}">
-                </div>
-                <div>
-                    <label for="alpha">Transparenz:</label>
-                    <input type="range" id="alpha" name="alpha" min="0" max="255" step="1" value="{{ color_settings['background_alpha'] }}" oninput="document.getElementById('alphaValue').textContent = this.value">
-                    <span id="alphaValue">{{ color_settings['background_alpha'] }}</span>
-                </div>
-            </div>
-
-            <div style="display: flex; gap: 10px;">
-                <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate"
-                       style="display: inline-block;">
-                <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate"
-                       style="display: inline-block;">
             </div>
         </form>
     {% else %}

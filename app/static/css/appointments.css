@@ -2,7 +2,7 @@
 
 /* Container für Appointments */
 .container {
-    max-width: 800px; /* Größerer Container für die Appointments-Seite */
+    max-width: 1000px; /* Breiterer Container für das zweispaltige Layout */
     animation: fadeIn 0.5s ease-in-out;
 }
 
@@ -370,18 +370,32 @@ textarea:focus {
     font-weight: bold;
 }
 
-/* Farbauswahl-Container */
-.color-picker-container {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    padding: var(--spacing-lg);
+/* Formatierungsoptionen */
+.format-options {
     display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: var(--spacing-md);
-    box-shadow: 0 2px 4px var(--shadow-color);
-    margin-bottom: var(--spacing-lg);
-    transition: all var(--transition-speed);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+/* Format-Option */
+.format-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Format-Option Label */
+.format-option-label {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 2px;
+}
+
+/* Format-Option mit voller Breite */
+.format-option-full {
+    grid-column: 1 / -1;
 }
 
 .color-picker-container:hover {
@@ -404,24 +418,32 @@ textarea:focus {
     display: contents;
 }
 
-.color-picker-container label {
-    grid-column: 1;
-    font-weight: bold;
-    color: var(--text-color);
-    align-self: center;
-    text-align: left;
-    margin-right: 0;
-}
-
-.color-picker-container input[type="file"] {
-    grid-column: 2;
-    width: auto;
-    height: 40px;
+/* Farbauswahl */
+.color-input {
+    width: 100%;
+    height: 30px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     cursor: pointer;
-    padding: var(--spacing-xs);
-    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+/* Dateiauswahl */
+.file-input {
+    width: 100%;
+    height: auto;
+    min-height: 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 0.8rem;
+    overflow: visible;
+}
+
+/* Container für Hintergrundbild */
+.format-option-full {
+    margin-bottom: 10px;
+    overflow: visible;
 }
 
 .color-picker-container input[type="file"]:hover {
@@ -434,14 +456,31 @@ textarea:focus {
     box-shadow: var(--focus-ring);
 }
 
-.color-picker-container input[type="color"] {
-    grid-column: 2;
-    width: 100px;
-    height: 40px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform var(--transition-speed), border-color var(--transition-speed);
+/* Transparenz-Slider */
+.transparency-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.transparency-slider {
+    flex: 1;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
+    border-radius: 3px;
+    outline: none;
+}
+
+.transparency-value {
+    font-size: 0.8rem;
+    min-width: 30px;
+    text-align: center;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
 }
 
 .color-picker-container input[type="color"]:hover {
@@ -455,22 +494,22 @@ textarea:focus {
     box-shadow: var(--focus-ring);
 }
 
-.color-picker-container input[type="range"] {
-    grid-column: 2;
-    width: 100%;
-    height: 8px;
+/* Slider-Thumb */
+.transparency-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    background: linear-gradient(to right, var(--primary-color), var(--primary-hover));
-    border-radius: 4px;
-    outline: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--primary-color);
+    cursor: pointer;
+    transition: background var(--transition-speed), transform var(--transition-speed);
 }
 
-.color-picker-container input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
+.transparency-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: white;
     border: 2px solid var(--primary-color);
@@ -479,8 +518,8 @@ textarea:focus {
 }
 
 .color-picker-container input[type="range"]::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: white;
     border: 2px solid var(--primary-color);
@@ -492,6 +531,65 @@ textarea:focus {
 .color-picker-container input[type="range"]::-moz-range-thumb:hover {
     background: var(--primary-color);
     transform: scale(1.1);
+}
+
+/* Zweispaltiges Layout für Termine und Formatierungsoptionen */
+.appointments-layout {
+    display: grid;
+    grid-template-columns: 3fr 2fr; /* Mehr Platz für die rechte Spalte */
+    gap: var(--spacing-lg); /* Größerer Abstand zwischen den Spalten */
+    margin-top: var(--spacing-md);
+}
+
+.appointments-main {
+    grid-column: 1;
+}
+
+.appointments-sidebar {
+    grid-column: 2;
+    position: sticky;
+    top: 80px; /* Abstand zum Sticky Header */
+    align-self: start;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+    background-color: #f9f9f9;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+/* Sidebar-Abschnitte */
+.sidebar-section {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.sidebar-section-title {
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Generate Buttons Container */
+.generate-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.generate-buttons .btn {
+    width: 100%;
+    text-align: center;
 }
 
 /* Spinner-Overlay */
