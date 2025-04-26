@@ -1,0 +1,51 @@
+/* overview.css - Spezifische Stile für die Overview-Seite */
+
+.container {
+    max-width: 600px; /* Mittlerer Container für die Overview-Seite */
+}
+
+/* Kachel-Container */
+.tiles-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+    margin: 30px 0;
+}
+
+/* Einzelne Kachel */
+.tile {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    text-decoration: none;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    width: 200px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.tile:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-5px);
+}
+
+/* Logout-Button Container */
+.btn-logout-container {
+    margin-top: 30px;
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 640px) {
+    .tile {
+        width: 100%;
+        max-width: 250px;
+    }
+}

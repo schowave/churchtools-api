@@ -1,0 +1,38 @@
+/* login.css - Spezifische Stile für die Login-Seite */
+
+.container {
+    max-width: 400px; /* Kleinerer Container für die Login-Seite */
+}
+
+/* Login-Button */
+.btn-login {
+    background-color: var(--success-color);
+    width: 100%;
+}
+
+.btn-login:hover {
+    background-color: var(--success-hover);
+}
+
+/* Spezifische Stile für Login-Formular */
+#username, 
+#password {
+    margin-bottom: 15px;
+}
+
+/* Responsive Anpassungen für kleinere Bildschirme */
+@media (max-width: 480px) {
+    .container {
+        padding: 1.5em;
+        margin-top: 10px;
+    }
+    
+    h1 {
+        font-size: 1.8em;
+    }
+    
+    h2 {
+        font-size: 1.3em;
+        margin-bottom: 1.5em;
+    }
+}

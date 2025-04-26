@@ -1,7 +1,23 @@
-/* common.css */
+/* common.css - Grundlegende Stile für alle Seiten */
+:root {
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+    --success-color: #4cae4c;
+    --success-hover: #398439;
+    --danger-color: #dc3545;
+    --danger-hover: #c82333;
+    --light-bg: #f4f7f6;
+    --container-bg: white;
+    --text-color: #333;
+    --border-color: #ddd;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --border-radius: 5px;
+    --container-radius: 10px;
+}
+
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f4f7f6;
+    background-color: var(--light-bg);
     margin: 0;
     padding: 20px;
     display: flex;
@@ -12,18 +28,9 @@ body {
     text-align: center;
 }
 
-.tiles-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
-    width: 100%;
-}
-
-
-
+/* Überschriften */
 h1, h2 {
-    color: #333;
+    color: var(--text-color);
 }
 
 h1 {
@@ -36,276 +43,106 @@ h2 {
     margin-bottom: 2em;
 }
 
-label, input[type="text"], input[type="password"], input[type="submit"] {
+/* Container */
+.container {
+    background: var(--container-bg);
+    padding: 2em;
+    border-radius: var(--container-radius);
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 4px 6px var(--shadow-color);
+    margin-top: 20px;
+}
+
+/* Formularelemente */
+label {
     display: block;
     width: 100%;
-    margin-top: 10px;
-}
-
-label {
     margin-top: 20px;
     font-weight: bold;
-    color: #333;
+    color: var(--text-color);
 }
 
-input[type="text"], input[type="password"],input[type="file"] {
+input[type="text"], 
+input[type="password"],
+input[type="file"] {
+    display: block;
+    width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    margin-top: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     box-sizing: border-box;
 }
 
 input[type="submit"] {
+    display: block;
+    width: 100%;
     padding: 10px;
+    margin-top: 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     color: white;
     font-size: 16px;
     cursor: pointer;
-    margin-top: 20px;
     transition: background-color 0.3s ease;
 }
 
+/* Allgemeine Buttons */
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-top: 10px;
+    font-size: 16px;
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-back {
+    background-color: var(--primary-color);
+}
+
+.btn-back:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-logout {
+    background-color: var(--danger-color);
+}
+
+.btn-logout:hover {
+    background-color: var(--danger-hover);
+}
+
+/* Alerts */
 .alert {
     margin-top: 20px;
     padding: 10px;
     color: white;
-    border-radius: 5px;
+    border-radius: var(--border-radius);
     text-align: center;
 }
 
 .alert-success {
-    background-color: #5cb85c;
+    background-color: var(--success-color);
 }
 
 .alert-error {
-    background-color: #d9534f;
+    background-color: var(--danger-color);
 }
 
 .alert-warning {
     background-color: #f0ad4e;
 }
 
-.container {
-    background: white;
-    padding: 2em;
-    border-radius: 10px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-top: 20px; /* Adjusted for spacing from the top */
-}
-
-.tile {
-    background-color: #007bff;
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    text-decoration: none;
-    transition: background-color 0.3s ease, transform 0.3s ease;
-    width: 200px;
-    height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-.tile:hover {
-    background-color: #0056b3;
-    transform: translateY(-5px);
-}
-
-.btn-logout {
-    background-color: #dc3545; /* Red color for logout */
-}
-
-.btn-logout:hover {
-    background-color: #c82333; /* Darker red on hover */
-}
-
-.btn-generate {
-    background-color: #4cae4c; /* Blue color for generate */
-}
-
-.btn-generate:hover {
-    background-color: #398439; /* Darker blue on hover */
-}
-
-.btn-back {
-    display: inline-block;
-    padding: 8px 12px;
-    margin-top: 10px;
-    font-size: 16px;
-    color: white;
-    background-color: #007bff;
-    text-decoration: none;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn-back:hover {
-    background-color: #0056b3;
-}
-
-
-.btn-fetch {
-    background-color: #007bff;
-    margin-bottom: 1.5rem;
-}
-
-.btn-fetch:hover {
-    background-color: #0056b3;
-}
-
-.btn-login {
-    background-color: #4cae4c;
-}
-
-.btn-login:hover {
-    background-color: #398439;
-}
-
-/* Container for all appointments */
-.appointments-container, .calendars-container {
-    margin: 20px 0;
+/* Footer */
+footer {
+    margin-top: auto;
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
-/* Individual appointment item */
-.appointment-item, .calendar-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-    padding: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-
-/* Style for the checkbox */
-.appointment-checkbox, .calendar-checkbox {
-    margin-right: 10px;
-    cursor: pointer;
-}
-
-/* Style for the label */
-.appointment-label, .calendar-label {
-    cursor: pointer;
-    margin-top: 0;
-    text-align: left;
-    transition: color 0.2s;
-}
-
-/* Hover effect for appointment items */
-.appointment-item:hover, .calendar-item:hover {
-    background-color: #e9ecef;
-}
-
-.appointment-item:hover .appointment-label, .calendar-item:hover .calendar-label {
-    color: #007bff;
-}
-
-/* Color Picker Container Styles */
-.color-picker-container {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 10px;
-    display: grid;
-    gap: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
-    grid-template-columns: 1fr; /* Stack label and input on small screens */
-}
-
-.color-picker-container div {
-    display: contents; /* Let the label and input take grid positions */
-}
-
-.color-picker-container label {
-    grid-column: 1; /* Place label in the first column */
-    font-weight: bold;
-    color: #333;
-    align-self: center; /* Vertically center the label */
-    text-align: left;
-    margin-right: 0;
-}
-
-.color-picker-container input[type="file"] {
-    grid-column: 2; /* Place input in the second column */
-    width: auto; /* Adjust width as needed */
-    height: 40px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.color-picker-container input[type="color"] {
-    grid-column: 2; /* Place input in the second column */
-    width: revert; /* Adjust width as needed */
-    height: 40px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.color-picker-title {
-    font-size: 1.5em; /* Adjust size as needed */
-    color: #333; /* Adjust color as needed */
-    margin-bottom: 10px; /* Space between title and first item */
-    text-align: left; /* Align text to left */
-    width: 100%; /* Ensure title takes full width */
-}
-
-/* Style for the appointment actions container */
-.appointments-actions {
-    margin-bottom: 20px;
-}
-
-/* General style for action buttons */
-.appointments-actions button {
-    background-color: #007bff; /* Primary color */
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    margin-right: 10px;
-    border-radius: 5px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.appointments-actions button:hover {
-    background-color: #0056b3; /* Darker shade on hover */
-}
-
-/* Additional styling for the appointments container */
-.appointments-container {
-    width: 100%; /* Adjust width as needed */
-    max-width: 600px; /* Set a max width */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Add some shadow for depth */
-    overflow: hidden; /* In case of overflowing content */
-}
-
-/* Style for the Select All button */
-.appointments-actions .select-all-btn {
-    background-color: #28a745; /* Green color */
-}
-
-.appointments-actions .select-all-btn:hover {
-    background-color: #218838; /* Darker green on hover */
-}
-
-/* Style for the Deselect All button */
-.appointments-actions .deselect-all-btn {
-    background-color: #dc3545; /* Red color */
-}
-
-.appointments-actions .deselect-all-btn:hover {
-    background-color: #c82333; /* Darker red on hover */
+    font-size: 0.8em;
+    color: var(--text-color);
 }

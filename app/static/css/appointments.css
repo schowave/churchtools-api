@@ -1,0 +1,202 @@
+/* appointments.css - Spezifische Stile für die Appointments-Seite */
+
+/* Container für Appointments */
+.container {
+    max-width: 800px; /* Größerer Container für die Appointments-Seite */
+}
+
+/* Fetch-Button */
+.btn-fetch {
+    background-color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.btn-fetch:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Generate-Button */
+.btn-generate {
+    background-color: var(--success-color);
+}
+
+.btn-generate:hover {
+    background-color: var(--success-hover);
+}
+
+/* Container für Kalender und Termine */
+.appointments-container, 
+.calendars-container {
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+/* Zusätzliche Stile für den Appointments-Container */
+.appointments-container {
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    overflow: hidden;
+}
+
+/* Einzelne Termin- und Kalendereinträge */
+.appointment-item, 
+.calendar-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+/* Checkboxen */
+.appointment-checkbox, 
+.calendar-checkbox {
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+/* Labels */
+.appointment-label, 
+.calendar-label {
+    cursor: pointer;
+    margin-top: 0;
+    text-align: left;
+    transition: color 0.2s;
+}
+
+/* Hover-Effekte */
+.appointment-item:hover, 
+.calendar-item:hover {
+    background-color: #e9ecef;
+}
+
+.appointment-item:hover .appointment-label, 
+.calendar-item:hover .calendar-label {
+    color: var(--primary-color);
+}
+
+/* Zusätzliche Informationen Textarea */
+textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    resize: vertical;
+}
+
+/* Aktionen für Termine */
+.appointments-actions {
+    margin-bottom: 20px;
+}
+
+.appointments-actions button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin-right: 10px;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.appointments-actions button:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Spezifische Buttons */
+.appointments-actions .select-all-btn {
+    background-color: var(--success-color);
+}
+
+.appointments-actions .select-all-btn:hover {
+    background-color: var(--success-hover);
+}
+
+.appointments-actions .deselect-all-btn {
+    background-color: var(--danger-color);
+}
+
+.appointments-actions .deselect-all-btn:hover {
+    background-color: var(--danger-hover);
+}
+
+/* Farbauswahl-Container */
+.color-picker-container {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    margin-bottom: 20px;
+}
+
+.color-picker-container div {
+    display: contents;
+}
+
+.color-picker-container label {
+    grid-column: 1;
+    font-weight: bold;
+    color: var(--text-color);
+    align-self: center;
+    text-align: left;
+    margin-right: 0;
+}
+
+.color-picker-container input[type="file"] {
+    grid-column: 2;
+    width: auto;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-picker-container input[type="color"] {
+    grid-column: 2;
+    width: 100px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.color-picker-container input[type="range"] {
+    grid-column: 2;
+    width: 100%;
+}
+
+/* Spinner-Overlay */
+#spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    z-index: 1000;
+    display: none;
+}
+
+.spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.spinner i {
+    font-size: 3rem;
+    color: var(--primary-color);
+}
