@@ -43,11 +43,12 @@ WORKDIR /app
 COPY . .
 
 # Set environment variables
-ENV FLASK_APP=run.py \
-    FLASK_RUN_HOST=0.0.0.0
+ENV PYTHONPATH=/app \
+    HOST=0.0.0.0 \
+    PORT=5005
 
 # The port number the container should expose
-EXPOSE 5000
+EXPOSE 5005
 
 # this is where the sqlite database should be mounted
 VOLUME /app/data
@@ -55,4 +56,4 @@ VOLUME /app/data
 ENV CHURCHTOOLS_BASE=evkila.church.tools \
     DB_PATH=/app/data/evkila.db
 
-CMD [ "python3", "-m" , "flask", "run"]
+CMD [ "python3", "run_fastapi.py"]

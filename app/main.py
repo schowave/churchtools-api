@@ -4,6 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Lade Umgebungsvariablen aus .env-Datei
+load_dotenv()
 
 from app.database import create_schema
 from app.config import Config

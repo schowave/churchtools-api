@@ -1,4 +1,10 @@
 import uvicorn
+import os
+from dotenv import load_dotenv
+
+# Lade Umgebungsvariablen aus .env-Datei
+load_dotenv()
+
 from app.main import app
 
 if __name__ == "__main__":
