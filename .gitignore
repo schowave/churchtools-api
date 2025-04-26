@@ -1,5 +1,6 @@
 .idea
 /saved_files/
+app/saved_files
 evkila.db
 /venv/
 .DS_Store
