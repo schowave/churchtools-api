@@ -1,5 +1,5 @@
 # Use the builder image to install dependencies and fontconfig
-FROM amd64/python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Start the final stage of the build
-FROM amd64/python:3.12-slim
+FROM python:3.12-slim
 
 # Install fontconfig in the final image
 RUN apt-get update && \
