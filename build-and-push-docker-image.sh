@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=1.4.1
+VERSION=1.4.4
 
 echo "Running tests before building the Docker image..."
 # Run the tests and store the exit code
