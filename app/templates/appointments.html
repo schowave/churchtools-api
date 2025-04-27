@@ -292,17 +292,19 @@
     <form method="POST">
         <div class="controls-header">
             <div class="date-controls">
-                <!-- Date selection -->
-                <div class="date-field">
-                    <label for="start_date">Startdatum:</label>
-                    <input type="text" id="start_date" name="start_date"
-                           value="{{ start_date }}" required>
-                </div>
-                
-                <div class="date-field">
-                    <label for="end_date">Enddatum:</label>
-                    <input type="text" id="end_date" name="end_date"
-                           value="{{ end_date }}" required>
+                <div class="date-fields-container">
+                    <!-- Date selection -->
+                    <div class="date-field">
+                        <label for="start_date">Startdatum:</label>
+                        <input type="text" id="start_date" name="start_date"
+                               value="{{ start_date }}" required>
+                    </div>
+                    
+                    <div class="date-field">
+                        <label for="end_date">Enddatum:</label>
+                        <input type="text" id="end_date" name="end_date"
+                               value="{{ end_date }}" required>
+                    </div>
                 </div>
                 
                 <!-- Quick date selection -->
