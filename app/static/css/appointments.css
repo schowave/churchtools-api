@@ -29,11 +29,103 @@
     position: sticky;
     top: 0;
     background-color: white;
-    padding: var(--spacing-sm);
+    padding: var(--spacing-md);
     z-index: 100;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: var(--spacing-md);
     border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+/* Date controls container */
+.date-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: flex-end;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Responsive adjustments for date controls */
+@media (max-width: 768px) {
+    .date-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .date-field {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .date-quick-select {
+        margin-bottom: var(--spacing-sm);
+        justify-content: center;
+    }
+}
+
+/* Date field container */
+.date-field {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Date field labels */
+.date-field label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Date inputs */
+.date-field input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background-color: #f9f9ff;
+    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    position: relative;
+}
+
+.date-field input[type="text"]:focus {
+    border-color: var(--primary-color);
+    box-shadow: var(--focus-ring);
+    outline: none;
+}
+
+/* Quick date selection */
+.date-quick-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-xs);
+}
+
+/* Date preset buttons */
+.date-preset {
+    background-color: #f0f7ff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.date-preset:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.date-preset:active {
+    transform: translateY(1px);
 }
 
 /* Fetch button */
@@ -41,17 +133,26 @@
 .btn-fetch {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    margin-bottom: var(--spacing-md);
+    margin-bottom: 0;
     position: relative;
     overflow: hidden;
     display: block;
     width: 100%;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all var(--transition-speed);
 }
 
 .btn--fetch:hover,
 .btn-fetch:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
 }
 
 .btn--fetch:after {

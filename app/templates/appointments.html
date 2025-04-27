@@ -7,15 +7,96 @@
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/appointments.css">
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <style>
+        /* Override jQuery UI Datepicker styles to ensure it appears above other elements */
+        .ui-datepicker {
+            z-index: 9999 !important;
+        }
+    </style>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script>
         $(function () {
+            // Store initial values
+            var initialStartDate = "{{ start_date }}";
+            var initialEndDate = "{{ end_date }}";
+            
+            // Helper function to calculate week dates
+            function calculateThisWeekDates() {
+                var today = new Date();
+                var dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+                var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days, otherwise go to Monday
+                var sundayOffset = dayOfWeek === 0 ? 0 : 7 - dayOfWeek; // If Sunday, use today, otherwise go to next Sunday
+                
+                var monday = new Date(today);
+                monday.setDate(today.getDate() + mondayOffset);
+                
+                var sunday = new Date(today);
+                sunday.setDate(today.getDate() + sundayOffset);
+                
+                return {
+                    start: monday,
+                    end: sunday
+                };
+            }
+            
+            // Initialize datepickers
             $("#start_date").datepicker({
                 dateFormat: "yy-mm-dd" // This format should match the value you're passing from Flask
             });
             $("#end_date").datepicker({
                 dateFormat: "yy-mm-dd"
+            });
+            
+            // Set initial values to "This Week" if not already set
+            if (!$("#start_date").val() || !$("#end_date").val()) {
+                var thisWeek = calculateThisWeekDates();
+                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
+                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
+            }
+            
+            // Store the initial values after they've been set
+            var initialStartDate = $("#start_date").val();
+            var initialEndDate = $("#end_date").val();
+            
+            // Function to calculate next week based on current end date
+            function calculateNextWeekFromCurrent() {
+                // Get the current end date
+                var currentEndDate = $("#end_date").val();
+                var endDate = $.datepicker.parseDate("yy-mm-dd", currentEndDate);
+                
+                // Next day after end date
+                var nextWeekStart = new Date(endDate);
+                nextWeekStart.setDate(endDate.getDate() + 1);
+                
+                // End date is 6 days after start date (7 days total)
+                var nextWeekEnd = new Date(nextWeekStart);
+                nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+                
+                return {
+                    start: nextWeekStart,
+                    end: nextWeekEnd
+                };
+            }
+            
+            // Date preset functionality
+            $("#today").click(function() {
+                var today = new Date();
+                var formattedDate = $.datepicker.formatDate("yy-mm-dd", today);
+                $("#start_date").val(formattedDate);
+                $("#end_date").val(formattedDate);
+            });
+            
+            $("#this-week").click(function() {
+                // Return to initial values
+                $("#start_date").val(initialStartDate);
+                $("#end_date").val(initialEndDate);
+            });
+            
+            $("#next-week").click(function() {
+                var nextWeek = calculateNextWeekFromCurrent();
+                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
+                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
             });
         });
     </script>
@@ -210,15 +291,28 @@
     <!-- Form to fetch appointments -->
     <form method="POST">
         <div class="controls-header">
-            <!-- Date selection -->
-            <label for="start_date">Startdatum:</label>
-            <input type="text" id="start_date" name="start_date"
-                   value="{{ start_date }}" required>
-    
-            <label for="end_date">Enddatum:</label>
-            <input type="text" id="end_date" name="end_date"
-                   value="{{ end_date }}" required>
-    
+            <div class="date-controls">
+                <!-- Date selection -->
+                <div class="date-field">
+                    <label for="start_date">Startdatum:</label>
+                    <input type="text" id="start_date" name="start_date"
+                           value="{{ start_date }}" required>
+                </div>
+                
+                <div class="date-field">
+                    <label for="end_date">Enddatum:</label>
+                    <input type="text" id="end_date" name="end_date"
+                           value="{{ end_date }}" required>
+                </div>
+                
+                <!-- Quick date selection -->
+                <div class="date-quick-select">
+                    <button type="button" id="today" class="date-preset">Heute</button>
+                    <button type="button" id="this-week" class="date-preset">Diese Woche</button>
+                    <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
+                </div>
+            </div>
+            
             <!-- Submit button for fetching appointments -->
             <input type="submit" name="fetch_appointments"
                    value="Termine abholen" class="btn btn-fetch">
