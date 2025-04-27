@@ -1,42 +1,42 @@
-/* common.css - Grundlegende Stile für alle Seiten */
+/* common.css - Basic styles for all pages */
 :root {
-    /* Farbpalette */
-    --primary-color: #0066cc; /* Dunkleres Blau für besseren Kontrast */
+    /* Color palette */
+    --primary-color: #0066cc; /* Darker blue for better contrast */
     --primary-hover: #004c99;
-    --success-color: #2e8540; /* Dunkleres Grün für besseren Kontrast */
+    --success-color: #2e8540; /* Darker green for better contrast */
     --success-hover: #1e5c2c;
-    --danger-color: #d83933; /* Angepasstes Rot für besseren Kontrast */
+    --danger-color: #d83933; /* Adjusted red for better contrast */
     --danger-hover: #b32d29;
     --light-bg: #f5f7fa;
     --container-bg: white;
-    --text-color: #212529; /* Dunklerer Text für bessere Lesbarkeit */
+    --text-color: #212529; /* Darker text for better readability */
     --text-muted: #6c757d;
     --border-color: #ced4da;
     --shadow-color: rgba(0, 0, 0, 0.15);
     
-    /* Abstände und Größen */
+    /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     
-    /* Ränder und Schatten */
+    /* Borders and shadows */
     --border-radius: 5px;
     --container-radius: 10px;
     --box-shadow: 0 4px 6px var(--shadow-color);
     --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.25);
     
-    /* Typografie */
+    /* Typography */
     --font-family: 'Arial', sans-serif;
     --font-size-base: 16px;
     --line-height: 1.5;
     
-    /* Übergänge */
+    /* Transitions */
     --transition-speed: 0.3s;
 }
 
-/* Grundlegende Stile */
+/* Base styles */
 html {
     font-size: var(--font-size-base);
     box-sizing: border-box;
@@ -61,7 +61,7 @@ body {
     text-align: center;
 }
 
-/* Überschriften */
+/* Headings */
 h1, h2, h3, h4, h5, h6 {
     color: var(--text-color);
     line-height: 1.2;
@@ -100,7 +100,7 @@ h3 {
     box-shadow: 0 6px 12px var(--shadow-color);
 }
 
-/* Formularelemente */
+/* Form elements */
 label {
     display: block;
     width: 100%;
@@ -141,16 +141,26 @@ input[type="submit"] {
     width: 100%;
     padding: 0.75rem;
     margin-top: var(--spacing-lg);
-    border: 2px solid var(--primary-color); /* Sichtbarer Rand */
+    border: 2px solid var(--primary-color); /* Visible border */
     border-radius: var(--border-radius);
     color: white;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed);
-    -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
-    appearance: none !important;
-    background-color: var(--primary-color); /* Explizite Hintergrundfarbe */
+    -webkit-appearance: none; /* For Safari on iOS */
+    appearance: none;
+    background-color: var(--primary-color); /* Explicit background color */
+}
+
+input[type="submit"].btn-login {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+input[type="submit"].btn-logout {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 input[type="submit"]:hover {
@@ -161,7 +171,7 @@ input[type="submit"]:active {
     transform: translateY(0);
 }
 
-/* Allgemeine Buttons */
+/* Buttons */
 .btn {
     display: inline-block;
     padding: 0.75rem 1rem;
@@ -171,17 +181,41 @@ input[type="submit"]:active {
     color: white;
     text-decoration: none;
     border-radius: var(--border-radius);
-    border: 2px solid var(--primary-color); /* Sichtbarer Rand */
+    border: 2px solid var(--primary-color); /* Visible border */
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
-    -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
-    appearance: none !important;
-    -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap auf iOS */
+    -webkit-appearance: none; /* For Safari on iOS */
+    appearance: none;
+    -webkit-tap-highlight-color: transparent; /* Removes blue highlight effect on tap in iOS */
+    background-color: var(--primary-color);
+}
+
+/* Login button (green) */
+.btn-login {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+/* Logout button (red) */
+.btn-logout {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+/* Back button (blue) */
+.btn-back {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-back:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .btn:active {
@@ -194,29 +228,34 @@ input[type="submit"]:active {
     box-shadow: var(--focus-ring);
 }
 
-.btn-back {
+.btn--primary {
     background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
-.btn-back:hover {
-    background-color: var(--primary-hover);
+.btn--primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
-.btn-logout {
-    background-color: var(--danger-color) !important;
+.btn--danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
-.btn-logout:hover {
-    background-color: var(--danger-hover) !important;
+.btn--danger:hover {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
-/* Login-Button */
-.btn-login {
-    background-color: var(--success-color) !important;
+.btn--success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
 }
 
-.btn-login:hover {
-    background-color: var(--success-hover) !important;
+.btn--success:hover {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
 }
 
 /* Alerts */
@@ -255,7 +294,7 @@ footer {
     color: var(--text-muted);
 }
 
-/* Hilfsstile */
+/* Utility classes */
 .text-center { text-align: center; }
 .text-left { text-align: left; }
 .text-right { text-align: right; }
@@ -269,7 +308,7 @@ footer {
 .mt-3 { margin-top: var(--spacing-lg); }
 .mb-3 { margin-bottom: var(--spacing-lg); }
 
-/* Responsive Anpassungen */
+/* Responsive adjustments */
 @media (max-width: 768px) {
     html {
         font-size: 14px;
@@ -303,7 +342,7 @@ footer {
         margin-bottom: var(--spacing-lg);
     }
     
-    /* Verbesserte Button-Darstellung auf kleinen Geräten */
+    /* Improved button display on small devices */
     .btn,
     input[type="submit"],
     button {
@@ -314,9 +353,9 @@ footer {
     }
 }
 
-/* Safari-spezifische Anpassungen */
+/* Safari-specific adjustments */
 @supports (-webkit-touch-callout: none) {
-    /* Nur für Safari auf iOS */
+    /* Only for Safari on iOS */
     input[type="text"],
     input[type="password"],
     input[type="file"],
@@ -325,77 +364,71 @@ footer {
     .btn,
     input[type="submit"],
     button {
-        -webkit-appearance: none !important;
-        appearance: none !important;
+        -webkit-appearance: none;
+        appearance: none;
         border-radius: var(--border-radius);
     }
     
-    /* Explizite Stile für Buttons in Safari */
+    /* Explicit styles for buttons in Safari */
     .btn,
     input[type="submit"],
     button {
-        color: white !important;
-        border: 2px solid !important; /* Sichtbarer Rand */
-        display: block !important;
-        width: 100% !important;
-        margin: 10px 0 !important;
-        padding: 15px !important; /* Größere Buttons für bessere Sichtbarkeit */
-        font-size: 16px !important;
-        text-align: center !important;
+        color: white;
+        border: 2px solid; /* Visible border */
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 15px; /* Larger buttons for better visibility */
+        font-size: 16px;
+        text-align: center;
     }
     
-    /* Spezifische Button-Farben mit höchster Priorität */
-    input[type="submit"].btn-logout,
-    .btn.btn-logout,
-    .btn-logout {
-        background-color: var(--danger-color) !important;
-        border-color: var(--danger-color) !important;
+    /* Button colors by type */
+    .btn--danger,
+    input[type="submit"].btn--danger,
+    .btn-logout,
+    input[type="submit"].btn-logout {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
     }
     
-    input[type="submit"].btn-login,
-    .btn.btn-login,
-    .btn-login {
-        background-color: var(--success-color) !important;
-        border-color: var(--success-color) !important;
+    .btn--success,
+    input[type="submit"].btn--success,
+    .btn-login,
+    input[type="submit"].btn-login {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
     }
     
-    /* Andere spezifische Button-Farben */
-    .btn-back {
-        background-color: var(--primary-color) !important;
-        border-color: var(--primary-color) !important;
+    .btn--primary,
+    input[type="submit"].btn--primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
     }
     
-    /* Generierungs-Buttons */
+    /* Function-specific buttons */
     input[type="submit"][name="generate_pdf"],
     input[type="submit"][name="generate_jpeg"] {
-        background-color: var(--success-color) !important;
-        border-color: var(--success-color) !important;
+        background-color: var(--success-color);
+        border-color: var(--success-color);
     }
     
-    /* Termine abholen Button */
     input[type="submit"][name="fetch_appointments"] {
-        background-color: var(--primary-color) !important;
-        border-color: var(--primary-color) !important;
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
     }
     
-    /* Standard-Button-Farbe (für Buttons ohne spezifische Klasse) */
-    .btn:not(.btn-back):not(.btn-logout):not(.btn-generate):not(.btn-fetch):not(.btn-login),
-    input[type="submit"]:not([name="generate_pdf"]):not([name="generate_jpeg"]):not([name="fetch_appointments"]):not(.btn-logout):not(.btn-login),
-    button:not(.select-all-btn):not(.deselect-all-btn) {
-        background-color: var(--primary-color) !important;
-    }
-    
-    /* Verhindert Zoom bei Fokus auf Eingabefeldern in Safari */
+    /* Prevents zoom on input fields in Safari */
     @media screen and (max-width: 768px) {
         input[type="text"],
         input[type="password"],
         select {
-            font-size: 16px; /* Verhindert Zoom auf Eingabefeldern in Safari */
+            font-size: 16px; /* Prevents zoom on input fields in Safari */
         }
     }
 }
 
-/* Zugänglichkeit */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
     * {
         transition: none !important;

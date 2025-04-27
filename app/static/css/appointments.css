@@ -1,15 +1,15 @@
-/* appointments.css - Spezifische Stile für die Appointments-Seite */
+/* appointments.css - Specific styles for the appointments page */
 
-/* Container für Appointments */
+/* Appointments container */
 .container {
-    max-width: 1000px; /* Breiterer Container für das zweispaltige Layout */
+    max-width: 1000px; /* Wider container for two-column layout */
     animation: fadeIn 0.5s ease-in-out;
     width: 100%;
     padding: var(--spacing-md);
     box-sizing: border-box;
 }
 
-/* Verbesserte Unterstützung für Safari */
+/* Improved Safari support */
 @supports (-webkit-touch-callout: none) {
     .container {
         width: 100%;
@@ -24,7 +24,7 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Sticky Header für Steuerelemente */
+/* Sticky header for controls */
 .controls-header {
     position: sticky;
     top: 0;
@@ -36,25 +36,25 @@
     border-radius: var(--border-radius);
 }
 
-/* Fetch-Button */
+/* Fetch button */
+.btn--fetch,
 .btn-fetch {
-    background-color: var(--primary-color) !important;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
     margin-bottom: var(--spacing-md);
     position: relative;
     overflow: hidden;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    color: white !important;
-    border: 2px solid var(--primary-color) !important;
-    display: block !important;
-    width: 100% !important;
+    display: block;
+    width: 100%;
 }
 
+.btn--fetch:hover,
 .btn-fetch:hover {
-    background-color: var(--primary-hover);
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
-.btn-fetch:after {
+.btn--fetch:after {
     content: '';
     position: absolute;
     top: 50%;
@@ -68,7 +68,7 @@
     transform-origin: 50% 50%;
 }
 
-.btn-fetch:focus:not(:active)::after {
+.btn--fetch:focus:not(:active)::after {
     animation: ripple 1s ease-out;
 }
 
@@ -87,25 +87,25 @@
     }
 }
 
-/* Generate-Button */
+/* Generate button */
+.btn--generate,
 .btn-generate {
-    background-color: var(--success-color) !important;
+    background-color: var(--success-color);
+    border-color: var(--success-color);
     position: relative;
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    color: white !important;
-    border: 2px solid var(--success-color) !important;
-    display: block !important;
-    width: 100% !important;
-    margin: 10px 0 !important;
-    padding: 15px !important;
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 15px;
 }
 
+.btn--generate:hover,
 .btn-generate:hover {
-    background-color: var(--success-hover);
+    background-color: var(--success-color);
+    border-color: var(--success-color);
 }
 
-.btn-generate:before {
+.btn--generate:before {
     content: '';
     position: absolute;
     top: 0;
@@ -120,11 +120,11 @@
     border-radius: var(--border-radius);
 }
 
-.btn-generate:hover:before {
+.btn--generate:hover:before {
     transform: scaleX(1);
 }
 
-/* Container für Kalender und Termine */
+/* Containers for calendars and appointments */
 .appointments-container,
 .calendars-container {
     margin: var(--spacing-lg) 0;
@@ -135,7 +135,7 @@
     transition: box-shadow var(--transition-speed);
 }
 
-/* Dreispaltiges Layout für Kalendereinträge */
+/* Three-column layout for calendar entries */
 .calendars-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -143,16 +143,16 @@
     padding: var(--spacing-sm);
 }
 
-/* Anpassung für mobile Geräte */
+/* Adjustment for mobile devices */
 @media (max-width: 600px) {
     .calendars-container {
-        grid-template-columns: repeat(2, 1fr); /* Zweispaltig auf kleineren Geräten */
+        grid-template-columns: repeat(2, 1fr); /* Two columns on smaller devices */
     }
 }
 
 @media (max-width: 400px) {
     .calendars-container {
-        grid-template-columns: 1fr; /* Einspaltig auf sehr kleinen Geräten */
+        grid-template-columns: 1fr; /* Single column on very small devices */
     }
 }
 
@@ -161,26 +161,26 @@
     box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-/* Zusätzliche Stile für den Appointments-Container */
+/* Additional styles for the appointments container */
 .appointments-container {
     width: 100%;
-    max-width: 100%; /* Volle Breite des Formulars */
+    max-width: 100%; /* Full width of the form */
     box-shadow: 0 2px 4px var(--shadow-color);
     overflow: hidden;
-    max-height: 800px; /* Doppelte Höhe (vorher 400px) */
+    max-height: 800px; /* Double height (previously 400px) */
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) #f0f0f0;
 }
 
-/* Gruppierung für Termine */
+/* Grouping for appointments */
 .appointment-group {
     margin-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
     padding-bottom: var(--spacing-sm);
 }
 
-.appointment-group-header {
+.appointment-group__header {
     background-color: var(--primary-color);
     color: white;
     padding: 5px 10px;
@@ -192,7 +192,7 @@
     justify-content: space-between;
 }
 
-.appointment-count {
+.appointment-group__count {
     background-color: white;
     color: var(--primary-color);
     border-radius: 10px;
@@ -215,11 +215,11 @@
     border-radius: 4px;
 }
 
-/* Einzelne Termin- und Kalendereinträge */
+/* Individual appointment and calendar entries */
 .appointment-item,
 .calendar-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: var(--spacing-xs);
     border-radius: 4px;
     transition: all var(--transition-speed);
@@ -228,9 +228,10 @@
 
 .appointment-item {
     padding: var(--spacing-xs) var(--spacing-sm);
-    background-color: #f5f9ff; /* Leichter Hintergrund für bessere Unterscheidung */
+    background-color: #f5f9ff; /* Light background for better distinction */
     margin-bottom: 4px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
 }
 
 .calendar-item {
@@ -238,16 +239,14 @@
     padding: 0 var(--spacing-xs);
 }
 
-/* Alternierende Farben für Termine */
+/* Alternating colors for appointments */
 .appointment-item:nth-child(even) {
     background-color: #f0f7ff;
 }
 
-.appointment-item {
-    flex-wrap: wrap;
-}
-
-/* Checkboxen */
+/* Checkboxes */
+.appointment-item__checkbox,
+.calendar-item__checkbox,
 .appointment-checkbox,
 .calendar-checkbox {
     margin-right: var(--spacing-md);
@@ -255,37 +254,59 @@
     min-width: 18px;
     min-height: 18px;
     accent-color: var(--primary-color);
+    vertical-align: middle;
 }
 
 /* Labels */
+.appointment-item__label,
+.calendar-item__label,
 .appointment-label,
 .calendar-label {
     cursor: pointer;
-    margin-top: 0;
     text-align: left;
     transition: color var(--transition-speed);
     flex: 1;
     padding: var(--spacing-xs) 0;
+    vertical-align: middle;
+    display: inline-flex;
+    align-items: flex-start;
 }
 
-/* Verbesserte Darstellung der Termindetails */
+/* Ensure calendar labels have no top margin */
+.calendar-item__label,
+.calendar-label {
+    margin-top: 0;
+}
+
+/* Ensure appointment labels have no top margin */
+.appointment-item__label,
+.appointment-label {
+    margin-top: 0;
+}
+
+/* Improved display of appointment details */
+.appointment-item__label,
 .appointment-label {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
+.appointment-item__date,
 .appointment-date {
     font-weight: bold;
     color: var(--primary-color);
     font-size: 0.9rem;
 }
 
+.appointment-item__description,
 .appointment-description {
     color: var(--text-color);
     margin-top: 2px;
 }
 
-/* Hover-Effekte */
+/* Hover effects */
 .appointment-item:hover,
 .calendar-item:hover {
     background-color: #e9ecef;
@@ -293,12 +314,12 @@
     transform: translateX(3px);
 }
 
-.appointment-item:hover .appointment-label,
-.calendar-item:hover .calendar-label {
+.appointment-item:hover .appointment-item__label,
+.calendar-item:hover .calendar-item__label {
     color: var(--primary-color);
 }
 
-/* Fokus-Stile für Tastaturnavigation */
+/* Focus styles for keyboard navigation */
 .appointment-item:focus-within,
 .calendar-item:focus-within {
     background-color: #e9ecef;
@@ -307,20 +328,20 @@
     box-shadow: var(--focus-ring);
 }
 
-/* Zusätzliche Informationen Textarea */
+/* Additional information textarea */
 textarea {
     width: 100%;
-    padding: 4px 8px; /* Reduziertes Padding für kompaktere Darstellung */
+    padding: 4px 8px; /* Reduced padding for more compact display */
     margin-top: var(--spacing-xs);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    resize: none; /* Deaktiviere manuelles Resize für bessere Auto-Resize-Funktionalität */
-    min-height: 24px; /* Höhe für eine Textzeile */
-    height: 24px; /* Initial nur eine Zeile hoch */
-    overflow-y: hidden; /* Verstecke Scrollbar für sauberes Auto-Resize */
+    resize: none; /* Disable manual resize for better auto-resize functionality */
+    min-height: 24px; /* Height for one text line */
+    height: 24px; /* Initially only one line high */
+    overflow-y: hidden; /* Hide scrollbar for clean auto-resize */
     font-family: var(--font-family);
-    font-size: 14px; /* Kleinere Schriftgröße */
-    line-height: 1.2; /* Kompaktere Zeilenhöhe */
+    font-size: 14px; /* Smaller font size */
+    line-height: 1.2; /* More compact line height */
     transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
     box-sizing: border-box;
 }
@@ -332,11 +353,11 @@ textarea:focus {
 }
 
 .appointment-item textarea {
-    margin-left: 28px; /* Einrückung für bessere visuelle Hierarchie */
+    margin-left: 28px; /* Indentation for better visual hierarchy */
     width: calc(100% - 28px);
 }
 
-/* Aktionen für Termine */
+/* Actions for appointments */
 .appointments-actions {
     margin-bottom: var(--spacing-lg);
     display: flex;
@@ -344,10 +365,10 @@ textarea:focus {
     gap: var(--spacing-sm);
 }
 
-.appointments-actions button {
-    background-color: var(--primary-color) !important;
-    color: white !important;
-    border: none !important;
+.appointments-actions__button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     font-size: 0.9rem;
@@ -359,8 +380,8 @@ textarea:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    -webkit-appearance: none !important; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
-    appearance: none !important;
+    -webkit-appearance: none; /* Prevents Safari-specific button display issues */
+    appearance: none;
 }
 
 @media (max-width: 480px) {
@@ -368,55 +389,95 @@ textarea:focus {
         flex-direction: column;
     }
     
-    .appointments-actions button {
+    .appointments-actions__button {
         width: 100%;
         margin-bottom: 8px;
     }
 }
 
-.appointments-actions button:hover {
-    background-color: var(--primary-hover);
+.appointments-actions__button:hover {
+    background-color: var(--primary-color);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.appointments-actions button:active {
+.appointments-actions__button:active {
     transform: translateY(0);
 }
 
-.appointments-actions button:focus {
+.appointments-actions__button:focus {
     outline: none;
     box-shadow: var(--focus-ring);
 }
 
-/* Spezifische Buttons */
-.appointments-actions .select-all-btn {
-    background-color: var(--success-color) !important;
+/* Specific buttons */
+.appointments-actions__button--select-all,
+.select-all-btn {
+    background-color: var(--success-color);
     position: relative;
     overflow: hidden;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 2px solid var(--success-color);
 }
 
-.appointments-actions .select-all-btn:hover {
-    background-color: var(--success-hover);
+.appointments-actions__button--select-all:hover,
+.select-all-btn:hover {
+    background-color: var(--success-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.appointments-actions .select-all-btn::before {
+.appointments-actions__button--select-all::before {
     content: "✓";
     margin-right: 5px;
     font-weight: bold;
 }
 
-.appointments-actions .deselect-all-btn {
-    background-color: var(--danger-color) !important;
+.appointments-actions__button--deselect-all,
+.deselect-all-btn {
+    background-color: var(--danger-color);
     position: relative;
     overflow: hidden;
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-speed);
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 2px solid var(--danger-color);
 }
 
-.appointments-actions .deselect-all-btn:hover {
-    background-color: var(--danger-hover);
+.appointments-actions__button--deselect-all:hover,
+.deselect-all-btn:hover {
+    background-color: var(--danger-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.appointments-actions .deselect-all-btn::before {
+.appointments-actions__button--deselect-all::before {
     content: "✕";
     margin-right: 5px;
     font-weight: bold;
@@ -659,7 +720,7 @@ textarea:focus {
     letter-spacing: 0.5px;
 }
 
-/* Generate Buttons Container */
+/* Generate buttons container */
 .generate-buttons {
     display: flex;
     flex-direction: column;
@@ -670,95 +731,95 @@ textarea:focus {
 .generate-buttons input[type="submit"] {
     width: 100%;
     text-align: center;
-    -webkit-appearance: none !important; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
-    appearance: none !important;
-    padding: 15px !important; /* Größere Buttons für Touch-Geräte */
-    background-color: var(--success-color) !important;
-    color: white !important;
-    border: 2px solid var(--success-color) !important;
-    margin: 10px 0 !important;
-    display: block !important;
-    font-size: 16px !important;
+    -webkit-appearance: none; /* Prevents Safari-specific button display issues */
+    appearance: none;
+    padding: 15px; /* Larger buttons for touch devices */
+    background-color: var(--success-color);
+    color: white;
+    border: 2px solid var(--success-color);
+    margin: 10px 0;
+    display: block;
+    font-size: 16px;
 }
 
-/* Safari-spezifische Anpassungen */
+/* Safari-specific adjustments */
 @supports (-webkit-touch-callout: none) {
-    /* Nur für Safari auf iOS */
+    /* Only for Safari on iOS */
     .btn,
     input[type="submit"],
     button {
-        -webkit-appearance: none !important;
-        appearance: none !important;
+        -webkit-appearance: none;
+        appearance: none;
         border-radius: var(--border-radius);
-        display: block !important;
-        width: 100% !important;
-        margin: 10px 0 !important;
-        padding: 15px !important;
-        font-size: 16px !important;
-        text-align: center !important;
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 15px;
+        font-size: 16px;
+        text-align: center;
     }
     
-    /* Explizite Stile für Buttons in Safari */
-    .btn-fetch {
-        background-color: var(--primary-color) !important;
-        color: white !important;
-        border: 2px solid var(--primary-color) !important;
+    /* Explicit styles for buttons in Safari */
+    .btn--fetch {
+        background-color: var(--primary-color);
+        color: white;
+        border: 2px solid var(--primary-color);
     }
     
-    .btn-generate {
-        background-color: var(--success-color) !important;
-        color: white !important;
-        border: 2px solid var(--success-color) !important;
+    .btn--generate {
+        background-color: var(--success-color);
+        color: white;
+        border: 2px solid var(--success-color);
     }
     
-    .appointments-actions button {
-        display: block !important;
-        width: 100% !important;
-        margin: 10px 0 !important;
-        background-color: var(--primary-color) !important;
-        color: white !important;
-        border: 2px solid var(--primary-color) !important;
+    .appointments-actions__button {
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        background-color: var(--primary-color);
+        color: white;
+        border: 2px solid var(--primary-color);
     }
     
-    .appointments-actions .select-all-btn {
-        background-color: var(--success-color) !important;
-        border: 2px solid var(--success-color) !important;
+    .appointments-actions__button--select-all {
+        background-color: var(--success-color);
+        border: 2px solid var(--success-color);
     }
     
-    .appointments-actions .deselect-all-btn {
-        background-color: var(--danger-color) !important;
-        border: 2px solid var(--danger-color) !important;
+    .appointments-actions__button--deselect-all {
+        background-color: var(--danger-color);
+        border: 2px solid var(--danger-color);
     }
     
-    /* Spezifische Anpassungen für Termine abholen Button */
+    /* Specific adjustments for fetch appointments button */
     input[type="submit"][name="fetch_appointments"] {
-        display: block !important;
-        width: 100% !important;
-        background-color: var(--primary-color) !important;
-        color: white !important;
-        border: 2px solid var(--primary-color) !important;
-        margin: 10px 0 !important;
-        padding: 15px !important;
-        font-size: 16px !important;
-        text-align: center !important;
+        display: block;
+        width: 100%;
+        background-color: var(--primary-color);
+        color: white;
+        border: 2px solid var(--primary-color);
+        margin: 10px 0;
+        padding: 15px;
+        font-size: 16px;
+        text-align: center;
     }
     
-    /* Spezifische Anpassungen für PDF und JPEG Buttons */
+    /* Specific adjustments for PDF and JPEG buttons */
     input[type="submit"][name="generate_pdf"],
     input[type="submit"][name="generate_jpeg"] {
-        display: block !important;
-        width: 100% !important;
-        background-color: var(--success-color) !important;
-        color: white !important;
-        border: 2px solid var(--success-color) !important;
-        margin: 10px 0 !important;
-        padding: 15px !important;
-        font-size: 16px !important;
-        text-align: center !important;
+        display: block;
+        width: 100%;
+        background-color: var(--success-color);
+        color: white;
+        border: 2px solid var(--success-color);
+        margin: 10px 0;
+        padding: 15px;
+        font-size: 16px;
+        text-align: center;
     }
 }
 
-/* Spinner-Overlay */
+/* Spinner overlay */
 #spinner-overlay {
     position: fixed;
     top: 0;
@@ -790,7 +851,7 @@ textarea:focus {
 }
 
 .spinner::after {
-    content: "Bitte warten...";
+    content: "Please wait...";
     margin-top: var(--spacing-md);
     color: var(--primary-color);
     font-weight: bold;
