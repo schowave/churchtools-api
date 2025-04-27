@@ -8,6 +8,8 @@
 .btn-login {
     background-color: var(--success-color);
     width: 100%;
+    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
+    appearance: none;
 }
 
 .btn-login:hover {
@@ -25,6 +27,9 @@
     .container {
         padding: 1.5em;
         margin-top: 10px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
     
     h1 {
@@ -34,5 +39,26 @@
     h2 {
         font-size: 1.3em;
         margin-bottom: 1.5em;
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+        font-size: 16px; /* Verhindert Zoom auf Eingabefeldern in Safari */
+    }
+}
+
+/* Safari-spezifische Anpassungen */
+@supports (-webkit-touch-callout: none) {
+    /* Nur für Safari auf iOS */
+    .btn-login {
+        border-radius: var(--border-radius);
+        padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+    }
+    
+    input[type="text"],
+    input[type="password"] {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: var(--border-radius);
     }
 }

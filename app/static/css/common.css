@@ -93,6 +93,7 @@ h3 {
     box-shadow: var(--box-shadow);
     margin-top: var(--spacing-lg);
     transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    box-sizing: border-box;
 }
 
 .container:hover {
@@ -147,6 +148,8 @@ input[type="submit"] {
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed);
+    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
+    appearance: none;
 }
 
 input[type="submit"]:hover {
@@ -170,6 +173,9 @@ input[type="submit"]:active {
     border: none;
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
+    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
+    appearance: none;
+    -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap auf iOS */
 }
 
 .btn:hover {
@@ -261,6 +267,9 @@ footer {
     
     .container {
         padding: var(--spacing-lg);
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
     }
 }
 
@@ -271,6 +280,8 @@ footer {
     
     .container {
         padding: var(--spacing-md);
+        margin-top: var(--spacing-sm);
+        border-radius: var(--border-radius);
     }
     
     h1 {
@@ -280,6 +291,42 @@ footer {
     h2 {
         font-size: 1.5rem;
         margin-bottom: var(--spacing-lg);
+    }
+    
+    /* Verbesserte Button-Darstellung auf kleinen Geräten */
+    .btn,
+    input[type="submit"],
+    button {
+        width: 100%;
+        padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+        margin-top: 8px;
+        margin-bottom: 8px;
+    }
+}
+
+/* Safari-spezifische Anpassungen */
+@supports (-webkit-touch-callout: none) {
+    /* Nur für Safari auf iOS */
+    input[type="text"],
+    input[type="password"],
+    input[type="file"],
+    textarea,
+    select,
+    .btn,
+    input[type="submit"],
+    button {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: var(--border-radius);
+    }
+    
+    /* Verhindert Zoom bei Fokus auf Eingabefeldern in Safari */
+    @media screen and (max-width: 768px) {
+        input[type="text"],
+        input[type="password"],
+        select {
+            font-size: 16px; /* Verhindert Zoom auf Eingabefeldern in Safari */
+        }
     }
 }
 

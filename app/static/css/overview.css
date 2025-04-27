@@ -2,6 +2,8 @@
 
 .container {
     max-width: 600px; /* Mittlerer Container für die Overview-Seite */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Kachel-Container */
@@ -30,6 +32,7 @@
     align-items: center;
     cursor: pointer;
     font-weight: bold;
+    -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap auf iOS */
 }
 
 .tile:hover {
@@ -47,5 +50,39 @@
     .tile {
         width: 100%;
         max-width: 250px;
+    }
+    
+    .container {
+        padding: var(--spacing-md);
+    }
+}
+
+/* Safari-spezifische Anpassungen */
+@supports (-webkit-touch-callout: none) {
+    /* Nur für Safari auf iOS */
+    .tile {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 8px;
+    }
+    
+    .btn-logout {
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: var(--border-radius);
+        width: 100%;
+        padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+    }
+}
+
+/* Verbesserte Touch-Ziele für mobile Geräte */
+@media (max-width: 480px) {
+    .tile {
+        height: 120px; /* Größere Höhe für bessere Touch-Ziele */
+        margin-bottom: 10px;
+    }
+    
+    .tiles-container {
+        gap: 15px;
     }
 }
