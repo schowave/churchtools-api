@@ -148,8 +148,9 @@ input[type="submit"] {
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed);
-    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
-    appearance: none;
+    -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
+    appearance: none !important;
+    background-color: var(--primary-color); /* Explizite Hintergrundfarbe */
 }
 
 input[type="submit"]:hover {
@@ -173,8 +174,8 @@ input[type="submit"]:active {
     border: none;
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
-    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
-    appearance: none;
+    -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
+    appearance: none !important;
     -webkit-tap-highlight-color: transparent; /* Entfernt den blauen Highlight-Effekt bei Tap auf iOS */
 }
 
@@ -202,11 +203,20 @@ input[type="submit"]:active {
 }
 
 .btn-logout {
-    background-color: var(--danger-color);
+    background-color: var(--danger-color) !important;
 }
 
 .btn-logout:hover {
-    background-color: var(--danger-hover);
+    background-color: var(--danger-hover) !important;
+}
+
+/* Login-Button */
+.btn-login {
+    background-color: var(--success-color) !important;
+}
+
+.btn-login:hover {
+    background-color: var(--success-hover) !important;
 }
 
 /* Alerts */
@@ -315,9 +325,42 @@ footer {
     .btn,
     input[type="submit"],
     button {
-        -webkit-appearance: none;
-        appearance: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
         border-radius: var(--border-radius);
+    }
+    
+    /* Explizite Stile für Buttons in Safari */
+    .btn,
+    input[type="submit"],
+    button {
+        color: white !important;
+        border: none !important;
+    }
+    
+    /* Spezifische Button-Farben mit höchster Priorität */
+    input[type="submit"].btn-logout,
+    .btn.btn-logout,
+    .btn-logout {
+        background-color: var(--danger-color) !important;
+    }
+    
+    input[type="submit"].btn-login,
+    .btn.btn-login,
+    .btn-login {
+        background-color: var(--success-color) !important;
+    }
+    
+    /* Andere spezifische Button-Farben */
+    .btn-back {
+        background-color: var(--primary-color) !important;
+    }
+    
+    /* Standard-Button-Farbe (für Buttons ohne spezifische Klasse) */
+    .btn:not(.btn-back):not(.btn-logout):not(.btn-generate):not(.btn-fetch):not(.btn-login),
+    input[type="submit"]:not([name="generate_pdf"]):not([name="generate_jpeg"]):not([name="fetch_appointments"]):not(.btn-logout):not(.btn-login),
+    button:not(.select-all-btn):not(.deselect-all-btn) {
+        background-color: var(--primary-color) !important;
     }
     
     /* Verhindert Zoom bei Fokus auf Eingabefeldern in Safari */

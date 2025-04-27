@@ -6,14 +6,14 @@
 
 /* Login-Button */
 .btn-login {
-    background-color: var(--success-color);
+    background-color: var(--success-color) !important;
     width: 100%;
-    -webkit-appearance: none; /* Wichtig für Safari auf iOS */
-    appearance: none;
+    -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
+    appearance: none !important;
 }
 
 .btn-login:hover {
-    background-color: var(--success-hover);
+    background-color: var(--success-hover) !important;
 }
 
 /* Spezifische Stile für Login-Formular */
@@ -50,15 +50,20 @@
 /* Safari-spezifische Anpassungen */
 @supports (-webkit-touch-callout: none) {
     /* Nur für Safari auf iOS */
+    input[type="submit"].btn-login,
+    .btn.btn-login,
     .btn-login {
         border-radius: var(--border-radius);
         padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+        background-color: var(--success-color) !important;
+        color: white !important;
+        border: none !important;
     }
     
     input[type="text"],
     input[type="password"] {
-        -webkit-appearance: none;
-        appearance: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
         border-radius: var(--border-radius);
     }
 }

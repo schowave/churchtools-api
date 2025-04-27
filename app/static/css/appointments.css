@@ -38,10 +38,14 @@
 
 /* Fetch-Button */
 .btn-fetch {
-    background-color: var(--primary-color);
+    background-color: var(--primary-color) !important;
     margin-bottom: var(--spacing-md);
     position: relative;
     overflow: hidden;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    color: white !important;
+    border: none !important;
 }
 
 .btn-fetch:hover {
@@ -83,9 +87,13 @@
 
 /* Generate-Button */
 .btn-generate {
-    background-color: var(--success-color);
+    background-color: var(--success-color) !important;
     position: relative;
     z-index: 1;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    color: white !important;
+    border: none !important;
 }
 
 .btn-generate:hover {
@@ -332,9 +340,9 @@ textarea:focus {
 }
 
 .appointments-actions button {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none !important;
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     font-size: 0.9rem;
@@ -346,8 +354,8 @@ textarea:focus {
     display: flex;
     align-items: center;
     justify-content: center;
-    -webkit-appearance: none; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
-    appearance: none;
+    -webkit-appearance: none !important; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
+    appearance: none !important;
 }
 
 @media (max-width: 480px) {
@@ -378,7 +386,7 @@ textarea:focus {
 
 /* Spezifische Buttons */
 .appointments-actions .select-all-btn {
-    background-color: var(--success-color);
+    background-color: var(--success-color) !important;
     position: relative;
     overflow: hidden;
 }
@@ -394,7 +402,7 @@ textarea:focus {
 }
 
 .appointments-actions .deselect-all-btn {
-    background-color: var(--danger-color);
+    background-color: var(--danger-color) !important;
     position: relative;
     overflow: hidden;
 }
@@ -656,9 +664,12 @@ textarea:focus {
 .generate-buttons .btn {
     width: 100%;
     text-align: center;
-    -webkit-appearance: none; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
-    appearance: none;
+    -webkit-appearance: none !important; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
+    appearance: none !important;
     padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+    background-color: var(--success-color) !important;
+    color: white !important;
+    border: none !important;
 }
 
 /* Safari-spezifische Anpassungen */
@@ -667,9 +678,20 @@ textarea:focus {
     .btn,
     input[type="submit"],
     button {
-        -webkit-appearance: none;
-        appearance: none;
+        -webkit-appearance: none !important;
+        appearance: none !important;
         border-radius: var(--border-radius);
+    }
+    
+    /* Explizite Stile für Buttons in Safari */
+    .btn-fetch {
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+    
+    .btn-generate {
+        background-color: var(--success-color) !important;
+        color: white !important;
     }
     
     .appointments-actions button {
@@ -677,6 +699,16 @@ textarea:focus {
         width: auto;
         min-width: 120px;
         margin: 4px;
+        background-color: var(--primary-color) !important;
+        color: white !important;
+    }
+    
+    .appointments-actions .select-all-btn {
+        background-color: var(--success-color) !important;
+    }
+    
+    .appointments-actions .deselect-all-btn {
+        background-color: var(--danger-color) !important;
     }
 }
 
