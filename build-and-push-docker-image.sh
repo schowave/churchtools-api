@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=2.3.0
+VERSION=2.4.0
 
 # Set -e to exit on error for the build and push steps
 set -e  # Exit immediately if a command exits with a non-zero status

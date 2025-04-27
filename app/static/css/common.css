@@ -141,7 +141,7 @@ input[type="submit"] {
     width: 100%;
     padding: 0.75rem;
     margin-top: var(--spacing-lg);
-    border: none;
+    border: 2px solid var(--primary-color); /* Sichtbarer Rand */
     border-radius: var(--border-radius);
     color: white;
     font-size: 1rem;
@@ -171,7 +171,7 @@ input[type="submit"]:active {
     color: white;
     text-decoration: none;
     border-radius: var(--border-radius);
-    border: none;
+    border: 2px solid var(--primary-color); /* Sichtbarer Rand */
     cursor: pointer;
     transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
     -webkit-appearance: none !important; /* Wichtig für Safari auf iOS */
@@ -335,7 +335,13 @@ footer {
     input[type="submit"],
     button {
         color: white !important;
-        border: none !important;
+        border: 2px solid !important; /* Sichtbarer Rand */
+        display: block !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
+        padding: 15px !important; /* Größere Buttons für bessere Sichtbarkeit */
+        font-size: 16px !important;
+        text-align: center !important;
     }
     
     /* Spezifische Button-Farben mit höchster Priorität */
@@ -343,17 +349,33 @@ footer {
     .btn.btn-logout,
     .btn-logout {
         background-color: var(--danger-color) !important;
+        border-color: var(--danger-color) !important;
     }
     
     input[type="submit"].btn-login,
     .btn.btn-login,
     .btn-login {
         background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
     }
     
     /* Andere spezifische Button-Farben */
     .btn-back {
         background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    /* Generierungs-Buttons */
+    input[type="submit"][name="generate_pdf"],
+    input[type="submit"][name="generate_jpeg"] {
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+    }
+    
+    /* Termine abholen Button */
+    input[type="submit"][name="fetch_appointments"] {
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
     }
     
     /* Standard-Button-Farbe (für Buttons ohne spezifische Klasse) */

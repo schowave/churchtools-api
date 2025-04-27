@@ -45,7 +45,9 @@
     -webkit-appearance: none !important;
     appearance: none !important;
     color: white !important;
-    border: none !important;
+    border: 2px solid var(--primary-color) !important;
+    display: block !important;
+    width: 100% !important;
 }
 
 .btn-fetch:hover {
@@ -89,11 +91,14 @@
 .btn-generate {
     background-color: var(--success-color) !important;
     position: relative;
-    z-index: 1;
     -webkit-appearance: none !important;
     appearance: none !important;
     color: white !important;
-    border: none !important;
+    border: 2px solid var(--success-color) !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+    padding: 15px !important;
 }
 
 .btn-generate:hover {
@@ -661,15 +666,19 @@ textarea:focus {
     gap: 8px;
 }
 
-.generate-buttons .btn {
+.generate-buttons .btn,
+.generate-buttons input[type="submit"] {
     width: 100%;
     text-align: center;
     -webkit-appearance: none !important; /* Verhindert Safari-spezifische Button-Darstellungsprobleme */
     appearance: none !important;
-    padding: 12px 16px; /* Größere Buttons für Touch-Geräte */
+    padding: 15px !important; /* Größere Buttons für Touch-Geräte */
     background-color: var(--success-color) !important;
     color: white !important;
-    border: none !important;
+    border: 2px solid var(--success-color) !important;
+    margin: 10px 0 !important;
+    display: block !important;
+    font-size: 16px !important;
 }
 
 /* Safari-spezifische Anpassungen */
@@ -681,34 +690,71 @@ textarea:focus {
         -webkit-appearance: none !important;
         appearance: none !important;
         border-radius: var(--border-radius);
+        display: block !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
+        padding: 15px !important;
+        font-size: 16px !important;
+        text-align: center !important;
     }
     
     /* Explizite Stile für Buttons in Safari */
     .btn-fetch {
         background-color: var(--primary-color) !important;
         color: white !important;
+        border: 2px solid var(--primary-color) !important;
     }
     
     .btn-generate {
         background-color: var(--success-color) !important;
         color: white !important;
+        border: 2px solid var(--success-color) !important;
     }
     
     .appointments-actions button {
-        display: inline-flex;
-        width: auto;
-        min-width: 120px;
-        margin: 4px;
+        display: block !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
         background-color: var(--primary-color) !important;
         color: white !important;
+        border: 2px solid var(--primary-color) !important;
     }
     
     .appointments-actions .select-all-btn {
         background-color: var(--success-color) !important;
+        border: 2px solid var(--success-color) !important;
     }
     
     .appointments-actions .deselect-all-btn {
         background-color: var(--danger-color) !important;
+        border: 2px solid var(--danger-color) !important;
+    }
+    
+    /* Spezifische Anpassungen für Termine abholen Button */
+    input[type="submit"][name="fetch_appointments"] {
+        display: block !important;
+        width: 100% !important;
+        background-color: var(--primary-color) !important;
+        color: white !important;
+        border: 2px solid var(--primary-color) !important;
+        margin: 10px 0 !important;
+        padding: 15px !important;
+        font-size: 16px !important;
+        text-align: center !important;
+    }
+    
+    /* Spezifische Anpassungen für PDF und JPEG Buttons */
+    input[type="submit"][name="generate_pdf"],
+    input[type="submit"][name="generate_jpeg"] {
+        display: block !important;
+        width: 100% !important;
+        background-color: var(--success-color) !important;
+        color: white !important;
+        border: 2px solid var(--success-color) !important;
+        margin: 10px 0 !important;
+        padding: 15px !important;
+        font-size: 16px !important;
+        text-align: center !important;
     }
 }
 
