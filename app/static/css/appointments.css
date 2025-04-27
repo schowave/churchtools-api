@@ -114,10 +114,12 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-xs);
-    align-items: center;
+    align-items: flex-end;
     justify-content: flex-start;
     height: 100%;
-    margin-top: 0;
+    padding-bottom: 10px;
+    position: relative;
+    top: 28px; /* Positions exactly at the input field level */
 }
 
 /* Date preset buttons */
@@ -240,10 +242,28 @@
     transform: scaleX(1);
 }
 
+/* Calendar selection header */
+.calendar-selection-header {
+    margin-top: var(--spacing-lg);
+    text-align: left;
+}
+
+.calendar-selection-header h3 {
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1.2rem;
+}
+
+.calendar-selection-info {
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+
 /* Containers for calendars and appointments */
 .appointments-container,
 .calendars-container {
-    margin: var(--spacing-lg) 0;
+    margin: var(--spacing-sm) 0 var(--spacing-lg) 0;
     padding: var(--spacing-md);
     border: 1px solid var(--border-color);
     border-radius: 8px;

@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Appointments</title>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/static/css/normalize.css">
+    <link rel="stylesheet" href="/static/css/prefixed.css">
+    <link rel="stylesheet" href="/static/css/cross-browser.css">
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/appointments.css">
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
         /* Override jQuery UI Datepicker styles to ensure it appears above other elements */
         .ui-datepicker {
@@ -321,6 +324,10 @@
         </div>
         
         <!-- Calendars selection -->
+        <div class="calendar-selection-header">
+            <h3>Kalender auswählen</h3>
+            <p class="calendar-selection-info">Bitte wählen Sie die Kalender aus, von denen Sie Termine anzeigen möchten.</p>
+        </div>
         <div class="calendars-container">
             {% for calendar in calendars %}
                 <div class="calendar-item">

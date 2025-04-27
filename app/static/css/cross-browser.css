@@ -1,0 +1,281 @@
+/* cross-browser.css - Specific fixes for various browsers */
+
+/* ========== General Fixes ========== */
+
+/* Prevents images from overflowing their containers */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Improves text readability in all browsers */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Consistent box-sizing strategy */
+html {
+  box-sizing: border-box;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* Improves button rendering in all browsers */
+button {
+  cursor: pointer;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* Improves link rendering in all browsers */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Improves list rendering in all browsers */
+ul, ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ========== Internet Explorer Fixes ========== */
+
+/* Prevents text from being over-rendered in IE */
+@media all and (-ms-high-contrast: none), (-ms-high-contrast: active) {
+  body {
+    font-family: Arial, sans-serif;
+  }
+  
+  /* Fixes flexbox issues in IE */
+  .flex-container {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+  }
+  
+  /* Fixes grid issues in IE */
+  .grid-container {
+    display: -ms-grid;
+    display: grid;
+  }
+  
+  /* Fixes SVG issues in IE */
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  /* Fixes object-fit issues in IE */
+  .object-fit-cover {
+    object-fit: cover;
+    font-family: 'object-fit: cover;';
+  }
+}
+
+/* ========== Edge Fixes ========== */
+
+@supports (-ms-ime-align:auto) {
+  /* Fixes scrollbar issues in Edge */
+  .scrollable {
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+  
+  /* Fixes input field issues in Edge */
+  input {
+    margin: 0;
+  }
+}
+
+/* ========== Firefox Fixes ========== */
+
+@-moz-document url-prefix() {
+  /* Fixes select element issues in Firefox */
+  select {
+    text-indent: 0.01px;
+    text-overflow: '';
+    padding-right: 1em;
+  }
+  
+  /* Fixes scrollbar issues in Firefox */
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  }
+  
+  /* Fixes input field issues in Firefox */
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+/* ========== Safari Fixes ========== */
+
+/* Safari 10.1+ */
+@media not all and (min-resolution:.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    /* Fixes input field issues in Safari */
+    input, textarea, select, button {
+      -webkit-appearance: none;
+      border-radius: 0;
+    }
+    
+    /* Fixes scrollbar issues in Safari */
+    .hide-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Fixes flexbox issues in Safari */
+    .flex-safari-fix {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+    }
+    
+    /* Fixes position: fixed issues in Safari on iOS */
+    .fixed-ios {
+      position: fixed;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+  }
+}
+
+/* ========== Chrome Fixes ========== */
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  /* Fixes input field issues in Chrome */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  
+  /* Fixes autofill background color issues in Chrome */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+    -webkit-text-fill-color: inherit !important;
+  }
+  
+  /* Improves image rendering in Chrome */
+  img {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* ========== Mobile Browser Fixes ========== */
+
+/* Prevents zoom on focus on input fields in iOS */
+@media screen and (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Fixes 100vh issues in mobile browsers */
+.full-height {
+  height: 100vh;
+  height: -webkit-fill-available;
+  height: -moz-available;
+  height: fill-available;
+}
+
+/* Fixes position: fixed issues in mobile browsers */
+.fixed-mobile {
+  position: fixed;
+  width: 100%;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Prevents blue highlight on tap on mobile devices */
+a, button, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== Print Media Fixes ========== */
+
+@media print {
+  /* Improves print rendering */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Ensures background colors and images are printed */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Improves link rendering when printing */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  /* Prevents page breaks within elements */
+  .no-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* ========== Accessibility Fixes ========== */
+
+/* Improves focus visibility for keyboard users */
+:focus {
+  outline: 3px solid rgba(0, 102, 204, 0.5);
+  outline-offset: 2px;
+}
+
+/* Improves focus visibility only for keyboard users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(0, 102, 204, 0.5);
+  outline-offset: 2px;
+}
+
+/* Improves readability for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Improves readability for screen readers, but shows the element when it's focused */
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
