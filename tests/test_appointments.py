@@ -210,14 +210,18 @@ class TestAppointments(unittest.TestCase):
         self.assertEqual(result['meetingAt'], '')
     
     @patch('app.api.appointments.convert_from_path')
-    def test_handle_jpeg_generation(self, mock_convert):
+    @patch('app.api.appointments.os.path.exists')
+    def test_handle_jpeg_generation(self, mock_exists, mock_convert):
+        # Mock file existence check
+        mock_exists.return_value = True
+        
         # Mock PDF to image conversion
         mock_image1 = MagicMock()
         mock_image2 = MagicMock()
         mock_convert.return_value = [mock_image1, mock_image2]
         
         # Mock image save method to write test data to BytesIO
-        def mock_save(stream, format):
+        def mock_save(stream, format, **kwargs):
             stream.write(b'test image data')
         mock_image1.save.side_effect = mock_save
         mock_image2.save.side_effect = mock_save

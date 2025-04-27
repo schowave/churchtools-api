@@ -1,0 +1,44 @@
+2025-04-27 23:46:51 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:46:58 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:47:09 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:47:34 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:48:00 - app.api.appointments - INFO - Keine Kalender ausgewählt, verwende alle verfügbaren Kalender: [98, 2, 132, 117, 120, 110, 126, 142, 135, 114, 101, 83, 178, 95, 92, 181, 172, 107, 104, 86, 123, 129, 89, 111, 169, 166, 184, 174, 175, 47, 1, 48, 160, 163, 154, 157, 151]
+2025-04-27 23:48:00 - app.api.appointments - INFO - Ausgewählte Termin-IDs: ['151_4240', '2_2035', '120_2418', '47_4021', '111_2543', '110_2561', '98_2537', '101_2522', '111_2546', '114_2580', '142_5061', '163_5246', '95_2421', '92_2388', '92_2528', '151_4243', '2_5024', '117_2415', '120_2418_1', '135_2597', '47_4021_1']
+2025-04-27 23:48:00 - app.api.appointments - INFO - Rufe Termine ab für Zeitraum 2025-04-27 bis 2025-05-04 und Kalender [98, 2, 132, 117, 120, 110, 126, 142, 135, 114, 101, 83, 178, 95, 92, 181, 172, 107, 104, 86, 123, 129, 89, 111, 169, 166, 184, 174, 175, 47, 1, 48, 160, 163, 154, 157, 151]
+2025-04-27 23:48:02 - app.api.appointments - INFO - Anzahl abgerufener Termine: 21
+2025-04-27 23:48:02 - app.api.appointments - INFO - Ausgewählte Termine: 21
+2025-04-27 23:48:02 - app.api.appointments - INFO -   1. Quasimodogeniti am 27.04.2025 (00:00-00:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   2. GOTTESDIENST am 27.04.2025 (10:00-11:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   3. GET UP am 27.04.2025 (10:00-11:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   4. Gebet unterm Kreuz am 27.04.2025 (19:00-19:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   5. Gemeindebücherei am 28.04.2025 (17:00-18:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   6. Mädchenjungschar 1 (1-4 Klasse) am 28.04.2025 (17:30-19:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   7. Pfarramt geöffnet am 29.04.2025 (09:00-11:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   8. Krabbeltreff am 29.04.2025 (09:30-10:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   9. Gemeindebücherei am 29.04.2025 (16:00-19:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   10. Jugendkreis JK:LA am 29.04.2025 (19:30-22:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   11. Open Lounge am 30.04.2025 (18:00-22:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   12. Tag der Arbeit am 01.05.2025 (00:00-00:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   13. Kirchenchorprobe am 01.05.2025 (19:30-21:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   14. Posaunenchorprobe am 01.05.2025 (19:30-21:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   15. Bläserschule am 02.05.2025 (15:00-18:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   16. Misericordias Domini am 04.05.2025 (00:00-00:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   17. GOTTESDIENST am 04.05.2025 (10:00-11:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   18. KINDERGOTTESDIENST am 04.05.2025 (10:00-11:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   19. GET UP am 04.05.2025 (10:00-11:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   20. PlanB- Gottesdienst für junge Erwachsene am 04.05.2025 (19:00-20:00)
+2025-04-27 23:48:02 - app.api.appointments - INFO -   21. Gebet unterm Kreuz am 04.05.2025 (19:00-19:30)
+2025-04-27 23:48:02 - app.api.appointments - INFO - Generiere PDF für 21 Termine
+2025-04-27 23:48:03 - app.services.pdf_generator - INFO - PDF erfolgreich erstellt: 2025-04-27_Termine.pdf mit 21 Terminen
+2025-04-27 23:48:03 - app.api.appointments - INFO - PDF erfolgreich erstellt: 2025-04-27_Termine.pdf
+2025-04-27 23:50:07 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:50:26 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:51:10 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:51:29 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:51:56 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:52:19 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:52:33 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:54:27 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-27 23:54:30 - app.main - ERROR - HTTP-Fehler: 404 - Not Found
+2025-04-28 00:11:41 - app.main - INFO - ChurchTools API v2.9.0 gestartet
+2025-04-28 00:11:49 - app.main - ERROR - HTTP-Fehler: 404 - Not Found

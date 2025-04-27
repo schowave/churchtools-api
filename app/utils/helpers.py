@@ -12,25 +12,18 @@ def get_login_token(request: Request) -> Optional[str]:
 def parse_iso_datetime(dt_str: str) -> datetime:
     """
     Konvertiert einen ISO-Datetime-String in ein timezone-aware datetime-Objekt in der Europe/Berlin-Zeitzone.
-    
-    Beide Formate werden als UTC-Zeit interpretiert:
-    - Mit 'Z' am Ende (explizit UTC)
-    - Ohne 'Z' am Ende (implizit UTC)
     """
-    # Entferne 'Z' am Ende, falls vorhanden
+    # Create a timezone-aware datetime object in UTC if the string ends with 'Z'
     if dt_str.endswith('Z'):
-        dt_str = dt_str.rstrip('Z')
-    
-    # Parse das Datum
-    dt = datetime.fromisoformat(dt_str)
-    
-    # Setze die Zeitzone auf UTC
-    utc_dt = dt.replace(tzinfo=pytz.utc)
-    
-    # Konvertiere die Zeitzone von UTC nach Europe/Berlin
+        dt = datetime.fromisoformat(dt_str.rstrip('Z'))
+        utc_dt = dt.replace(tzinfo=pytz.utc)
+    else:
+        # If the string does not end with 'Z', parse it as is
+        utc_dt = datetime.fromisoformat(dt_str)
+
+    # Convert the timezone from UTC to Europe/Berlin
     berlin_tz = pytz.timezone('Europe/Berlin')
     berlin_dt = utc_dt.astimezone(berlin_tz)
-    
     return berlin_dt
 
 def get_date_range_from_form(start_date: str = None, end_date: str = None) -> Tuple[str, str]:
