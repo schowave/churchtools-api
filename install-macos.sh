@@ -1,25 +1,29 @@
 #!/bin/bash
 
-# Erstelle eine virtuelle Umgebung, falls noch nicht vorhanden
+# Create a virtual environment if it doesn't exist yet
 if [ ! -d "venv" ]; then
-    echo "Erstelle virtuelle Umgebung..."
+    echo "Creating virtual environment..."
     python3 -m venv venv
 fi
 
-# Aktiviere die virtuelle Umgebung
+# Activate the virtual environment
 source venv/bin/activate
 
-# Aktualisiere pip
+# Update pip
 pip install --upgrade pip
 
-# Installiere reportlab ohne C-Erweiterungen
-echo "Installiere reportlab ohne C-Erweiterungen..."
-pip install --no-binary=reportlab reportlab==3.5.68
+echo "Installing reportlab without C extensions..."
+pip install reportlab==3.5.68 --global-option="--without-c-extensions"
 
-# Installiere die restlichen Abhängigkeiten
-echo "Installiere restliche Abhängigkeiten..."
+if [ $? -ne 0 ]; then
+    echo "Installation of reportlab 3.5.68 failed, trying newer version..."
+    pip install reportlab
+fi
+
+# Install the remaining dependencies
+echo "Installing remaining dependencies..."
 pip install -r requirements-macos.txt
 
-echo "Installation abgeschlossen!"
-echo "Aktiviere die virtuelle Umgebung mit 'source venv/bin/activate'"
-echo "Führe die Tests aus mit 'python -m pytest tests/'"
+echo "Installation completed!"
+echo "Activate the virtual environment with 'source venv/bin/activate'"
+echo "Run the tests with 'python -m pytest tests/'"

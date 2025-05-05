@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, Column, String, Integer, Text
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base
 from app.config import Config
 import os
 
@@ -15,7 +15,7 @@ engine = create_engine(
 # Session-Factory erstellen
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base-Klasse für Modelle
+# Base class for models
 Base = declarative_base()
 
 # Datenbankmodelle
@@ -34,7 +34,7 @@ class ColorSetting(Base):
     date_color = Column(String, nullable=False)
     description_color = Column(String, nullable=False)
 
-# Dependency für Datenbankzugriff
+# Dependency for database access
 def get_db():
     db = SessionLocal()
     try:
@@ -46,7 +46,7 @@ def get_db():
 def create_schema():
     Base.metadata.create_all(bind=engine)
 
-# CRUD-Operationen für Appointments
+# CRUD operations for Appointments
 def save_additional_infos(db, appointment_info_list):
     try:
         for appointment_id, additional_info in appointment_info_list:
@@ -68,7 +68,7 @@ def get_additional_infos(db, appointment_ids):
         print(f"Database error: {e}")
         return {}
 
-# CRUD-Operationen für ColorSettings
+# CRUD operations for ColorSettings
 def save_color_settings(db, settings):
     try:
         color_setting = db.query(ColorSetting).filter(ColorSetting.setting_name == settings['name']).first()

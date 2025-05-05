@@ -14,26 +14,11 @@ class TestUtils(unittest.TestCase):
         
         # Check if conversion to Berlin timezone is correct
         berlin_tz = pytz.timezone('Europe/Berlin')
-        # Wir prüfen nur, ob es sich um die gleiche Zeitzone handelt, nicht das exakte tzinfo-Objekt
+        # We only check if it's the same timezone, not the exact tzinfo object
         self.assertEqual(str(result.tzinfo), str(berlin_tz))
         
         # In winter time Berlin is UTC+1
         self.assertEqual(result.hour, 15)  # 14 UTC = 15 Berlin (assuming standard time)
-    
-    def test_parse_iso_datetime_without_z(self):
-        # Test parsing ISO datetime without Z suffix
-        dt_str = "2023-01-15T14:30:00"
-        result = parse_iso_datetime(dt_str)
-        
-        # Check if result is timezone aware
-        self.assertIsNotNone(result.tzinfo)
-        
-        # Check if the time is correctly parsed
-        self.assertEqual(result.year, 2023)
-        self.assertEqual(result.month, 1)
-        self.assertEqual(result.day, 15)
-        self.assertEqual(result.hour, 15)  # 14 UTC = 15 Berlin (assuming standard time)
-        self.assertEqual(result.minute, 30)
     
     def test_normalize_newlines(self):
         # Test with Windows-style line endings

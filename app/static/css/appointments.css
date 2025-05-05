@@ -629,7 +629,7 @@ textarea:focus {
 
 @media (max-width: 480px) {
     .format-options {
-        grid-template-columns: 1fr; /* Einspaltig auf sehr kleinen Geräten */
+        grid-template-columns: 1fr; /* Single column on very small devices */
     }
 }
 
@@ -695,7 +695,7 @@ textarea:focus {
     overflow: visible;
 }
 
-/* Container für Hintergrundbild */
+/* Container for background image */
 .format-option-full {
     margin-bottom: 10px;
     overflow: visible;
@@ -788,11 +788,11 @@ textarea:focus {
     transform: scale(1.1);
 }
 
-/* Zweispaltiges Layout für Termine und Formatierungsoptionen */
+/* Two-column layout for appointments and formatting options */
 .appointments-layout {
     display: grid;
-    grid-template-columns: 3fr 2fr; /* Mehr Platz für die rechte Spalte */
-    gap: var(--spacing-lg); /* Größerer Abstand zwischen den Spalten */
+    grid-template-columns: 3fr 2fr; /* More space for the right column */
+    gap: var(--spacing-lg); /* Larger gap between columns */
     margin-top: var(--spacing-md);
 }
 
@@ -815,10 +815,10 @@ textarea:focus {
     -webkit-overflow-scrolling: touch; /* Verbessert das Scrolling auf iOS */
 }
 
-/* Mobile Anpassungen für das Layout */
+/* Mobile adjustments for the layout */
 @media (max-width: 768px) {
     .appointments-layout {
-        grid-template-columns: 1fr; /* Einspaltiges Layout auf mobilen Geräten */
+        grid-template-columns: 1fr; /* Single column layout on mobile devices */
         gap: var(--spacing-md);
     }
     
@@ -828,7 +828,7 @@ textarea:focus {
     }
     
     .appointments-sidebar {
-        position: relative; /* Keine sticky Position auf mobilen Geräten */
+        position: relative; /* No sticky position on mobile devices */
         top: 0;
         max-height: none;
         margin-top: var(--spacing-md);

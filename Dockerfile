@@ -17,8 +17,8 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file first to leverage Docker cache
-COPY requirements.txt .
+# Copy requirements files first to leverage Docker cache
+COPY requirements.txt requirements-base.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Start the final stage of the build

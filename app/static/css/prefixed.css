@@ -272,27 +272,27 @@
   }
 }
 
-/* Allgemeine Hilfsmittel für bessere Browserkompatibilität */
+/* General utilities for better browser compatibility */
 
-/* Verhindert Textvergrößerung bei Orientierungsänderungen im iOS */
+/* Prevents text enlargement during orientation changes in iOS */
 html {
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
-/* Verbesserte Touch-Ziele für mobile Geräte */
+/* Improved touch targets for mobile devices */
 .touch-target {
   min-height: 44px;
   min-width: 44px;
 }
 
-/* Verhindert blaue Hervorhebung bei Tap auf mobilen Geräten */
+/* Prevents blue highlight on tap on mobile devices */
 .no-tap-highlight {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Verbesserte Schriftglättung */
+/* Improved font smoothing */
 .font-smoothing {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

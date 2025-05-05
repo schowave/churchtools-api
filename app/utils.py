@@ -53,7 +53,7 @@ def normalize_newlines(text: str) -> str:
     text = text.replace('\r\n', '\n')
     # Dann einzelne \r durch \n ersetzen
     text = text.replace('\r', '\n')
-    # Entfernen von speziellen Unicode-Zeichen, die manchmal in Textfeldern erscheinen können
+    # Remove special Unicode characters that may sometimes appear in text fields
     text = text.replace('\u2028', '\n')  # Line Separator
     text = text.replace('\u2029', '\n')  # Paragraph Separator
     return text

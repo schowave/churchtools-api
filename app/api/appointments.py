@@ -135,13 +135,15 @@ def handle_jpeg_generation(pdf_filename):
         jpeg_stream.seek(0)
         jpeg_files.append((f'page_{i + 1}.jpg', jpeg_stream))
 
-    zip_buffer = BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
+    zip_filename = os.path.splitext(pdf_filename)[0] + ".zip"
+    zip_path = os.path.join(Config.FILE_DIRECTORY, zip_filename)
+    
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for file_name, file_bytes in jpeg_files:
             zip_file.writestr(file_name, file_bytes.read())
-    zip_buffer.seek(0)
-    logger.info(f"JPEG-Bilder erfolgreich erstellt und in ZIP-Datei gepackt")
-    return zip_buffer
+    
+    logger.info(f"JPEG-Bilder erfolgreich erstellt und in ZIP-Datei gepackt: {zip_filename}")
+    return zip_filename
 
 @router.get("/appointments")
 async def appointments_page(
@@ -196,7 +198,7 @@ async def process_appointments(
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
-    # Standardwerte für Datumsbereich, falls nicht im Formular
+    # Default values for date range if not in the form
     if not start_date or not end_date:
         start_date_default, end_date_default = get_date_range_from_form()
         start_date = start_date or start_date_default
@@ -209,15 +211,15 @@ async def process_appointments(
     if calendar_ids:
         calendar_ids_int = [int(id) for id in calendar_ids if id.isdigit()]
     
-    # Wenn keine Kalender ausgewählt sind, alle verfügbaren Kalender verwenden
+    # If no calendars are selected, use all available calendars
     if not calendar_ids_int and calendars:
         calendar_ids_int = [calendar['id'] for calendar in calendars]
-        logger.info(f"Keine Kalender ausgewählt, verwende alle verfügbaren Kalender: {calendar_ids_int}")
+        logger.info(f"No calendars selected, using all available calendars: {calendar_ids_int}")
     
-    # Standardwerte für Farbeinstellungen
+    # Default values for color settings
     color_settings = load_color_settings(db, "default")
     
-    # Überschreibe mit Formulardaten, falls vorhanden
+    # Override with form data if available
     if background_color:
         color_settings['background_color'] = background_color
     if alpha is not None:
@@ -232,7 +234,7 @@ async def process_appointments(
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
-        # Zusätzliche Informationen laden
+        # Load additional information
         additional_infos = get_additional_infos(db, [appointment['id'] for appointment in appointments])
         for appointment in appointments:
             appointment['additional_info'] = additional_infos.get(appointment['id'], "")
@@ -259,7 +261,7 @@ async def process_appointments(
     
     elif generate_pdf_btn:
         if not appointment_id:
-            # Wenn keine Termine ausgewählt wurden, zurück zur Terminübersicht
+            # If no appointments were selected, return to appointment overview
             return templates.TemplateResponse(
                 "appointments.html",
                 {
@@ -275,7 +277,7 @@ async def process_appointments(
                 }
             )
             
-        # Zusätzliche Informationen speichern
+        # Save additional information
         appointment_info_list = []
         form_data = await request.form()
         for app_id in appointment_id:
@@ -296,30 +298,30 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # Hole die tatsächlichen Termine von der API
-        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
-        logger.info(f"Rufe Termine ab für Zeitraum {start_date} bis {end_date} und Kalender {calendar_ids_int}")
+        # Get the actual appointments from the API
+        logger.info(f"Selected appointment IDs: {appointment_id}")
+        logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
         
-        # Hole alle Termine für den angegebenen Zeitraum
+        # Get all appointments for the specified time period
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
         
         # Konvertiere die Termine in das richtige Format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
-        # Füge zusätzliche Informationen aus dem Formular hinzu
+        # Add additional information from the form
         for appointment in appointments:
             app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
             appointment['additional_info'] = additional_info
         
-        logger.info(f"Anzahl der Termine für PDF: {len(appointments)}")
+        logger.info(f"Number of appointments for PDF: {len(appointments)}")
+
+        # Debug logging for IDs
+        logger.info(f"Selected appointment IDs: {appointment_id}")
+        logger.info(f"Available appointment IDs: {[app['id'] for app in appointments]}")
         
-        # Debug-Logging für IDs
-        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
-        logger.info(f"Verfügbare Termin-IDs: {[app['id'] for app in appointments]}")
-        
-        # Nur ausgewählte Termine verwenden - mit Stringvergleich
+        # Use only selected appointments - with string comparison
         selected_appointments = []
         for app in appointments:
             for app_id in appointment_id:
@@ -327,8 +329,8 @@ async def process_appointments(
                     selected_appointments.append(app)
                     break
         
-        # Logging für ausgewählte Termine
-        logger.info(f"Generiere PDF für {len(selected_appointments)} Termine:")
+        # Logging for selected appointments
+        logger.info(f"Generating PDF for {len(selected_appointments)} appointments:")
         for idx, app in enumerate(selected_appointments, 1):
             logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
         
@@ -343,7 +345,7 @@ async def process_appointments(
     
     elif generate_jpeg_btn:
         if not appointment_id:
-            # Wenn keine Termine ausgewählt wurden, zurück zur Terminübersicht
+            # If no appointments were selected, return to appointment overview
             return templates.TemplateResponse(
                 "appointments.html",
                 {
@@ -359,7 +361,7 @@ async def process_appointments(
                 }
             )
             
-        # Ähnlich wie bei PDF, aber mit JPEG-Konvertierung
+        # Similar to PDF, but with JPEG conversion
         appointment_info_list = []
         form_data = await request.form()
         for app_id in appointment_id:
@@ -380,30 +382,30 @@ async def process_appointments(
             except Exception as e:
                 print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
         
-        # Hole die tatsächlichen Termine von der API
-        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
-        logger.info(f"Rufe Termine ab für Zeitraum {start_date} bis {end_date} und Kalender {calendar_ids_int}")
+        # Get the actual appointments from the API
+        logger.info(f"Selected appointment IDs: {appointment_id}")
+        logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
         
-        # Hole alle Termine für den angegebenen Zeitraum
+        # Get all appointments for the specified time period
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
         
         # Konvertiere die Termine in das richtige Format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
-        # Füge zusätzliche Informationen aus dem Formular hinzu
+        # Add additional information from the form
         for appointment in appointments:
             app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
             appointment['additional_info'] = additional_info
         
-        logger.info(f"Anzahl der Termine für JPEG: {len(appointments)}")
+        logger.info(f"Number of appointments for JPEG: {len(appointments)}")
+
+        # Debug logging for IDs
+        logger.info(f"Selected appointment IDs: {appointment_id}")
+        logger.info(f"Available appointment IDs: {[app['id'] for app in appointments]}")
         
-        # Debug-Logging für IDs
-        logger.info(f"Ausgewählte Termin-IDs: {appointment_id}")
-        logger.info(f"Verfügbare Termin-IDs: {[app['id'] for app in appointments]}")
-        
-        # Nur ausgewählte Termine verwenden - mit Stringvergleich
+        # Use only selected appointments - with string comparison
         selected_appointments = []
         for app in appointments:
             for app_id in appointment_id:
@@ -411,8 +413,8 @@ async def process_appointments(
                     selected_appointments.append(app)
                     break
         
-        # Logging für ausgewählte Termine
-        logger.info(f"Generiere JPEG für {len(selected_appointments)} Termine:")
+        # Logging for selected appointments
+        logger.info(f"Generating JPEG for {len(selected_appointments)} appointments:")
         for idx, app in enumerate(selected_appointments, 1):
             logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
         
@@ -422,13 +424,13 @@ async def process_appointments(
                             background_image_stream)
         
         # JPEG generieren
-        zip_buffer = handle_jpeg_generation(filename)
+        zip_filename = handle_jpeg_generation(filename)
         
-        # Als Datei zurückgeben
+        # Return as file
         response = FileResponse(
-            zip_buffer,
+            os.path.join(Config.FILE_DIRECTORY, zip_filename),
             media_type="application/zip",
-            filename="images.zip"
+            filename=zip_filename
         )
         response.set_cookie(key="jpegGenerated", value="true", max_age=1, path='/')
         return response

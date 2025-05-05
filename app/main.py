@@ -22,7 +22,7 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # Templates einrichten
 templates = Jinja2Templates(directory="app/templates")
 
-# Stellen Sie sicher, dass das Verzeichnis für gespeicherte Dateien existiert
+# Make sure the directory for saved files exists
 Path(Config.FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
 # Routen einbinden

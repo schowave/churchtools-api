@@ -1,115 +1,115 @@
 # ChurchTools API Tests
 
-Dieses Verzeichnis enthält Unit-Tests für die ChurchTools API-Anwendung.
+This directory contains unit tests for the ChurchTools API application.
 
-## Testausführung
+## Test Execution
 
-### Lokale Ausführung
+### Local Execution
 
-#### Für Linux/Windows:
+#### For Linux/Windows:
 
-Um die Tests lokal auszuführen, verwenden Sie den folgenden Befehl:
+To run the tests locally, use the following command:
 
 ```bash
-# Installiere die Abhängigkeiten
+# Install dependencies
 pip install -r requirements.txt
 
-# Führe die Tests aus
+# Run the tests
 python -m pytest tests/
 ```
 
-#### Für macOS:
+#### For macOS:
 
-macOS-Benutzer können auf Probleme mit der reportlab-Installation stoßen. Hier sind drei Lösungsansätze:
+macOS users may encounter issues with the reportlab installation. Here are three approaches:
 
-**Option 1: Verwende das Installationsskript (empfohlen)**
+**Option 1: Use the installation script (recommended)**
 
 ```bash
-# Mache das Skript ausführbar
+# Make the script executable
 chmod +x install-macos.sh
 
-# Führe das Installationsskript aus
+# Run the installation script
 ./install-macos.sh
 
-# Aktiviere die virtuelle Umgebung (falls noch nicht aktiviert)
+# Activate the virtual environment (if not already activated)
 source venv/bin/activate
 
-# Führe die Tests aus
+# Run the tests
 python -m pytest tests/
 ```
 
-**Option 2: Manuelle Installation**
+**Option 2: Manual installation**
 
 ```bash
-# Erstelle eine virtuelle Umgebung
+# Create a virtual environment
 python -m venv venv
 source venv/bin/activate
 
-# Installiere reportlab ohne C-Erweiterungen
+# Install reportlab without C extensions
 pip install --no-binary=reportlab reportlab==3.5.68
 
-# Installiere die restlichen Abhängigkeiten
+# Install the remaining dependencies
 pip install -r requirements-macos.txt
 
-# Führe die Tests aus
+# Run the tests
 python -m pytest tests/
 ```
 
-**Option 3: Verwende Docker**
+**Option 3: Use Docker**
 
 ```bash
-# Baue das Docker-Image
+# Build the Docker image
 docker build -t churchtools-api:test .
 
-# Führe die Tests im Container aus
+# Run the tests in the container
 docker run --rm churchtools-api:test python -m pytest tests/
 ```
 
-### Ausführung mit Codeabdeckungsbericht
+### Running with Code Coverage Report
 
-Um die Tests mit einem Codeabdeckungsbericht auszuführen:
+To run the tests with a code coverage report:
 
 ```bash
 python -m pytest --cov=app tests/ --cov-report=term
 ```
 
-Für einen HTML-Bericht:
+For an HTML report:
 
 ```bash
 python -m pytest --cov=app tests/ --cov-report=html
 ```
 
-### IntelliJ Run-Konfigurationen
+### IntelliJ Run Configurations
 
-Es wurden zwei IntelliJ Run-Konfigurationen erstellt:
+Two IntelliJ Run configurations have been created:
 
-1. **Run Tests with Coverage**: Führt alle Tests aus und zeigt einen Codeabdeckungsbericht im Terminal an
-2. **Run Tests with HTML Coverage**: Führt alle Tests aus und generiert einen HTML-Codeabdeckungsbericht
+1. **Run Tests with Coverage**: Runs all tests and displays a code coverage report in the terminal
+2. **Run Tests with HTML Coverage**: Runs all tests and generates an HTML code coverage report
 
-## Teststruktur
+## Test Structure
 
-Die Tests sind in folgende Kategorien unterteilt:
+The tests are divided into the following categories:
 
-1. **Utils Tests**: Testen Hilfsfunktionen mit 97% Codeabdeckung
-2. **Database Tests**: Testen Datenbankoperationen mit 84% Codeabdeckung
-3. **Auth Tests**: Testen Authentifizierungsfunktionen mit 43% Codeabdeckung
-4. **Appointments Tests**: Testen Terminverwaltungsfunktionen mit 23% Codeabdeckung
-5. **PDF Generator Tests**: Testen PDF-Erstellungsfunktionen mit 82% Codeabdeckung
+1. **Utils Tests**: Test helper functions with 97% code coverage
+2. **Database Tests**: Test database operations with 84% code coverage
+3. **Auth Tests**: Test authentication functions with 43% code coverage
+4. **Appointments Tests**: Test appointment management functions with 23% code coverage
+5. **PDF Generator Tests**: Test PDF creation functions with 82% code coverage
 
-Die Gesamtcodeabdeckung beträgt 51%.
+The total code coverage is 51%.
 
-## CI/CD-Pipeline
+## CI/CD Pipeline
 
-Die Tests werden automatisch in der GitHub Actions-Pipeline ausgeführt. Es gibt zwei Workflows:
+The tests are automatically run in the GitHub Actions pipeline. There are two workflows:
 
-1. **test-and-build.yml**: Wird bei jedem Push und Pull Request ausgeführt
-   - Führt alle Tests mit Codeabdeckungsbericht aus
-   - Lädt den Codeabdeckungsbericht zu Codecov hoch
-   - Baut das Docker-Image (ohne Push)
+1. **test-and-build.yml**: Runs on every push and pull request
+   - Runs all tests with code coverage report
+   - Uploads the code coverage report to Codecov
+   - Builds the Docker image (without pushing)
 
-2. **release.yml**: Wird nur manuell über den GitHub Actions UI ausgeführt
-   - Erfordert die Eingabe einer Version (z.B. v1.0.0)
-   - Führt alle Tests mit Codeabdeckungsbericht aus
-   - Lädt den Codeabdeckungsbericht zu Codecov hoch
-   - Baut das Docker-Image und pusht es zur GitHub Container Registry (GHCR)
-   - Taggt das Image mit der angegebenen Version und "latest"
+2. **release.yml**: Only runs manually via the GitHub Actions UI
+   - Requires entering a version (e.g., v1.0.0)
+   - Runs all tests with code coverage report
+   - Uploads the code coverage report to Codecov
+   - Builds the Docker image and pushes it to the GitHub Container Registry (GHCR)
+   - Tags the image with the specified version and "latest"

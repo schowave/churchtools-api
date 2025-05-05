@@ -164,7 +164,7 @@ def wrap_text(text, font_name, line_height, max_width):
 
 
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
-    # Versuche, die Schriftart zu registrieren und verwende Fallback, wenn nicht verfügbar
+    # Try to register the font and use fallback if not available
     try:
         # Versuche, Bahnschrift zu registrieren
         if 'Bahnschrift' not in pdfmetrics.getRegisteredFontNames():

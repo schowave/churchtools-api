@@ -112,7 +112,7 @@
                     document.cookie = cookieName + '=; Max-Age=-99999999;';  // delete the cookie
                     $('#spinner-overlay').hide();  // hide the spinner
                     
-                    // Löse ein benutzerdefiniertes Event aus, wenn der Cookie gefunden wurde
+                    // Trigger a custom event when the cookie is found
                     document.dispatchEvent(new CustomEvent('cookieChanged', {
                         detail: { name: cookieName }
                     }));
@@ -144,16 +144,16 @@
                 localStorage.setItem('scrollToAppointments', 'true');
             });
             
-            // Beim Laden der Seite prüfen, ob gescrollt werden soll
+            // Check if scrolling should occur when the page loads
             $(document).ready(function() {
                 // Wenn Termine vorhanden sind und das Flag gesetzt ist
                 if ($('.appointments-container').length > 0 && localStorage.getItem('scrollToAppointments') === 'true') {
-                    // Flag zurücksetzen
+                    // Reset flag
                     localStorage.removeItem('scrollToAppointments');
-                    
-                    // Mit Verzögerung scrollen, um sicherzustellen, dass die Seite vollständig geladen ist
+
+                    // Scroll with delay to ensure the page is fully loaded
                     setTimeout(function() {
-                        // Zu den Appointments-Actions scrollen (Buttons über den Terminen)
+                        // Scroll to the Appointments-Actions (buttons above the appointments)
                         $('html, body').animate({
                             scrollTop: $('.appointments-actions').offset().top - 20
                         }, 1000);
@@ -225,16 +225,16 @@
         });
     </script>
     
-    <!-- Script für automatische Höhenanpassung der Textareas -->
+    <!-- Script for automatic height adjustment of textareas -->
     <script>
         function autoResizeTextarea(textarea) {
-            // Aktuelle Höhe speichern
+            // Save current height
             var originalHeight = textarea.style.height;
-            
-            // Höhe zurücksetzen, um die tatsächliche Scrollhöhe zu ermitteln
+
+            // Reset height to determine the actual scroll height
             textarea.style.height = '24px';
-            
-            // Höhe auf die Scrollhöhe setzen, wenn Text vorhanden ist
+
+            // Set height to scroll height if text is present
             if (textarea.value.trim().length > 0) {
                 if (textarea.scrollHeight > 24) {
                     textarea.style.height = textarea.scrollHeight + 'px';
@@ -242,14 +242,14 @@
             }
         }
         
-        // Warten auf vollständiges Laden der Seite
+        // Wait for the page to fully load
         window.addEventListener('load', function() {
-            // Alle Textareas auswählen
+            // Select all textareas
             const textareas = document.querySelectorAll('textarea[name^="additional_info_"]');
-            
-            // Für jede Textarea
+
+            // For each textarea
             textareas.forEach(function(textarea) {
-                // Kurze Verzögerung für korrekte Berechnung
+                // Short delay for correct calculation
                 setTimeout(function() {
                     autoResizeTextarea(textarea);
                 }, 100);
@@ -344,7 +344,7 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
-            <!-- Zweispaltiges Layout für Termine und Formatierungsoptionen -->
+            <!-- Two-column layout for appointments and formatting options -->
             <div class="appointments-layout">
                 <!-- Linke Spalte: Termine -->
                 <div class="appointments-main">

@@ -2,10 +2,10 @@ import pytest
 import sys
 import os
 
-# Füge das Hauptverzeichnis zum Python-Pfad hinzu, damit die Module gefunden werden
+# Add the main directory to the Python path so that modules can be found
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Wir verwenden pytest statt unittest für die Test-Suite, da es besser mit asyncio umgehen kann
+# We use pytest instead of unittest for the test suite because it handles asyncio better
 if __name__ == '__main__':
-    # Führe alle Tests mit pytest aus
+    # Run all tests with pytest
     sys.exit(pytest.main(["-v", "tests/"]))

@@ -52,13 +52,13 @@ class TestPdfGenerator(unittest.TestCase):
         kwargs = canvas_mock.drawImage.call_args[1]
         
         self.assertEqual(args[0], image_mock)
-        # Wir prüfen nur, ob die Position innerhalb eines vernünftigen Bereichs liegt
-        self.assertTrue(100 <= args[1] <= 300)  # x position sollte ungefähr zentriert sein
-        self.assertTrue(0 <= args[2] <= 100)    # y position sollte ungefähr zentriert sein
-        # Wir prüfen nicht die exakten Werte, sondern nur das Verhältnis
+        # We only check if the position is within a reasonable range
+        self.assertTrue(100 <= args[1] <= 300)  # x position should be approximately centered
+        self.assertTrue(0 <= args[2] <= 100)    # y position should be approximately centered
+        # We don't check the exact values, just the ratio
         self.assertTrue(kwargs['width'] > 0)
         self.assertTrue(kwargs['height'] > 0)
-        # Überprüfen, dass das Seitenverhältnis beibehalten wird
+        # Check that the aspect ratio is maintained
         self.assertAlmostEqual(kwargs['width'] / kwargs['height'], 800 / 600, places=1)
         self.assertEqual(kwargs['mask'], 'auto')
     
