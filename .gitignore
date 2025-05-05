@@ -10,3 +10,4 @@ app/__pycache__/
 
 .aider*
 .env
+/.docker_source_hash
