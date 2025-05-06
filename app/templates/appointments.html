@@ -29,22 +29,22 @@
                 var today = new Date();
                 var dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
                 
-                // Berechne den nächsten Montag
-                var daysUntilNextMonday = (1 - dayOfWeek) % 7;
-                if (daysUntilNextMonday <= 0) {
-                    daysUntilNextMonday += 7; // Wenn heute Montag ist oder Sonntag, nehmen wir nächsten Montag
+                // Calculate the next Sunday
+                var daysUntilNextSunday = (0 - dayOfWeek) % 7;
+                if (daysUntilNextSunday === 0) { // If today is Sunday, we use today as Sunday
+                    var nextSunday = new Date(today);
+                } else {
+                    var nextSunday = new Date(today);
+                    nextSunday.setDate(today.getDate() + daysUntilNextSunday + 7); // +7 because we want the next Sunday
                 }
                 
-                var nextMonday = new Date(today);
-                nextMonday.setDate(today.getDate() + daysUntilNextMonday);
-                
-                // Berechne den darauffolgenden Sonntag (6 Tage nach dem Montag)
-                var nextSunday = new Date(nextMonday);
-                nextSunday.setDate(nextMonday.getDate() + 6);
+                // Calculate the following Sunday (7 days after the first Sunday)
+                var nextNextSunday = new Date(nextSunday);
+                nextNextSunday.setDate(nextSunday.getDate() + 7);
                 
                 return {
-                    start: nextMonday,
-                    end: nextSunday
+                    start: nextSunday,
+                    end: nextNextSunday
                 };
             }
             
@@ -52,18 +52,18 @@
             $("#start_date").datepicker({
                 dateFormat: "yy-mm-dd", // This format should match the value you're passing from Flask
                 onSelect: function() {
-                    // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                    // If the date changes, hide the appointments area
                     if ($('.appointments-container').length > 0) {
-                        $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                        $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
                     }
                 }
             });
             $("#end_date").datepicker({
                 dateFormat: "yy-mm-dd",
                 onSelect: function() {
-                    // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                    // If the date changes, hide the appointments area
                     if ($('.appointments-container').length > 0) {
-                        $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                        $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
                     }
                 }
             });
@@ -79,11 +79,11 @@
             var initialStartDate = $("#start_date").val();
             var initialEndDate = $("#end_date").val();
             
-            // Function to calculate next week (the week after the next Monday)
+            // Function to calculate next week (the week after the next Sunday)
             function calculateNextWeekDates() {
                 var thisWeek = calculateThisWeekDates();
                 
-                // Die Woche nach dem nächsten Montag
+                // The week after the next Sunday
                 var nextWeekStart = new Date(thisWeek.start);
                 nextWeekStart.setDate(nextWeekStart.getDate() + 7);
                 
@@ -105,26 +105,26 @@
             });
             
             $("#this-week").click(function() {
-                // Berechne die aktuelle Woche (nächster Montag bis Sonntag)
+                // Calculate the current week (next Sunday to the following Sunday)
                 var thisWeek = calculateThisWeekDates();
                 $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
                 $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
                 
-                // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                // If the date changes, hide the appointments area
                 if ($('.appointments-container').length > 0) {
-                    $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                    $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
                 }
             });
             
             $("#next-week").click(function() {
-                // Berechne die nächste Woche (die Woche nach dem nächsten Montag)
+                // Calculate the next week (the week after the next Sunday)
                 var nextWeek = calculateNextWeekDates();
                 $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
                 $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
                 
-                // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                // If the date changes, hide the appointments area
                 if ($('.appointments-container').length > 0) {
-                    $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                    $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
                 }
             });
         });
@@ -166,13 +166,13 @@
                 // Start monitoring for the fetchAppointments cookie
                 monitorDownload('fetchAppointments');
                 
-                // Direktes Scrollen nach dem Absenden des Formulars
+                // Direct scrolling after submitting the form
                 localStorage.setItem('scrollToAppointments', 'true');
             });
             
             // Check if scrolling should occur when the page loads
             $(document).ready(function() {
-                // Wenn Termine vorhanden sind und das Flag gesetzt ist
+                // If appointments are available and the flag is set
                 if ($('.appointments-container').length > 0 && localStorage.getItem('scrollToAppointments') === 'true') {
                     // Reset flag
                     localStorage.removeItem('scrollToAppointments');
@@ -280,17 +280,17 @@
                     autoResizeTextarea(textarea);
                 }, 100);
                 
-                // Bei Eingabe anpassen
+                // Adjust on input
                 textarea.addEventListener('input', function() {
                     autoResizeTextarea(this);
                 });
                 
-                // Bei Fokus anpassen
+                // Adjust on focus
                 textarea.addEventListener('focus', function() {
                     autoResizeTextarea(this);
                 });
                 
-                // Bei Blur (Verlassen des Feldes) anpassen
+                // Adjust on blur (when leaving the field)
                 textarea.addEventListener('blur', function() {
                     autoResizeTextarea(this);
                 });
