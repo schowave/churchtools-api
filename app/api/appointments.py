@@ -38,6 +38,89 @@ async def fetch_calendars(login_token: str):
         else:
             response.raise_for_status()
 
+async def fetch_appointment_details(login_token: str, appointment_id: str, start_date: str = None, end_date: str = None):
+    """Holt die Details eines einzelnen Termins anhand seiner ID und berücksichtigt den Datumsbereich."""
+    import httpx
+    import pytz
+    from datetime import datetime, timedelta
+    
+    # Die Termin-ID enthält die Kalender-ID und die Basis-ID, getrennt durch "_"
+    # Format: "calendar_id_base_id" oder "calendar_id_base_id_counter"
+    parts = appointment_id.split("_")
+    
+    if len(parts) < 2:
+        logger.error(f"Ungültiges Format für Termin-ID: {appointment_id}")
+        return None
+    
+    # Extrahiere die Kalender-ID (erster Teil)
+    try:
+        calendar_id = int(parts[0])
+    except ValueError:
+        logger.error(f"Kalender-ID ist keine gültige Zahl: {parts[0]}")
+        return None
+    
+    # Extrahiere die Basis-ID (zweiter Teil)
+    base_id = parts[1]
+    
+    # Wenn es einen Counter gibt (drittes Teil), ignorieren wir ihn hier
+    
+    # Wenn kein Datumsbereich angegeben ist, verwenden wir einen großzügigen Standardbereich
+    if not start_date or not end_date:
+        berlin_tz = pytz.timezone('Europe/Berlin')
+        today = berlin_tz.localize(datetime.now())
+        start_date = (today - timedelta(days=30)).strftime('%Y-%m-%d')  # 30 Tage in die Vergangenheit
+        end_date = (today + timedelta(days=30)).strftime('%Y-%m-%d')    # 30 Tage in die Zukunft
+    
+    # Hole den Termin aus der API mit dem angegebenen Datumsbereich
+    headers = {'Authorization': f'Login {login_token}'}
+    query_params = {
+        'from': start_date,
+        'to': end_date
+    }
+    url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, params=query_params)
+            
+            if response.status_code == 200:
+                appointments = response.json().get('data', [])
+                
+                # Suche nach dem Termin mit der passenden Basis-ID
+                matching_appointments = []
+                for appointment in appointments:
+                    if str(appointment['base']['id']) == base_id:
+                        matching_appointments.append(appointment)
+                
+                if not matching_appointments:
+                    logger.error(f"Termin mit Basis-ID {base_id} nicht gefunden in Kalender {calendar_id} für den Zeitraum {start_date} bis {end_date}")
+                    return None
+                
+                # Wenn es mehrere passende Termine gibt, wähle den, der im ausgewählten Datumsbereich liegt
+                if len(matching_appointments) > 1:
+                    # Konvertiere start_date und end_date in datetime-Objekte
+                    berlin_tz = pytz.timezone('Europe/Berlin')
+                    start_dt = berlin_tz.localize(datetime.strptime(start_date, '%Y-%m-%d'))
+                    end_dt = berlin_tz.localize(datetime.strptime(end_date, '%Y-%m-%d'))
+                    
+                    # Finde den Termin, der im ausgewählten Datumsbereich liegt
+                    for appointment in matching_appointments:
+                        appointment_start = parse_iso_datetime(appointment['calculated']['startDate'])
+                        if start_dt <= appointment_start <= end_dt:
+                            logger.info(f"Mehrere Termine mit Basis-ID {base_id} gefunden, wähle den im Datumsbereich {start_date} bis {end_date}")
+                            return appointment
+                
+                # Wenn kein Termin im ausgewählten Datumsbereich liegt, nimm den ersten
+                logger.warning(f"Kein Termin mit Basis-ID {base_id} im Datumsbereich {start_date} bis {end_date} gefunden, nehme den ersten passenden Termin")
+                return matching_appointments[0]
+                return None
+            else:
+                logger.error(f"Fehler beim Abrufen des Termins: {response.status_code}")
+                return None
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen des Termins: {e}")
+        return None
+
 async def fetch_appointments(login_token: str, start_date: str, end_date: str, calendar_ids: List[int]):
     import httpx
     import pytz
@@ -302,32 +385,36 @@ async def process_appointments(
         logger.info(f"Selected appointment IDs: {appointment_id}")
         logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
         
-        # Get all appointments for the specified time period
+        # Wir holen alle Termine für den angegebenen Zeitraum und die ausgewählten Kalender
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
         
-        # Convert appointments to the correct format
+        # Konvertiere die Termine in das richtige Format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
-        # Add additional information from the form
+        # Sammle die zusätzlichen Informationen aus dem Formular
+        form_data = await request.form()
+        
+        # Füge die zusätzlichen Informationen zu den Terminen hinzu
         for appointment in appointments:
             app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
             appointment['additional_info'] = additional_info
         
-        logger.info(f"Number of appointments for PDF: {len(appointments)}")
-
-        # Debug logging for IDs
-        logger.info(f"Selected appointment IDs: {appointment_id}")
-        logger.info(f"Available appointment IDs: {[app['id'] for app in appointments]}")
-        
-        # Use only selected appointments - with string comparison
+        # Filtere die ausgewählten Termine
         selected_appointments = []
-        for app in appointments:
-            for app_id in appointment_id:
-                if str(app['id']) == str(app_id):
-                    selected_appointments.append(app)
-                    break
+        for app_id in appointment_id:
+            # Finde alle Termine mit der passenden ID
+            matching_appointments = [app for app in appointments if str(app['id']) == str(app_id)]
+            # Füge alle passenden Termine hinzu
+            selected_appointments.extend(matching_appointments)
+        
+        logger.info(f"Number of selected appointments: {len(selected_appointments)}")
+        
+        # Wir haben bereits die ausgewählten Termine in selected_appointments
+        
+        # Sortiere die Termine nach dem Startdatum
+        selected_appointments.sort(key=lambda x: parse_iso_datetime(x['startDate']))
         
         # Logging for selected appointments
         logger.info(f"Generating PDF for {len(selected_appointments)} appointments:")
@@ -382,36 +469,31 @@ async def process_appointments(
             except Exception as e:
                 print(f"Error reading background image: {e}")
         
-        # Get the actual appointments from the API
-        logger.info(f"Selected appointment IDs: {appointment_id}")
-        logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
-        
-        # Get all appointments for the specified time period
+        # Wir holen alle Termine für den angegebenen Zeitraum und die ausgewählten Kalender
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
         
-        # Convert appointments to the correct format
+        # Konvertiere die Termine in das richtige Format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
-        # Add additional information from the form
+        # Füge die zusätzlichen Informationen zu den Terminen hinzu
         for appointment in appointments:
             app_id = appointment['id']
             additional_info = form_data.get(f'additional_info_{app_id}', "")
             appointment['additional_info'] = additional_info
         
-        logger.info(f"Number of appointments for JPEG: {len(appointments)}")
-
-        # Debug logging for IDs
-        logger.info(f"Selected appointment IDs: {appointment_id}")
-        logger.info(f"Available appointment IDs: {[app['id'] for app in appointments]}")
-        
-        # Use only selected appointments - with string comparison
+        # Filtere die ausgewählten Termine
         selected_appointments = []
-        for app in appointments:
-            for app_id in appointment_id:
-                if str(app['id']) == str(app_id):
-                    selected_appointments.append(app)
-                    break
+        for app_id in appointment_id:
+            # Finde alle Termine mit der passenden ID
+            matching_appointments = [app for app in appointments if str(app['id']) == str(app_id)]
+            # Füge alle passenden Termine hinzu
+            selected_appointments.extend(matching_appointments)
+        
+        logger.info(f"Number of selected appointments for JPEG: {len(selected_appointments)}")
+        
+        # Sortiere die Termine nach dem Startdatum
+        selected_appointments.sort(key=lambda x: parse_iso_datetime(x['startDate']))
         
         # Logging for selected appointments
         logger.info(f"Generating JPEG for {len(selected_appointments)} appointments:")
