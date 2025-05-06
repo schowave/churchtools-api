@@ -2,7 +2,7 @@ import os
 import re
 from pathlib import Path
 
-# Version aus build-and-push-docker-image.sh lesen
+# Read version from build-and-push-docker-image.sh
 def get_version_from_script():
     try:
         script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'build-and-push-docker-image.sh')
@@ -12,8 +12,8 @@ def get_version_from_script():
             if match:
                 return match.group(1)
     except Exception as e:
-        print(f"Fehler beim Lesen der Version: {e}")
-    return "0.0.0"  # Fallback-Version
+        print(f"Error reading version: {e}")
+    return "0.0.0"  # Fallback version
 
 class Config:
     VERSION = get_version_from_script()
@@ -23,5 +23,5 @@ class Config:
     CHURCHTOOLS_BASE_URL = os.getenv('CHURCHTOOLS_BASE_URL', f"https://{CHURCHTOOLS_BASE}")
     FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files')
     
-    # Stellen Sie sicher, dass das Verzeichnis existiert
+    # Make sure the directory exists
     Path(FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)

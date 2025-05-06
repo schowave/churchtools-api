@@ -4,21 +4,21 @@ from sqlalchemy.orm import declarative_base
 from app.config import Config
 import os
 
-# SQLite-Datenbank-URL
+# SQLite database URL
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{Config.DB_PATH}"
 
-# Engine erstellen
+# Create engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 
-# Session-Factory erstellen
+# Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for models
 Base = declarative_base()
 
-# Datenbankmodelle
+# Database models
 class Appointment(Base):
     __tablename__ = "appointments"
     
@@ -42,7 +42,7 @@ def get_db():
     finally:
         db.close()
 
-# Schema erstellen
+# Create schema
 def create_schema():
     Base.metadata.create_all(bind=engine)
 

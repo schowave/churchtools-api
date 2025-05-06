@@ -6,30 +6,30 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Lade Umgebungsvariablen aus .env-Datei
+# Load environment variables from .env file
 load_dotenv()
 
 from app.database import create_schema
 from app.config import Config
 from app.api import auth, appointments
 
-# FastAPI-Anwendung erstellen
+# Create FastAPI application
 app = FastAPI(title="ChurchTools API")
 
-# Statische Dateien einbinden
+# Include static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Templates einrichten
+# Set up templates
 templates = Jinja2Templates(directory="app/templates")
 
 # Make sure the directory for saved files exists
 Path(Config.FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)
 
-# Routen einbinden
+# Include routes
 app.include_router(auth.router, tags=["auth"])
 app.include_router(appointments.router, tags=["appointments"])
 
-# Hauptroute
+# Main route
 @app.get("/")
 async def root(request: Request):
     login_token = request.cookies.get("login_token")
@@ -37,10 +37,10 @@ async def root(request: Request):
         return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse("login.html", {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "version": Config.VERSION})
 
-# Datenbank-Schema erstellen
+# Create database schema
 create_schema()
 
-# Server starten mit uvicorn
+# Start server with uvicorn
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=5005, reload=True)

@@ -285,7 +285,7 @@ class TestPdfGenerator(unittest.TestCase):
         
         # Mock parse_iso_datetime
         with patch('app.services.pdf_generator.parse_iso_datetime') as mock_parse:
-            # Erstelle ein Mock-Datetime-Objekt
+            # Create a mock datetime object
             mock_dt = MagicMock()
             mock_dt.strftime.side_effect = lambda fmt: '15.01.2023' if fmt == '%d.%m.%Y' else '11:00'
             mock_parse.return_value = mock_dt

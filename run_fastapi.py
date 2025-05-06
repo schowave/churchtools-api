@@ -2,7 +2,7 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 
-# Lade Umgebungsvariablen aus .env-Datei
+# Load environment variables from .env file
 load_dotenv()
 
 from app.main import app

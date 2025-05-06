@@ -5,13 +5,13 @@ from typing import Tuple, Dict, List, Any, Optional
 
 def get_login_token(request: Request) -> Optional[str]:
     """
-    Extrahiert das Login-Token aus den Cookies der Anfrage.
+    Extracts the login token from the request cookies.
     """
     return request.cookies.get('login_token')
 
 def parse_iso_datetime(dt_str: str) -> datetime:
     """
-    Konvertiert einen ISO-Datetime-String in ein timezone-aware datetime-Objekt in der Europe/Berlin-Zeitzone.
+    Converts an ISO datetime string to a timezone-aware datetime object in the Europe/Berlin timezone.
     """
     # Create a timezone-aware datetime object in UTC if the string ends with 'Z'
     if dt_str.endswith('Z'):
@@ -28,7 +28,7 @@ def parse_iso_datetime(dt_str: str) -> datetime:
 
 def get_date_range_from_form(start_date: str = None, end_date: str = None) -> Tuple[str, str]:
     """
-    Berechnet einen Datumsbereich basierend auf den übergebenen Werten oder verwendet Standardwerte.
+    Calculates a date range based on the provided values or uses default values.
     """
     today = datetime.today()
     next_sunday = today + timedelta(days=(6 - today.weekday()) % 7)
@@ -43,15 +43,15 @@ def get_date_range_from_form(start_date: str = None, end_date: str = None) -> Tu
 
 def normalize_newlines(text: str) -> str:
     """
-    Normalisiert Zeilenumbrüche in einem Text.
-    Ersetzt alle Arten von Zeilenumbrüchen (\r\n, \r) durch \n.
-    Entfernt auch spezielle Unicode-Zeichen, die manchmal in Textfeldern erscheinen können.
+    Normalizes line breaks in a text.
+    Replaces all types of line breaks (\r\n, \r) with \n.
+    Also removes special Unicode characters that may sometimes appear in text fields.
     """
     if text is None:
         return ""
-    # Zuerst \r\n durch \n ersetzen
+    # First replace \r\n with \n
     text = text.replace('\r\n', '\n')
-    # Dann einzelne \r durch \n ersetzen
+    # Then replace single \r with \n
     text = text.replace('\r', '\n')
     # Remove special Unicode characters that may sometimes appear in text fields
     text = text.replace('\u2028', '\n')  # Line Separator

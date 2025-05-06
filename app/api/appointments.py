@@ -15,14 +15,14 @@ from app.config import Config
 from app.services.pdf_generator import create_pdf
 from app.utils import parse_iso_datetime, normalize_newlines
 
-# Logger konfigurieren
+# Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-# Hilfsfunktionen
+# Helper functions
 async def fetch_calendars(login_token: str):
     import httpx
     url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars'
@@ -122,7 +122,7 @@ def get_date_range_from_form(start_date: str = None, end_date: str = None):
         
     return start_date, end_date
 
-# Diese Funktion wurde entfernt, da sie nicht verwendet wird
+# This function was removed because it is not used
 
 def handle_jpeg_generation(pdf_filename):
     full_pdf_path = os.path.join(Config.FILE_DIRECTORY, pdf_filename)
@@ -142,7 +142,7 @@ def handle_jpeg_generation(pdf_filename):
         for file_name, file_bytes in jpeg_files:
             zip_file.writestr(file_name, file_bytes.read())
     
-    logger.info(f"JPEG-Bilder erfolgreich erstellt und in ZIP-Datei gepackt: {zip_filename}")
+    logger.info(f"JPEG images successfully created and packed into ZIP file: {zip_filename}")
     return zip_filename
 
 @router.get("/appointments")
@@ -157,7 +157,7 @@ async def appointments_page(
     start_date, end_date = get_date_range_from_form()
     calendars = await fetch_calendars(login_token)
     
-    # Vorauswahl aller Kalender
+    # Preselection of all calendars
     selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
     
     # Lade Farbeinstellungen
@@ -206,7 +206,7 @@ async def process_appointments(
     
     calendars = await fetch_calendars(login_token)
     
-    # Konvertiere calendar_ids zu Integers, falls vorhanden
+    # Convert calendar_ids to integers if available
     calendar_ids_int = []
     if calendar_ids:
         calendar_ids_int = [int(id) for id in calendar_ids if id.isdigit()]
@@ -230,7 +230,7 @@ async def process_appointments(
         color_settings['description_color'] = description_color
     
     if fetch_appointments_btn:
-        # Termine abholen
+        # Fetch appointments
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
@@ -239,7 +239,7 @@ async def process_appointments(
         for appointment in appointments:
             appointment['additional_info'] = additional_infos.get(appointment['id'], "")
         
-        # Farbeinstellungen laden
+        # Load color settings
         color_settings = load_color_settings(db, "default")
         
         response = templates.TemplateResponse(
@@ -272,7 +272,7 @@ async def process_appointments(
                     "end_date": end_date,
                     "base_url": Config.CHURCHTOOLS_BASE,
                     "color_settings": color_settings,
-                    "error": "Bitte wählen Sie mindestens einen Termin aus.",
+                    "error": "Please select at least one appointment.",
                     "version": Config.VERSION
                 }
             )
@@ -288,7 +288,7 @@ async def process_appointments(
         save_additional_infos(db, appointment_info_list)
         save_color_settings(db, color_settings)
         
-        # Hintergrundbild verarbeiten
+        # Process background image
         background_image_stream = None
         if background_image and background_image.filename:
             try:
@@ -296,7 +296,7 @@ async def process_appointments(
                 if content:  # Nur verarbeiten, wenn Inhalt vorhanden ist
                     background_image_stream = BytesIO(content)
             except Exception as e:
-                print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
+                print(f"Error reading background image: {e}")
         
         # Get the actual appointments from the API
         logger.info(f"Selected appointment IDs: {appointment_id}")
@@ -304,9 +304,9 @@ async def process_appointments(
         
         # Get all appointments for the specified time period
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-        logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
+        logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
         
-        # Konvertiere die Termine in das richtige Format
+        # Convert appointments to the correct format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
         # Add additional information from the form
@@ -334,7 +334,7 @@ async def process_appointments(
         for idx, app in enumerate(selected_appointments, 1):
             logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
         
-        # PDF erstellen
+        # Create PDF
         filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
                             color_settings['description_color'], color_settings['background_alpha'],
                             background_image_stream)
@@ -356,7 +356,7 @@ async def process_appointments(
                     "end_date": end_date,
                     "base_url": Config.CHURCHTOOLS_BASE,
                     "color_settings": color_settings,
-                    "error": "Bitte wählen Sie mindestens einen Termin aus.",
+                    "error": "Please select at least one appointment.",
                     "version": Config.VERSION
                 }
             )
@@ -372,7 +372,7 @@ async def process_appointments(
         save_additional_infos(db, appointment_info_list)
         save_color_settings(db, color_settings)
         
-        # Hintergrundbild verarbeiten
+        # Process background image
         background_image_stream = None
         if background_image and background_image.filename:
             try:
@@ -380,7 +380,7 @@ async def process_appointments(
                 if content:  # Nur verarbeiten, wenn Inhalt vorhanden ist
                     background_image_stream = BytesIO(content)
             except Exception as e:
-                print(f"Fehler beim Lesen des Hintergrundbildes: {e}")
+                print(f"Error reading background image: {e}")
         
         # Get the actual appointments from the API
         logger.info(f"Selected appointment IDs: {appointment_id}")
@@ -388,9 +388,9 @@ async def process_appointments(
         
         # Get all appointments for the specified time period
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-        logger.info(f"Anzahl abgerufener Termine: {len(appointments_data)}")
+        logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
         
-        # Konvertiere die Termine in das richtige Format
+        # Convert appointments to the correct format
         appointments = [appointment_to_dict(app) for app in appointments_data]
         
         # Add additional information from the form
@@ -418,12 +418,12 @@ async def process_appointments(
         for idx, app in enumerate(selected_appointments, 1):
             logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
         
-        # PDF erstellen
+        # Create PDF
         filename = create_pdf(selected_appointments, color_settings['date_color'], color_settings['background_color'],
                             color_settings['description_color'], color_settings['background_alpha'],
                             background_image_stream)
         
-        # JPEG generieren
+        # Generate JPEG
         zip_filename = handle_jpeg_generation(filename)
         
         # Return as file
@@ -435,7 +435,7 @@ async def process_appointments(
         response.set_cookie(key="jpegGenerated", value="true", max_age=1, path='/')
         return response
     
-    # Standardfall: Formular anzeigen
+    # Default case: Show form
     return templates.TemplateResponse(
         "appointments.html",
         {

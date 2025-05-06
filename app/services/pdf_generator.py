@@ -2,7 +2,7 @@ import os
 import logging
 import sys
 
-# Logger konfigurieren
+# Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from app.config import Config
@@ -19,13 +19,13 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 
-# Logger konfigurieren
+# Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
-    # Wenn kein Bild vorhanden ist, nichts tun
+    # If no image is available, do nothing
     if image_stream is None:
         return
     
@@ -52,8 +52,8 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
         # Draw the image on the canvas with the new dimensions
         canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
     except Exception as e:
-        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
-        # Bei einem Fehler einfach kein Bild zeichnen
+        logger.error(f"Error drawing background image: {e}")
+        # In case of an error, simply don't draw an image
 
 
 # Define the 16:9 page size in points
@@ -97,7 +97,7 @@ def setup_new_page(canvas_obj, image_stream):
         if image_stream:
             draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
     except Exception as e:
-        logger.error(f"Fehler beim Einrichten einer neuen Seite: {e}")
+        logger.error(f"Error setting up a new page: {e}")
     return new_y_position
 
 
@@ -111,23 +111,23 @@ def wrap_text(text, font_name, line_height, max_width):
     try:
         if font_name not in pdfmetrics.getRegisteredFontNames():
             try:
-                # Versuche, die angegebene Schriftart zu registrieren
+                # Try to register the specified font
                 pdfmetrics.registerFont(TTFont(font_name, f'fonts/{font_name}.ttf'))
             except Exception as e:
-                logger.error(f"Fehler beim Registrieren der Schriftart {font_name}: {e}")
-                # Fallback auf Helvetica
+                logger.error(f"Error registering font {font_name}: {e}")
+                # Fallback to Helvetica
                 font_name = 'Helvetica'
             
             try:
-                # Versuche, die fette Variante der Schriftart zu registrieren
+                # Try to register the bold variant of the font
                 pdfmetrics.registerFont(TTFont(font_name + '-Bold', f'fonts/{font_name}-Bold.ttf'))
             except Exception as e:
-                logger.error(f"Fehler beim Registrieren der fetten Schriftart {font_name}-Bold: {e}")
-                # Fallback auf Helvetica-Bold
+                logger.error(f"Error registering bold font {font_name}-Bold: {e}")
+                # Fallback to Helvetica-Bold
                 pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
     except Exception as e:
-        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
-        # Verwende die eingebauten Standardschriftarten
+        logger.error(f"General error in font registration: {e}")
+        # Use the built-in default fonts
         font_name = 'Helvetica'
 
     wrapped_lines = []
@@ -166,19 +166,19 @@ def wrap_text(text, font_name, line_height, max_width):
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
     # Try to register the font and use fallback if not available
     try:
-        # Versuche, Bahnschrift zu registrieren
+        # Try to register Bahnschrift
         if 'Bahnschrift' not in pdfmetrics.getRegisteredFontNames():
             try:
                 pdfmetrics.registerFont(TTFont('Bahnschrift', 'fonts/Bahnschrift.ttf'))
                 font_name = 'Bahnschrift'
             except Exception as e:
-                logger.error(f"Fehler beim Registrieren der Schriftart Bahnschrift: {e}")
-                # Fallback auf Helvetica
+                logger.error(f"Error registering font Bahnschrift: {e}")
+                # Fallback to Helvetica
                 font_name = 'Helvetica'
         else:
             font_name = 'Bahnschrift'
         
-        # Versuche, die fette Variante zu registrieren
+        # Try to register the bold variant
         bold_font_name = font_name + '-Bold'
         if bold_font_name not in pdfmetrics.getRegisteredFontNames():
             try:
@@ -187,21 +187,21 @@ def create_pdf(appointments, date_color, background_color, description_color, al
                 else:
                     pdfmetrics.registerFont(TTFont(bold_font_name, f'fonts/{font_name}-Bold.ttf'))
             except Exception as e:
-                logger.error(f"Fehler beim Registrieren der fetten Schriftart {bold_font_name}: {e}")
-                # Fallback auf Helvetica-Bold
+                logger.error(f"Error registering bold font {bold_font_name}: {e}")
+                # Fallback to Helvetica-Bold
                 bold_font_name = 'Helvetica-Bold'
                 if 'Helvetica-Bold' not in pdfmetrics.getRegisteredFontNames():
                     try:
                         pdfmetrics.registerFont(TTFont('Helvetica-Bold', 'fonts/helvetica-bold.ttf'))
                     except Exception as e:
-                        logger.error(f"Fehler beim Registrieren der Schriftart Helvetica-Bold: {e}")
-                        # Verwende eingebaute Standardschriftart
+                        logger.error(f"Error registering font Helvetica-Bold: {e}")
+                        # Use built-in default font
                         bold_font_name = 'Helvetica'
         
         font_name_bold = bold_font_name
     except Exception as e:
-        logger.error(f"Allgemeiner Fehler bei der Schriftartregistrierung: {e}")
-        # Verwende eingebaute Standardschriftarten
+        logger.error(f"General error in font registration: {e}")
+        # Use built-in default fonts
         font_name = 'Helvetica'
         font_name_bold = 'Helvetica-Bold'
     current_day = datetime.now().strftime('%Y-%m-%d')
@@ -215,7 +215,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         if image_stream:
             draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
     except Exception as e:
-        logger.error(f"Fehler beim Zeichnen des Hintergrundbildes: {e}")
+        logger.error(f"Error drawing background image: {e}")
 
     indent = PAGE_WIDTH * 1 / 40
 
@@ -330,5 +330,5 @@ def create_pdf(appointments, date_color, background_color, description_color, al
         y_position = min(information_y_position, y_position - rect_height - line_spacing)
 
     c.save()
-    logger.info(f"PDF erfolgreich erstellt: {filename} mit {len(appointments)} Terminen")
+    logger.info(f"PDF successfully created: {filename} with {len(appointments)} appointments")
     return filename
