@@ -195,13 +195,21 @@ def appointment_to_dict(appointment):
 
 def get_date_range_from_form(start_date: str = None, end_date: str = None):
     today = datetime.today()
-    next_sunday = today + timedelta(days=(6 - today.weekday()) % 7)
-    sunday_after_next = next_sunday + timedelta(weeks=1)
     
+    # Berechne den nächsten Montag
+    days_until_next_monday = (0 - today.weekday()) % 7
+    if days_until_next_monday == 0:  # Wenn heute Montag ist, nehmen wir nächsten Montag
+        days_until_next_monday = 7
+    next_monday = today + timedelta(days=days_until_next_monday)
+    
+    # Berechne den darauffolgenden Sonntag (6 Tage nach dem Montag)
+    next_sunday = next_monday + timedelta(days=6)
+    
+    # Wenn der Benutzer einen Zeitraum gewählt hat, verwenden wir diesen
     if not start_date:
-        start_date = next_sunday.strftime('%Y-%m-%d')
+        start_date = next_monday.strftime('%Y-%m-%d')
     if not end_date:
-        end_date = sunday_after_next.strftime('%Y-%m-%d')
+        end_date = next_sunday.strftime('%Y-%m-%d')
         
     return start_date, end_date
 
@@ -386,6 +394,8 @@ async def process_appointments(
         logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
         
         # Wir holen alle Termine für den angegebenen Zeitraum und die ausgewählten Kalender
+        # Wichtig: Wir verwenden hier die vom Benutzer ausgewählten Daten, nicht die Standarddaten
+        logger.info(f"Using user-selected date range: {start_date} to {end_date}")
         appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
         logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
         

@@ -28,27 +28,44 @@
             function calculateThisWeekDates() {
                 var today = new Date();
                 var dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-                var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // If Sunday, go back 6 days, otherwise go to Monday
-                var sundayOffset = dayOfWeek === 0 ? 0 : 7 - dayOfWeek; // If Sunday, use today, otherwise go to next Sunday
                 
-                var monday = new Date(today);
-                monday.setDate(today.getDate() + mondayOffset);
+                // Berechne den nächsten Montag
+                var daysUntilNextMonday = (1 - dayOfWeek) % 7;
+                if (daysUntilNextMonday <= 0) {
+                    daysUntilNextMonday += 7; // Wenn heute Montag ist oder Sonntag, nehmen wir nächsten Montag
+                }
                 
-                var sunday = new Date(today);
-                sunday.setDate(today.getDate() + sundayOffset);
+                var nextMonday = new Date(today);
+                nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+                
+                // Berechne den darauffolgenden Sonntag (6 Tage nach dem Montag)
+                var nextSunday = new Date(nextMonday);
+                nextSunday.setDate(nextMonday.getDate() + 6);
                 
                 return {
-                    start: monday,
-                    end: sunday
+                    start: nextMonday,
+                    end: nextSunday
                 };
             }
             
             // Initialize datepickers
             $("#start_date").datepicker({
-                dateFormat: "yy-mm-dd" // This format should match the value you're passing from Flask
+                dateFormat: "yy-mm-dd", // This format should match the value you're passing from Flask
+                onSelect: function() {
+                    // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                    if ($('.appointments-container').length > 0) {
+                        $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                    }
+                }
             });
             $("#end_date").datepicker({
-                dateFormat: "yy-mm-dd"
+                dateFormat: "yy-mm-dd",
+                onSelect: function() {
+                    // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                    if ($('.appointments-container').length > 0) {
+                        $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                    }
+                }
             });
             
             // Set initial values to "This Week" if not already set
@@ -62,19 +79,16 @@
             var initialStartDate = $("#start_date").val();
             var initialEndDate = $("#end_date").val();
             
-            // Function to calculate next week based on current end date
-            function calculateNextWeekFromCurrent() {
-                // Get the current end date
-                var currentEndDate = $("#end_date").val();
-                var endDate = $.datepicker.parseDate("yy-mm-dd", currentEndDate);
+            // Function to calculate next week (the week after the next Monday)
+            function calculateNextWeekDates() {
+                var thisWeek = calculateThisWeekDates();
                 
-                // Next day after end date
-                var nextWeekStart = new Date(endDate);
-                nextWeekStart.setDate(endDate.getDate() + 1);
+                // Die Woche nach dem nächsten Montag
+                var nextWeekStart = new Date(thisWeek.start);
+                nextWeekStart.setDate(nextWeekStart.getDate() + 7);
                 
-                // End date is 6 days after start date (7 days total)
-                var nextWeekEnd = new Date(nextWeekStart);
-                nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+                var nextWeekEnd = new Date(thisWeek.end);
+                nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
                 
                 return {
                     start: nextWeekStart,
@@ -91,15 +105,27 @@
             });
             
             $("#this-week").click(function() {
-                // Return to initial values
-                $("#start_date").val(initialStartDate);
-                $("#end_date").val(initialEndDate);
+                // Berechne die aktuelle Woche (nächster Montag bis Sonntag)
+                var thisWeek = calculateThisWeekDates();
+                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
+                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
+                
+                // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                if ($('.appointments-container').length > 0) {
+                    $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                }
             });
             
             $("#next-week").click(function() {
-                var nextWeek = calculateNextWeekFromCurrent();
+                // Berechne die nächste Woche (die Woche nach dem nächsten Montag)
+                var nextWeek = calculateNextWeekDates();
                 $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
                 $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
+                
+                // Wenn sich das Datum ändert, verstecke den Appointments-Bereich
+                if ($('.appointments-container').length > 0) {
+                    $('.appointments-container').html('<p>Bitte klicken Sie auf "Termine abholen", um Termine für den neuen Zeitraum anzuzeigen.</p>');
+                }
             });
         });
     </script>
@@ -344,6 +370,9 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
+            <!-- Versteckte Felder für Datumsparameter -->
+            <input type="hidden" name="start_date" value="{{ start_date }}">
+            <input type="hidden" name="end_date" value="{{ end_date }}">
             <!-- Two-column layout for appointments and formatting options -->
             <div class="appointments-layout">
                 <!-- Linke Spalte: Termine -->
@@ -440,10 +469,48 @@
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Ausgabe generieren</div>
                         <div class="generate-buttons">
-                            <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate">
-                            <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate">
+                            <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate" id="generate_pdf_btn">
+                            <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate" id="generate_jpeg_btn">
+                        </div>
+                        <div id="generate_error" class="alert alert-error" style="display: none; margin-top: 10px;">
+                            Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.
                         </div>
                     </div>
+                    
+                    <script>
+                        // Funktion zum Prüfen, ob Termine vorhanden sind
+                        function checkAppointments() {
+                            var hasAppointments = $('.appointment-checkbox').length > 0;
+                            
+                            // Aktiviere oder deaktiviere die Generierungs-Buttons
+                            $('#generate_pdf_btn, #generate_jpeg_btn').prop('disabled', !hasAppointments);
+                            
+                            // Zeige oder verstecke die Fehlermeldung
+                            if (!hasAppointments) {
+                                $('#generate_error').show();
+                                
+                                // Verhindere das Absenden des Formulars, wenn keine Termine vorhanden sind
+                                $('#generate_pdf_btn, #generate_jpeg_btn').on('click', function(e) {
+                                    if (!hasAppointments) {
+                                        e.preventDefault();
+                                        alert('Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.');
+                                    }
+                                });
+                            } else {
+                                $('#generate_error').hide();
+                            }
+                        }
+                        
+                        // Prüfe beim Laden der Seite
+                        $(document).ready(function() {
+                            checkAppointments();
+                        });
+                        
+                        // Prüfe, wenn der Appointments-Bereich geändert wird
+                        $(document).on('DOMSubtreeModified', '.appointments-container', function() {
+                            checkAppointments();
+                        });
+                    </script>
                 </div>
             </div>
         </form>
