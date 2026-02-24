@@ -1,6 +1,9 @@
 import os
 import re
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Read version from build-and-push-docker-image.sh
 def get_version_from_script():
@@ -12,7 +15,7 @@ def get_version_from_script():
             if match:
                 return match.group(1)
     except Exception as e:
-        print(f"Error reading version: {e}")
+        logger.error(f"Error reading version: {e}")
     return "0.0.0"  # Fallback version
 
 class Config:

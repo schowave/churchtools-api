@@ -14,7 +14,7 @@ import httpx
 from app.database import get_db, save_additional_infos, get_additional_infos, save_color_settings, load_color_settings
 from app.config import Config
 from app.services.pdf_generator import create_pdf
-from app.utils import parse_iso_datetime, normalize_newlines
+from app.utils import parse_iso_datetime, normalize_newlines, get_date_range_from_form
 
 # Configure logger
 logging.basicConfig(level=logging.INFO)
@@ -102,27 +102,6 @@ def appointment_to_dict(appointment):
         'additional_info': ""
     }
 
-def get_date_range_from_form(start_date: str = None, end_date: str = None):
-    today = datetime.today()
-    
-    # Calculate the next Sunday
-    # In Python, weekday() returns 0 for Monday and 6 for Sunday
-    days_until_next_sunday = (6 - today.weekday()) % 7
-    if days_until_next_sunday == 0:  # If today is Sunday, we use today as Sunday
-        next_sunday = today
-    else:
-        next_sunday = today + timedelta(days=days_until_next_sunday)
-    
-    # Calculate the following Sunday (7 days after the first Sunday)
-    next_next_sunday = next_sunday + timedelta(days=7)
-    
-    # If the user has chosen a time period, we use that
-    if not start_date:
-        start_date = next_sunday.strftime('%Y-%m-%d')
-    if not end_date:
-        end_date = next_next_sunday.strftime('%Y-%m-%d')
-        
-    return start_date, end_date
 
 def _build_template_context(
     request: Request,
