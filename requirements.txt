@@ -1,2 +1,2 @@
 -r requirements-base.txt
-reportlab==3.5.68 --no-binary=reportlab
+reportlab==3.6.13
