@@ -5,8 +5,7 @@ app/saved_files
 evkila.db
 /venv/
 .DS_Store
-/__pycache__/
-app/__pycache__/
+__pycache__/
 
 .aider*
 .env
