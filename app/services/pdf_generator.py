@@ -194,20 +194,32 @@ def _draw_event(
     top_padding = BASE_FONT_SIZE * TOP_PADDING_FACTOR
     rect_width = PAGE_WIDTH * SCALE_FACTOR
 
-    # Calculate the total text block height
-    total_text_height = top_padding + line_height_large
-
     wrapped_description_lines, _ = wrap_text(
         event["description"], font_name_bold, font_size_large, PAGE_WIDTH - RIGHT_COLUMN_X - INDENT
     )
 
+    # Calculate the total text block height (using actual drawing step size)
+    description_step = font_size_large * LINE_SPACING_FACTOR
+    total_text_height = top_padding + len(wrapped_description_lines) * description_step
+
     information = normalize_newlines(event.get("additional_info") or event.get("information") or "")
-    wrapped_info_lines, wrapped_info_height = wrap_text(
-        information, font_name, line_height_medium, rect_width - RIGHT_COLUMN_X * 0.4
+    info_max_width = LEFT_COLUMN_X + rect_width - RIGHT_COLUMN_X - INDENT
+    wrapped_info_lines, _ = wrap_text(
+        information, font_name, line_height_medium, info_max_width
     )
 
-    time_and_meeting_at_height = line_height_medium + (line_height_medium if event["meetingAt"] != "" else 0)
-    wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != "" else 0
+    left_col_max_width = RIGHT_COLUMN_X - LEFT_COLUMN_X - INDENT * 2
+    wrapped_meeting_at_lines, _ = wrap_text(
+        event["meetingAt"], font_name, font_size_medium, left_col_max_width
+    ) if event["meetingAt"] else ([], 0)
+
+    meeting_at_line_count = len(wrapped_meeting_at_lines) if event["meetingAt"] else 0
+    medium_step = font_size_medium * LINE_SPACING_FACTOR
+    time_and_meeting_at_height = line_height_medium + meeting_at_line_count * medium_step
+
+    info_step = font_size_medium * LINE_SPACING_FACTOR
+    actual_info_height = len(wrapped_info_lines) * info_step
+    wrapped_info_height_with_padding = (actual_info_height + line_height_small) if information != "" else 0
 
     max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
     rect_height = total_text_height + max_height + line_height_medium
@@ -238,13 +250,12 @@ def _draw_event(
     time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
     c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large - line_height_medium, time_str)
 
-    # MeetingAt
+    # MeetingAt (wrapped to left column width)
     if event["meetingAt"]:
-        c.drawString(
-            LEFT_COLUMN_X + INDENT,
-            text_y_position - line_height_large - line_height_medium - line_height_medium,
-            event["meetingAt"],
-        )
+        meeting_at_y = text_y_position - line_height_large - line_height_medium - line_height_medium
+        for ma_line in wrapped_meeting_at_lines:
+            c.drawString(LEFT_COLUMN_X + INDENT, meeting_at_y, ma_line)
+            meeting_at_y -= font_size_medium * LINE_SPACING_FACTOR
 
     # Right column: Caption and Information
     c.setFillColor(black)
