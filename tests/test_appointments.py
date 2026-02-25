@@ -323,5 +323,284 @@ async def test_download_file_not_found():
     assert context.value.status_code == 404
     assert context.value.detail == 'File not found'
 
-if __name__ == '__main__':
-    unittest.main()
+
+# --- Tests for process_appointments (4.1) ---
+
+SAMPLE_CALENDARS = [
+    {'id': 1, 'name': 'Calendar 1'},
+    {'id': 2, 'name': 'Calendar 2'},
+]
+
+SAMPLE_APPOINTMENT_DATA = [
+    {
+        'base': {
+            'id': '1_101',
+            'caption': 'Event 1',
+            'information': 'Info 1',
+            'address': {'meetingAt': 'Location 1'},
+        },
+        'calculated': {
+            'startDate': '2023-01-15T10:00:00Z',
+            'endDate': '2023-01-15T12:00:00Z',
+        },
+    },
+]
+
+
+def _make_request_mock(has_token=True):
+    """Create a mock Request with cookies and async form()."""
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = 'test_token' if has_token else None
+
+    # Mock the async form() method used by _prepare_selected_appointments
+    form_data = MagicMock()
+    form_data.get.return_value = ''
+
+    async def async_form():
+        return form_data
+    request.form = async_form
+
+    return request
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_no_token(mock_fetch, templates_mock):
+    """POST without login token should redirect to login."""
+    request = _make_request_mock(has_token=False)
+    db = MagicMock()
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None, generate_pdf_btn=None, generate_jpeg_btn=None,
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=None, appointment_id=None, background_image=None,
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
+    mock_fetch.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.get_additional_infos')
+@patch('app.api.appointments.fetch_appointments')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_fetch(
+    mock_fetch_cal, mock_fetch_app, mock_get_info, mock_load_color, templates_mock, config_mock
+):
+    """Clicking 'fetch appointments' should load appointments and render template."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
+    mock_get_info.return_value = {'1_101': 'Saved info'}
+    mock_load_color.return_value = ColorSettings(name='default')
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn='Termine abholen',
+        generate_pdf_btn=None, generate_jpeg_btn=None,
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=['1', '2'], appointment_id=None, background_image=None,
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    # Should call fetch_appointments with integer calendar IDs
+    mock_fetch_app.assert_called_once_with('test_token', '2023-01-15', '2023-01-22', [1, 2])
+
+    # Should render template with appointments in context
+    templates_mock.TemplateResponse.assert_called_once()
+    call_args = templates_mock.TemplateResponse.call_args
+    context = call_args[0][1]
+    assert 'appointments' in context
+    assert len(context['appointments']) == 1
+    assert context['appointments'][0]['additional_info'] == 'Saved info'
+
+    # Response should set fetchAppointments cookie
+    response = templates_mock.TemplateResponse.return_value
+    response.set_cookie.assert_called_once_with(key='fetchAppointments', value='true', max_age=1, path='/')
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.create_pdf')
+@patch('app.api.appointments.save_color_settings')
+@patch('app.api.appointments.save_additional_infos')
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.fetch_appointments')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_generate_pdf(
+    mock_fetch_cal, mock_fetch_app, mock_load_color,
+    mock_save_info, mock_save_color, mock_create_pdf,
+    templates_mock, config_mock
+):
+    """Clicking 'generate PDF' should create PDF and redirect to download."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
+    mock_load_color.return_value = ColorSettings(name='default')
+    mock_create_pdf.return_value = '2023-01-15_Termine.pdf'
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None,
+        generate_pdf_btn='PDF Generieren',
+        generate_jpeg_btn=None,
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=['1'], appointment_id=['1_101'],
+        background_image=MagicMock(filename=''),
+        date_color='#ff0000', description_color='#00ff00',
+        background_color='#0000ff', alpha=100,
+    )
+
+    # Should be a redirect to the download URL
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
+    assert '/download/2023-01-15_Termine.pdf' in result.headers['location']
+
+    # create_pdf should be called with overridden color values
+    mock_create_pdf.assert_called_once()
+    call_args = mock_create_pdf.call_args
+    assert call_args[0][1] == '#ff0000'   # date_color
+    assert call_args[0][2] == '#0000ff'   # background_color
+    assert call_args[0][3] == '#00ff00'   # description_color
+    assert call_args[0][4] == 100         # alpha
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_generate_pdf_no_selection(
+    mock_fetch_cal, mock_load_color, templates_mock, config_mock
+):
+    """Generate PDF with no appointments selected should show error."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_load_color.return_value = ColorSettings(name='default')
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None,
+        generate_pdf_btn='PDF Generieren',
+        generate_jpeg_btn=None,
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=['1'], appointment_id=None,
+        background_image=None,
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    # Should render template with error message
+    templates_mock.TemplateResponse.assert_called_once()
+    context = templates_mock.TemplateResponse.call_args[0][1]
+    assert 'error' in context
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.handle_jpeg_generation')
+@patch('app.api.appointments.create_pdf')
+@patch('app.api.appointments.save_color_settings')
+@patch('app.api.appointments.save_additional_infos')
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.fetch_appointments')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_generate_jpeg(
+    mock_fetch_cal, mock_fetch_app, mock_load_color,
+    mock_save_info, mock_save_color, mock_create_pdf, mock_jpeg,
+    templates_mock, config_mock
+):
+    """Clicking 'generate JPEG' should create PDF, convert to JPEG ZIP, and return file."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
+    mock_load_color.return_value = ColorSettings(name='default')
+    mock_create_pdf.return_value = '2023-01-15_Termine.pdf'
+    mock_jpeg.return_value = '2023-01-15_Termine.zip'
+
+    # Create the expected zip file so FileResponse doesn't fail
+    zip_path = os.path.join(config_mock['FILE_DIRECTORY'], '2023-01-15_Termine.zip')
+    with open(zip_path, 'wb') as f:
+        f.write(b'fake zip')
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None,
+        generate_pdf_btn=None,
+        generate_jpeg_btn='JPEG generieren',
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=['1'], appointment_id=['1_101'],
+        background_image=MagicMock(filename=''),
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    assert isinstance(result, FileResponse)
+    mock_create_pdf.assert_called_once()
+    mock_jpeg.assert_called_once_with('2023-01-15_Termine.pdf')
+
+    # Clean up
+    os.remove(zip_path)
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_default_form(
+    mock_fetch_cal, mock_load_color, templates_mock, config_mock
+):
+    """POST with no button pressed should render the default form."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_load_color.return_value = ColorSettings(name='default')
+
+    result = await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None, generate_pdf_btn=None, generate_jpeg_btn=None,
+        start_date='2023-01-15', end_date='2023-01-22',
+        calendar_ids=None, appointment_id=None, background_image=None,
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    templates_mock.TemplateResponse.assert_called_once()
+    context = templates_mock.TemplateResponse.call_args[0][1]
+    assert context['calendars'] == SAMPLE_CALENDARS
+    # No calendars selected, should use all available
+    assert context['selected_calendar_ids'] is None
+
+
+@pytest.mark.asyncio
+@patch('app.api.appointments.load_color_settings')
+@patch('app.api.appointments.get_date_range_from_form')
+@patch('app.api.appointments.fetch_calendars')
+async def test_process_appointments_default_dates(
+    mock_fetch_cal, mock_get_dates, mock_load_color, templates_mock, config_mock
+):
+    """When no dates provided, should fall back to get_date_range_from_form()."""
+    request = _make_request_mock()
+    db = MagicMock()
+
+    mock_fetch_cal.return_value = SAMPLE_CALENDARS
+    mock_load_color.return_value = ColorSettings(name='default')
+    mock_get_dates.return_value = ('2023-02-01', '2023-02-08')
+
+    await process_appointments(
+        request=request, db=db,
+        fetch_appointments_btn=None, generate_pdf_btn=None, generate_jpeg_btn=None,
+        start_date=None, end_date=None,
+        calendar_ids=None, appointment_id=None, background_image=None,
+        date_color=None, description_color=None, background_color=None, alpha=None,
+    )
+
+    # Default dates should be used in template context
+    context = templates_mock.TemplateResponse.call_args[0][1]
+    assert context['start_date'] == '2023-02-01'
+    assert context['end_date'] == '2023-02-08'
