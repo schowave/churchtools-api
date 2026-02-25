@@ -1,4 +1,4 @@
-.PHONY: run test lint format build push
+.PHONY: run test lint format build push preview
 
 run:
 	uvicorn app.main:app --reload --host 0.0.0.0 --port 5005
@@ -17,3 +17,6 @@ build:
 
 push:
 	./build-and-push-docker-image.sh
+
+preview:
+	python scripts/preview_pdf.py && open app/saved_files/*_Termine.pdf
