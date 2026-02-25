@@ -1,7 +1,6 @@
 import os
 import re
 import logging
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +24,3 @@ class Config:
     DB_PATH = os.getenv('DB_PATH', '<SET DB_PATH IN .ENV FILE>')
     CHURCHTOOLS_BASE_URL = os.getenv('CHURCHTOOLS_BASE_URL', f"https://{CHURCHTOOLS_BASE}")
     FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'saved_files')
-    
-    # Make sure the directory exists
-    Path(FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)

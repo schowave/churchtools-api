@@ -410,21 +410,21 @@
                             <div class="format-option">
                                 <div class="format-option-label">Hintergrundfarbe</div>
                                 <input type="color" id="background_color" name="background_color"
-                                       value="{{ color_settings['background_color'] }}" class="color-input">
+                                       value="{{ color_settings.background_color }}" class="color-input">
                             </div>
                             
                             <!-- Datumsfarbe -->
                             <div class="format-option">
                                 <div class="format-option-label">Datumsfarbe</div>
                                 <input type="color" id="date_color" name="date_color"
-                                       value="{{ color_settings['date_color'] }}" class="color-input">
+                                       value="{{ color_settings.date_color }}" class="color-input">
                             </div>
                             
                             <!-- Beschreibungsfarbe -->
                             <div class="format-option">
                                 <div class="format-option-label">Beschreibungsfarbe</div>
                                 <input type="color" id="description_color" name="description_color"
-                                       value="{{ color_settings['description_color'] }}" class="color-input">
+                                       value="{{ color_settings.description_color }}" class="color-input">
                             </div>
                             
                             <!-- Transparenz -->
@@ -432,9 +432,9 @@
                                 <div class="format-option-label">Transparenz</div>
                                 <div class="transparency-container">
                                     <input type="range" id="alpha" name="alpha" class="transparency-slider"
-                                           min="0" max="255" step="1" value="{{ color_settings['background_alpha'] }}"
+                                           min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
                                            oninput="document.getElementById('alphaValue').textContent = this.value">
-                                    <span id="alphaValue" class="transparency-value">{{ color_settings['background_alpha'] }}</span>
+                                    <span id="alphaValue" class="transparency-value">{{ color_settings.background_alpha }}</span>
                                 </div>
                             </div>
                             

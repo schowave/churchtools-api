@@ -4,101 +4,21 @@ from fastapi.responses import RedirectResponse, FileResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
-import zipfile
 from io import BytesIO
-from pdf2image import convert_from_path
-from datetime import datetime
-import httpx
 
-from app.database import get_db, save_additional_infos, get_additional_infos, save_color_settings, load_color_settings
+from app.database import get_db, DEFAULT_SETTING_NAME
+from app.crud import save_additional_infos, get_additional_infos, save_color_settings, load_color_settings
+from app.schemas import ColorSettings
 from app.config import Config
 from app.shared import templates
 from app.services.pdf_generator import create_pdf
+from app.services.churchtools_client import fetch_calendars, fetch_appointments, appointment_to_dict
+from app.services.jpeg_generator import handle_jpeg_generation
 from app.utils import parse_iso_datetime, normalize_newlines, get_date_range_from_form
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def _auth_headers(login_token: str) -> dict:
-    return {'Authorization': f'Login {login_token}'}
-
-# Helper functions
-async def fetch_calendars(login_token: str):
-    url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars'
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=_auth_headers(login_token))
-        
-        if response.status_code == 200:
-            all_calendars = response.json().get('data', [])
-            public_calendars = [calendar for calendar in all_calendars if calendar.get('isPublic') is True]
-            return public_calendars
-        else:
-            response.raise_for_status()
-
-async def fetch_appointments(login_token: str, start_date: str, end_date: str, calendar_ids: List[int]):
-    headers = _auth_headers(login_token)
-    query_params = {
-        'from': start_date,
-        'to': end_date,
-    }
-    appointments = []
-    seen_ids = set()  # Set to track seen appointment IDs
-
-    async with httpx.AsyncClient() as client:
-        for calendar_id in calendar_ids:
-            url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
-            response = await client.get(url, headers=headers, params=query_params)
-            
-            if response.status_code != 200:
-                logger.warning(f"Failed to fetch appointments for calendar {calendar_id}: HTTP {response.status_code}")
-                continue
-
-            appointment_counts = {}  # Dictionary to keep track of appointment counts
-
-            for appointment in response.json()['data']:
-                base_id = str(appointment['base']['id'])
-                appointment_id = str(calendar_id) + "_" + base_id
-
-                # Check if the appointment_id already exists, and increment the count
-                if appointment_id in appointment_counts:
-                    appointment_counts[appointment_id] += 1
-                    appointment_id += f"_{appointment_counts[appointment_id]}"
-                else:
-                    appointment_counts[appointment_id] = 0  # Initialize count for new ID
-
-                if appointment_id not in seen_ids:
-                    seen_ids.add(appointment_id)
-                    appointment['base']['id'] = appointment_id
-                    appointments.append(appointment)
-
-    appointments.sort(key=lambda x: parse_iso_datetime(x['calculated']['startDate']))
-    return appointments
-
-def appointment_to_dict(appointment):
-    start_date_from_appointment = appointment['calculated']['startDate']
-    start_date_datetime = parse_iso_datetime(start_date_from_appointment)
-
-    end_date_from_appointment = appointment['calculated']['endDate']
-    end_date_datetime = parse_iso_datetime(end_date_from_appointment)
-
-    meeting_at = (appointment['base'].get('address') or {}).get('meetingAt', '')
-
-    return {
-        'id': appointment['base']['id'],
-        'description': appointment['base']['caption'],
-        'startDate': start_date_from_appointment,
-        'endDate': appointment['calculated']['endDate'],
-        'address': appointment['base'].get('address', ''),
-        'meetingAt': meeting_at,
-        'information': appointment['base']['information'],
-        'startDateView': start_date_datetime.strftime('%d.%m.%Y'),
-        'startTimeView': start_date_datetime.strftime('%H:%M'),
-        'endTimeView': end_date_datetime.strftime('%H:%M'),
-        'additional_info': ""
-    }
 
 
 def _build_template_context(
@@ -107,7 +27,7 @@ def _build_template_context(
     selected_calendar_ids: list,
     start_date: str,
     end_date: str,
-    color_settings: dict,
+    color_settings: ColorSettings,
     **extra
 ) -> dict:
     """Build the common template context dict for appointments.html."""
@@ -133,7 +53,7 @@ async def _prepare_selected_appointments(
     start_date: str,
     end_date: str,
     calendar_ids_int: List[int],
-    color_settings: dict,
+    color_settings: ColorSettings,
     background_image: Optional[UploadFile],
 ):
     """Shared preparation logic for PDF and JPEG generation.
@@ -189,27 +109,6 @@ async def _prepare_selected_appointments(
     return selected_appointments, background_image_stream
 
 
-def handle_jpeg_generation(pdf_filename):
-    full_pdf_path = os.path.join(Config.FILE_DIRECTORY, pdf_filename)
-    images = convert_from_path(full_pdf_path)
-    jpeg_files = []
-
-    for i, image in enumerate(images):
-        jpeg_stream = BytesIO()
-        image.save(jpeg_stream, 'JPEG')
-        jpeg_stream.seek(0)
-        jpeg_files.append((f'page_{i + 1}.jpg', jpeg_stream))
-
-    zip_filename = os.path.splitext(pdf_filename)[0] + ".zip"
-    zip_path = os.path.join(Config.FILE_DIRECTORY, zip_filename)
-    
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-        for file_name, file_bytes in jpeg_files:
-            zip_file.writestr(file_name, file_bytes.read())
-    
-    logger.info(f"JPEG images successfully created and packed into ZIP file: {zip_filename}")
-    return zip_filename
-
 @router.get("/appointments")
 async def appointments_page(
     request: Request,
@@ -218,16 +117,15 @@ async def appointments_page(
     login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    
+
     start_date, end_date = get_date_range_from_form()
     calendars = await fetch_calendars(login_token)
-    
+
     # Preselection of all calendars
     selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
-    
-    # Lade Farbeinstellungen
-    color_settings = load_color_settings(db, "default")
-    
+
+    color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
+
     return templates.TemplateResponse(
         "appointments.html",
         _build_template_context(request, calendars, selected_calendar_ids, start_date, end_date, color_settings)
@@ -247,7 +145,7 @@ async def _handle_fetch_appointments(
         appointment['additional_info'] = additional_infos.get(appointment['id'], "")
 
     # Reload color settings from DB (ignore form overrides for fetch)
-    color_settings = load_color_settings(db, "default")
+    color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
 
     context = _build_template_context(
         request, calendars, calendar_ids, start_date, end_date, color_settings,
@@ -276,8 +174,8 @@ async def _handle_generate_pdf(
     )
 
     filename = create_pdf(
-        selected_appointments, color_settings['date_color'], color_settings['background_color'],
-        color_settings['description_color'], color_settings['background_alpha'], bg_stream,
+        selected_appointments, color_settings.date_color, color_settings.background_color,
+        color_settings.description_color, color_settings.background_alpha, bg_stream,
     )
 
     response = RedirectResponse(url=f"/download/{filename}", status_code=status.HTTP_303_SEE_OTHER)
@@ -303,8 +201,8 @@ async def _handle_generate_jpeg(
     )
 
     filename = create_pdf(
-        selected_appointments, color_settings['date_color'], color_settings['background_color'],
-        color_settings['description_color'], color_settings['background_alpha'], bg_stream,
+        selected_appointments, color_settings.date_color, color_settings.background_color,
+        color_settings.description_color, color_settings.background_alpha, bg_stream,
     )
 
     zip_filename = handle_jpeg_generation(filename)
@@ -358,15 +256,18 @@ async def process_appointments(
         logger.info(f"No calendars selected, using all available calendars: {calendar_ids_int}")
 
     # Load color settings with form overrides
-    color_settings = load_color_settings(db, "default")
+    color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
+    overrides = {}
     if background_color:
-        color_settings['background_color'] = background_color
+        overrides['background_color'] = background_color
     if alpha is not None:
-        color_settings['background_alpha'] = alpha
+        overrides['background_alpha'] = alpha
     if date_color:
-        color_settings['date_color'] = date_color
+        overrides['date_color'] = date_color
     if description_color:
-        color_settings['description_color'] = description_color
+        overrides['description_color'] = description_color
+    if overrides:
+        color_settings = color_settings.copy(update=overrides)
 
     # Dispatch to the appropriate handler
     if fetch_appointments_btn:
@@ -391,6 +292,7 @@ async def process_appointments(
         request, calendars, calendar_ids, start_date, end_date, color_settings,
     )
     return templates.TemplateResponse("appointments.html", context)
+
 
 @router.get("/download/{filename}")
 async def download_file(filename: str):

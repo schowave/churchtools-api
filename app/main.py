@@ -1,7 +1,6 @@
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Request, status
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-import os
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -36,8 +35,3 @@ async def root(request: Request):
 
 # Create database schema
 create_schema()
-
-# Start server with uvicorn
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=5005, reload=True)

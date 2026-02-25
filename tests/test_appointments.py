@@ -7,11 +7,11 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from fastapi import Request, Form, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
-from app.api.appointments import (
-    fetch_calendars, fetch_appointments, appointment_to_dict,
-    get_date_range_from_form, handle_jpeg_generation,
-    appointments_page, process_appointments, download_file
-)
+from app.services.churchtools_client import fetch_calendars, fetch_appointments, appointment_to_dict
+from app.services.jpeg_generator import handle_jpeg_generation
+from app.api.appointments import appointments_page, process_appointments, download_file
+from app.utils import get_date_range_from_form
+from app.schemas import ColorSettings
 from app.config import Config
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def config_mock():
         'CHURCHTOOLS_BASE_URL': 'https://test.church.tools',
         'FILE_DIRECTORY': '/tmp/test_files'
     }
-    with patch.multiple('app.api.appointments.Config',
+    with patch.multiple('app.config.Config',
                       CHURCHTOOLS_BASE=config_mock['CHURCHTOOLS_BASE'],
                       CHURCHTOOLS_BASE_URL=config_mock['CHURCHTOOLS_BASE_URL'],
                       FILE_DIRECTORY=config_mock['FILE_DIRECTORY']):
@@ -203,7 +203,7 @@ def test_appointment_to_dict():
     # Check that meetingAt is empty when address is None
     assert result['meetingAt'] == ''
 
-@patch('app.api.appointments.convert_from_path')
+@patch('app.services.jpeg_generator.convert_from_path')
 def test_handle_jpeg_generation(mock_convert, config_mock):
     # Mock PDF to image conversion
     mock_image1 = MagicMock()
@@ -246,13 +246,7 @@ async def test_appointments_page_with_token(mock_load_color, mock_get_date, mock
         {'id': 1, 'name': 'Calendar 1'},
         {'id': 2, 'name': 'Calendar 2'}
     ]
-    mock_load_color.return_value = {
-        'name': 'default',
-        'background_color': '#ffffff',
-        'background_alpha': 128,
-        'date_color': '#c1540c',
-        'description_color': '#4e4e4e'
-    }
+    mock_load_color.return_value = ColorSettings(name='default')
     
     # Call the function
     result = await appointments_page(request_mock, db_mock)
@@ -278,7 +272,7 @@ async def test_appointments_page_with_token(mock_load_color, mock_get_date, mock
     assert context['start_date'] == '2023-01-15'
     assert context['end_date'] == '2023-01-22'
     assert context['base_url'] == config_mock['CHURCHTOOLS_BASE']
-    assert context['color_settings'] == mock_load_color.return_value
+    assert context['color_settings'] == ColorSettings(name='default')
 
 @pytest.mark.asyncio
 @patch('app.api.appointments.fetch_calendars')
