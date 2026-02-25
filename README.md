@@ -76,10 +76,10 @@ This uses `compose.yml` to build the image, expose port 5005, mount `./data` for
 ### Run locally without Compose
 
 ```bash
-./run_docker.sh
+./run_local_docker.sh
 ```
 
-The script auto-detects Podman or Docker, builds the image, and starts a container with your `.env` configuration.
+Builds the image, starts a container with your `.env` configuration and a `data/` volume for the SQLite database. Automatically cleans up any previous container.
 
 ### Build and push to Docker Hub
 
