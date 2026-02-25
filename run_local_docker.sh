@@ -17,7 +17,7 @@ if podman ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
 fi
 
 # Extract version from build script
-VERSION=$(grep -oP 'VERSION=\K[\d.]+' build-and-push-docker-image.sh)
+VERSION=$(grep 'VERSION=' build-and-push-docker-image.sh | head -1 | sed 's/VERSION=//')
 
 echo "Building container image (v${VERSION})..."
 podman build --build-arg APP_VERSION="${VERSION}" -t "$IMAGE_NAME" .
