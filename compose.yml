@@ -1,9 +1,0 @@
-services:
-  app:
-    build: .
-    ports:
-      - "5005:5005"
-    volumes:
-      - ./data:/app/data
-    env_file:
-      - .env

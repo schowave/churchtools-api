@@ -65,15 +65,7 @@ Access the application at [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
 
 ## Docker / Podman Deployment
 
-### Quick start with Compose
-
-```bash
-podman compose up        # or: docker compose up
-```
-
-This uses `compose.yml` to build the image, expose port 5005, mount `./data` for the SQLite database, and load variables from `.env`.
-
-### Run locally without Compose
+### Run locally
 
 ```bash
 ./run_local_docker.sh
