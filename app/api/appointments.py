@@ -1,35 +1,35 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, File, UploadFile
 from fastapi.responses import RedirectResponse, FileResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import os
 import zipfile
 from io import BytesIO
 from pdf2image import convert_from_path
-from datetime import datetime, timedelta
+from datetime import datetime
 import httpx
 
 from app.database import get_db, save_additional_infos, get_additional_infos, save_color_settings, load_color_settings
 from app.config import Config
+from app.shared import templates
 from app.services.pdf_generator import create_pdf
 from app.utils import parse_iso_datetime, normalize_newlines, get_date_range_from_form
 
-# Configure logger
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
+
+
+def _auth_headers(login_token: str) -> dict:
+    return {'Authorization': f'Login {login_token}'}
 
 # Helper functions
 async def fetch_calendars(login_token: str):
     url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars'
-    headers = {'Authorization': f'Login {login_token}'}
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers=headers)
+        response = await client.get(url, headers=_auth_headers(login_token))
         
         if response.status_code == 200:
             all_calendars = response.json().get('data', [])
@@ -39,7 +39,7 @@ async def fetch_calendars(login_token: str):
             response.raise_for_status()
 
 async def fetch_appointments(login_token: str, start_date: str, end_date: str, calendar_ids: List[int]):
-    headers = {'Authorization': f'Login {login_token}'}
+    headers = _auth_headers(login_token)
     query_params = {
         'from': start_date,
         'to': end_date,
@@ -81,12 +81,7 @@ def appointment_to_dict(appointment):
     end_date_from_appointment = appointment['calculated']['endDate']
     end_date_datetime = parse_iso_datetime(end_date_from_appointment)
 
-    address = appointment['base'].get('address', '')
-
-    if address is not None:
-        meeting_at = address.get('meetingAt', '')
-    else:
-        meeting_at = ''  # Or however you'd like to handle a missing address
+    meeting_at = (appointment['base'].get('address') or {}).get('meetingAt', '')
 
     return {
         'id': appointment['base']['id'],
@@ -217,7 +212,7 @@ async def appointments_page(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    login_token = request.cookies.get("login_token")
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
@@ -337,7 +332,7 @@ async def process_appointments(
     background_color: Optional[str] = Form(None),
     alpha: Optional[int] = Form(None)
 ):
-    login_token = request.cookies.get("login_token")
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 

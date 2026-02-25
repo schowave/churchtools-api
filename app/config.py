@@ -19,6 +19,7 @@ def get_version_from_script():
     return "0.0.0"  # Fallback version
 
 class Config:
+    COOKIE_LOGIN_TOKEN = "login_token"
     VERSION = get_version_from_script()
     CHURCHTOOLS_BASE = os.getenv('CHURCHTOOLS_BASE', '<SET CHURCHTOOLS_BASE IN .ENV FILE>')
     DB_PATH = os.getenv('DB_PATH', '<SET DB_PATH IN .ENV FILE>')

@@ -128,34 +128,34 @@ class TestDatabase(unittest.TestCase):
     
     def test_database_error_handling(self):
         # Test error handling in get_additional_infos
-        with patch('app.database.print') as mock_print:
+        with patch('app.database.logger') as mock_logger:
             # Create a session that raises an exception when queried
             mock_session = MagicMock()
             mock_session.query.side_effect = Exception("Database error")
-            
+
             # Call function with mocked session
             result = get_additional_infos(mock_session, ["appointment1"])
-            
+
             # Check that error was handled and empty dict returned
             self.assertEqual(result, {})
-            mock_print.assert_called_once()
-            self.assertIn("Database error", mock_print.call_args[0][0])
+            mock_logger.error.assert_called_once()
+            self.assertIn("Database error", mock_logger.error.call_args[0][0])
     
     def test_load_color_settings_error_handling(self):
         # Test error handling in load_color_settings
-        with patch('app.database.print') as mock_print:
+        with patch('app.database.logger') as mock_logger:
             # Create a session that raises an exception when queried
             mock_session = MagicMock()
             mock_session.query.side_effect = Exception("Database error")
-            
+
             # Call function with mocked session
             result = load_color_settings(mock_session, "test")
-            
+
             # Check that default settings were returned
             self.assertEqual(result['name'], 'test')
             self.assertEqual(result['background_color'], '#ffffff')
-            mock_print.assert_called_once()
-            self.assertIn("An error occurred", mock_print.call_args[0][0])
+            mock_logger.error.assert_called_once()
+            self.assertIn("An error occurred", mock_logger.error.call_args[0][0])
 
 if __name__ == '__main__':
     unittest.main()

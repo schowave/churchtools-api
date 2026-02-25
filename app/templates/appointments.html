@@ -507,9 +507,11 @@
                         });
                         
                         // Prüfe, wenn der Appointments-Bereich geändert wird
-                        $(document).on('DOMSubtreeModified', '.appointments-container', function() {
-                            checkAppointments();
-                        });
+                        var container = document.querySelector('.appointments-container');
+                        if (container) {
+                            var observer = new MutationObserver(checkAppointments);
+                            observer.observe(container, { childList: true, subtree: true });
+                        }
                     </script>
                 </div>
             </div>

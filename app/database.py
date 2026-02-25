@@ -1,8 +1,19 @@
+import logging
+
 from sqlalchemy import create_engine, Column, String, Integer, Text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 from app.config import Config
 import os
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_COLOR_SETTINGS = {
+    'background_color': '#ffffff',
+    'background_alpha': 128,
+    'date_color': '#c1540c',
+    'description_color': '#4e4e4e'
+}
 
 # SQLite database URL
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{Config.DB_PATH}"
@@ -65,7 +76,7 @@ def get_additional_infos(db, appointment_ids):
         results = db.query(Appointment).filter(Appointment.id.in_(appointment_ids)).all()
         return {appointment.id: appointment.additional_info for appointment in results}
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(f"Database error: {e}")
         return {}
 
 # CRUD operations for ColorSettings
@@ -102,21 +113,7 @@ def load_color_settings(db, setting_name):
                 'description_color': color_setting.description_color
             }
         else:
-            # Default settings
-            return {
-                'name': setting_name,
-                'background_color': '#ffffff',
-                'background_alpha': 128,
-                'date_color': '#c1540c',
-                'description_color': '#4e4e4e'
-            }
+            return {'name': setting_name, **DEFAULT_COLOR_SETTINGS}
     except Exception as e:
-        print(f"An error occurred: {e}")
-        # Return default settings in case of an error
-        return {
-            'name': setting_name,
-            'background_color': '#ffffff',
-            'background_alpha': 128,
-            'date_color': '#c1540c',
-            'description_color': '#4e4e4e'
-        }
+        logger.error(f"An error occurred: {e}")
+        return {'name': setting_name, **DEFAULT_COLOR_SETTINGS}

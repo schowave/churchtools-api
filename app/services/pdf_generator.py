@@ -15,8 +15,6 @@ from PIL import Image, ImageColor
 from app.config import Config
 from app.utils import parse_iso_datetime, normalize_newlines
 
-# Configure logger
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Layout constants (16:9 page for church projector display)
@@ -173,6 +171,89 @@ def wrap_text(text, font_name, line_height, max_width):
     return wrapped_lines, text_height
 
 
+def _draw_event(c, event, y_position, font_name, font_name_bold,
+                date_color, background_color, description_color, alpha, image_stream):
+    """Draw a single event on the PDF canvas. Returns the updated y_position."""
+    # Derived typography sizes
+    font_size_large = BASE_FONT_SIZE * LINE_SPACING_FACTOR
+    line_height_large = font_size_large * LINE_HEIGHT_FACTOR
+    font_size_medium = BASE_FONT_SIZE * 1.2
+    line_height_medium = font_size_medium * LINE_HEIGHT_FACTOR
+    line_height_small = BASE_FONT_SIZE * LINE_HEIGHT_FACTOR
+    line_spacing = BASE_FONT_SIZE * LINE_SPACING_FACTOR
+    top_padding = BASE_FONT_SIZE * TOP_PADDING_FACTOR
+    rect_width = PAGE_WIDTH * SCALE_FACTOR
+
+    # Calculate the total text block height
+    total_text_height = top_padding + line_height_large
+
+    wrapped_description_lines, _ = wrap_text(
+        event['description'], font_name_bold, font_size_large, PAGE_WIDTH - RIGHT_COLUMN_X - INDENT
+    )
+
+    information = normalize_newlines(event.get('additional_info') or event.get('information') or '')
+    wrapped_info_lines, wrapped_info_height = wrap_text(
+        information, font_name, line_height_medium, rect_width - RIGHT_COLUMN_X * 0.4
+    )
+
+    time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
+    wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != '' else 0
+
+    max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
+    rect_height = total_text_height + max_height + line_height_medium
+
+    # Check if we need to start a new page
+    if y_position < (rect_height + BOTTOM_MARGIN):
+        y_position = setup_new_page(c, image_stream)
+
+    draw_transparent_rectangle(c, LEFT_COLUMN_X, y_position - rect_height, rect_width, rect_height,
+                               background_color, alpha)
+
+    text_y_position = y_position - top_padding
+
+    # Left column: German Day and Date
+    c.setFillColor(HexColor(date_color))
+    c.setFont(font_name_bold, font_size_large)
+
+    start_dt = parse_iso_datetime(event['startDate'])
+    end_dt = parse_iso_datetime(event['endDate'])
+    german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
+    day_date_str = f"{german_day_of_week}, {start_dt.strftime('%d.%m.%Y')}"
+    c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large, day_date_str)
+
+    # Time
+    c.setFillColor(HexColor(description_color))
+    c.setFont(font_name, font_size_medium)
+    time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
+    c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large - line_height_medium, time_str)
+
+    # MeetingAt
+    if event['meetingAt']:
+        c.drawString(LEFT_COLUMN_X + INDENT,
+                     text_y_position - line_height_large - line_height_medium - line_height_medium,
+                     event['meetingAt'])
+
+    # Right column: Caption and Information
+    c.setFillColor(black)
+    c.setFont(font_name_bold, font_size_large)
+
+    description_y_position = text_y_position - line_height_large
+    for line in wrapped_description_lines:
+        c.drawString(RIGHT_COLUMN_X, description_y_position, line)
+        description_y_position -= font_size_large * LINE_SPACING_FACTOR
+
+    information_y_position = description_y_position
+
+    c.setFillColor(HexColor(description_color))
+    c.setFont(font_name, font_size_medium)
+
+    for detail in wrapped_info_lines:
+        c.drawString(RIGHT_COLUMN_X, information_y_position, detail)
+        information_y_position -= font_size_medium * LINE_SPACING_FACTOR
+
+    return min(information_y_position, y_position - rect_height - line_spacing)
+
+
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
     font_name, font_name_bold = _register_fonts()
 
@@ -182,100 +263,19 @@ def create_pdf(appointments, date_color, background_color, description_color, al
     c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
     c.setTitle(filename)
 
-    # Draw the background image first
     try:
         if image_stream:
             draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
     except Exception as e:
         logger.error(f"Error drawing background image: {e}")
 
-    # Derived typography sizes
-    font_size_large = BASE_FONT_SIZE * LINE_SPACING_FACTOR
-    line_height_large = font_size_large * LINE_HEIGHT_FACTOR
-    font_size_medium = BASE_FONT_SIZE * 1.2
-    line_height_medium = font_size_medium * LINE_HEIGHT_FACTOR
-    font_size_small = BASE_FONT_SIZE
-    line_height_small = font_size_small * LINE_HEIGHT_FACTOR
-    line_spacing = BASE_FONT_SIZE * LINE_SPACING_FACTOR
-    top_padding = BASE_FONT_SIZE * TOP_PADDING_FACTOR
-    rect_width = PAGE_WIDTH * SCALE_FACTOR
-
     y_position = PAGE_HEIGHT - TOP_MARGIN
 
     for event in appointments:
-        # Calculate the total text block height for each appointment
-        total_text_height = top_padding + line_height_large
-
-        # Wrap the caption text if it exceeds the width of the page
-        wrapped_description_lines, wrapped_description_height = wrap_text(
-            event['description'], font_name_bold, font_size_large, PAGE_WIDTH - RIGHT_COLUMN_X - INDENT
+        y_position = _draw_event(
+            c, event, y_position, font_name, font_name_bold,
+            date_color, background_color, description_color, alpha, image_stream,
         )
-
-        # Wrap the information text if it exceeds the width of the rectangle
-        information = normalize_newlines(event.get('additional_info') or event.get('information') or '')
-        wrapped_info_lines, wrapped_info_height = wrap_text(
-            information, font_name, line_height_medium, rect_width - RIGHT_COLUMN_X * 0.4
-        )
-
-        time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
-        wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != '' else 0
-
-        max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
-        rect_height = total_text_height + max_height + line_height_medium
-
-        information_font_size = font_size_medium
-
-        # Check if we need to start a new page
-        if y_position < (rect_height + BOTTOM_MARGIN):
-            y_position = setup_new_page(c, image_stream)
-
-        draw_transparent_rectangle(c, LEFT_COLUMN_X, y_position - rect_height, rect_width, rect_height,
-                                background_color, alpha)
-
-        text_y_position = y_position - top_padding
-
-        # Left column: German Day and Date
-        c.setFillColor(HexColor(date_color))
-        c.setFont(font_name_bold, font_size_large)
-
-        start_dt = parse_iso_datetime(event['startDate'])
-        end_dt = parse_iso_datetime(event['endDate'])
-        german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
-        day_date_str = f"{german_day_of_week}, {start_dt.strftime('%d.%m.%Y')}"
-        c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large, day_date_str)
-
-        # Time
-        c.setFillColor(HexColor(description_color))
-        c.setFont(font_name, font_size_medium)
-        time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
-        c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large - line_height_medium, time_str)
-
-        # MeetingAt
-        if event['meetingAt']:
-            c.drawString(LEFT_COLUMN_X + INDENT,
-                        text_y_position - line_height_large - line_height_medium - line_height_medium,
-                        event['meetingAt'])
-
-        # Right column: Caption and Information
-        c.setFillColor(black)
-        c.setFont(font_name_bold, font_size_large)
-
-        description_y_position = text_y_position - line_height_large
-        for line in wrapped_description_lines:
-            c.drawString(RIGHT_COLUMN_X, description_y_position, line)
-            description_y_position -= font_size_large * LINE_SPACING_FACTOR
-
-        information_y_position = description_y_position
-
-        c.setFillColor(HexColor(description_color))
-        c.setFont(font_name, information_font_size)
-
-        for detail in wrapped_info_lines:
-            c.drawString(RIGHT_COLUMN_X, information_y_position, detail)
-            information_y_position -= font_size_medium * LINE_SPACING_FACTOR
-
-        # Update y_position for next event
-        y_position = min(information_y_position, y_position - rect_height - line_spacing)
 
     c.save()
     logger.info(f"PDF successfully created: {filename} with {len(appointments)} appointments")
