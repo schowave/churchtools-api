@@ -216,7 +216,7 @@ def _draw_event(
 
     information = normalize_newlines(event.get("additional_info") or event.get("information") or "")
     info_max_width = LEFT_COLUMN_X + rect_width - RIGHT_COLUMN_X - INDENT
-    wrapped_info_lines, _ = wrap_text(information, font_name, line_height_medium, info_max_width)
+    wrapped_info_lines, _ = wrap_text(information, font_name, font_size_medium, info_max_width)
 
     left_col_max_width = RIGHT_COLUMN_X - LEFT_COLUMN_X - INDENT * 2
     wrapped_meeting_at_lines, _ = (
