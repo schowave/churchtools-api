@@ -131,7 +131,9 @@ SAMPLE_APPOINTMENTS = [
         "description": "Regionaler Jugendgottesdienst",
         "startDate": "2026-03-27T17:00:00Z",
         "endDate": "2026-03-27T19:00:00Z",
-        "meetingAt": "Evangelisches Gemeindezentrum an der Kreuzbergstraße 147, Eingang über den Hinterhof neben dem Parkplatz",
+        "meetingAt": (
+            "Evangelisches Gemeindezentrum an der Kreuzbergstraße 147, Eingang über den Hinterhof neben dem Parkplatz"
+        ),
         "information": "",
         "additional_info": "Thema: Glaube und Zweifel",
     },

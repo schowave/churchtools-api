@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from reportlab.lib.pagesizes import landscape
+from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
 
 from app.services.pdf_generator import (
@@ -322,6 +323,194 @@ class TestPdfGenerator(unittest.TestCase):
 
         # Check that the result is the correct filename
         self.assertEqual(result, "2023-01-15_Termine.pdf")
+
+
+class TestDrawEventOverflow(unittest.TestCase):
+    """Integration test: verify all drawn text stays within the grey box boundaries.
+
+    Uses real reportlab canvas + font metrics to catch layout overflow regressions.
+    """
+
+    # Outlier events (ids 11-15) from scripts/preview_pdf.py — stress-test every layout area
+    OUTLIER_EVENTS = [
+        {
+            "id": "11",
+            "description": "Regionaler Jugendgottesdienst",
+            "startDate": "2026-03-27T17:00:00Z",
+            "endDate": "2026-03-27T19:00:00Z",
+            "meetingAt": (
+                "Evangelisches Gemeindezentrum an der Kreuzbergstraße 147, "
+                "Eingang über den Hinterhof neben dem Parkplatz"
+            ),
+            "information": "",
+            "additional_info": "Thema: Glaube und Zweifel",
+        },
+        {
+            "id": "12",
+            "description": (
+                "Festlicher Gemeinschaftsgottesdienst mit Einführung der neuen Kirchenvorsteherin "
+                "und anschließendem Empfang im Gemeindehaus mit Kaffee und Kuchen für alle Gemeindemitglieder"
+            ),
+            "startDate": "2026-03-29T10:00:00Z",
+            "endDate": "2026-03-29T12:30:00Z",
+            "meetingAt": "Stadtkirche",
+            "information": "",
+            "additional_info": "Bitte Kuchen mitbringen!",
+        },
+        {
+            "id": "13",
+            "description": "Karfreitagsgottesdienst",
+            "startDate": "2026-04-03T10:00:00Z",
+            "endDate": "2026-04-03T11:30:00Z",
+            "meetingAt": "Stadtkirche",
+            "information": "",
+            "additional_info": (
+                "Wochenspruch: Also hat Gott die Welt geliebt, dass er seinen "
+                "eingeborenen Sohn gab, damit alle, die an ihn glauben, nicht "
+                "verloren werden, sondern das ewige Leben haben. (Johannes 3,16)\n"
+                "Wochenlied: O Haupt voll Blut und Wunden (EG 85)\n"
+                "Predigttext: Jesaja 52,13–53,12\n"
+                "Liturgische Farbe: Schwarz/Violett\n"
+                "Kollekte: Brot für die Welt\n"
+                "Musik: Kirchenchor – »O Traurigkeit, o Herzeleid«\n"
+                "Orgel: Johann Sebastian Bach – »O Mensch, bewein dein Sünde groß« BWV 622\n"
+                "Stille Prozession zum Kreuz mit Fürbitten\n"
+                "Abendmahl in beiderlei Gestalt\n"
+                "Anschließend stilles Beisammensein im Gemeindehaus"
+            ),
+        },
+        {
+            "id": "14",
+            "description": (
+                "Ökumenischer Gottesdienst zum Tag der Deutschen Einheit mit Friedensgebet "
+                "und Segnung der neuen Gemeindefahne durch Superintendent Dr. Hoffmann"
+            ),
+            "startDate": "2026-04-05T10:00:00Z",
+            "endDate": "2026-04-05T12:00:00Z",
+            "meetingAt": (
+                "Evangelisch-Lutherische Hauptkirche St. Petri am Alten Marktplatz, Seiteneingang barrierefrei"
+            ),
+            "information": "",
+            "additional_info": (
+                "Mitwirkende: Posaunenchor, Gospelchor »Joyful Noise«, Bläserensemble der Musikschule\n"
+                "Predigt: Superintendent Dr. Hoffmann und Pfarrer Benedikt (kath.)\n"
+                "Kollekte: Renovierung des Gemeindehauses\n"
+                "Anschließend Stehempfang auf dem Kirchplatz bei hoffentlich gutem Wetter\n"
+                "Kinderbetreuung im Gemeindehaus während des gesamten Gottesdienstes"
+            ),
+        },
+        {
+            "id": "15",
+            "description": "Gemeindeausflug",
+            "startDate": "2026-04-07T08:00:00Z",
+            "endDate": "2026-04-07T18:00:00Z",
+            "meetingAt": "",
+            "information": (
+                "Abfahrt: 08:00 Uhr am Gemeindehaus (bitte pünktlich!). "
+                "Ziel: Kloster Maulbronn mit Führung und anschließender Wanderung "
+                "durch das Salzachtal. Mittagessen im Klosterhof (Selbstzahler). "
+                "Nachmittags freie Zeit für Besichtigung oder Spaziergang. "
+                "Rückfahrt gegen 17:00 Uhr. Kosten: 15 € pro Person (Busfahrt + Eintritt). "
+                "Anmeldung bis 25.03. im Pfarrbüro. Bitte festes Schuhwerk mitbringen!"
+            ),
+            "additional_info": "",
+        },
+    ]
+
+    def setUp(self):
+        import app.services.pdf_generator as pg
+
+        # Reset font cache so we get a fresh registration with real fonts
+        pg._cached_fonts = None
+        self.font_name, self.font_name_bold = pg._register_fonts()
+        self.y_start = pg.PAGE_HEIGHT - pg.BOTTOM_MARGIN
+
+    def _draw_and_capture(self, event):
+        """Draw a single event on a real canvas and capture box + text positions.
+
+        Returns (box_calls, text_calls) where:
+          box_calls  = list of (x, y_bottom, width, height)
+          text_calls = list of (x, y, text)
+        """
+        from app.services.pdf_generator import _draw_event
+
+        buf = io.BytesIO()
+        c = canvas.Canvas(buf, pagesize=landscape((1200, 675)))
+
+        box_calls = []
+        text_calls = []
+
+        original_draw_string = c.drawString
+
+        def spy_draw_string(x, y, text, *args, **kwargs):
+            text_calls.append((x, y, text))
+            return original_draw_string(x, y, text, *args, **kwargs)
+
+        c.drawString = spy_draw_string
+
+        with patch(
+            "app.services.pdf_generator.draw_transparent_rectangle",
+            wraps=draw_transparent_rectangle,
+        ) as mock_rect:
+            _draw_event(
+                c,
+                event,
+                self.y_start,
+                self.font_name,
+                self.font_name_bold,
+                date_color="#FFFFFF",
+                background_color="#000000",
+                description_color="#CCCCCC",
+                alpha=180,
+                image_stream=None,
+            )
+
+            for call in mock_rect.call_args_list:
+                # draw_transparent_rectangle(canvas, x, y, width, height, ...)
+                _, x, y_bottom, width, height = call[0][:5]
+                box_calls.append((x, y_bottom, width, height))
+
+        return box_calls, text_calls
+
+    def test_text_stays_within_box_vertically(self):
+        """No drawString baseline should fall below the grey box bottom edge."""
+        for event in self.OUTLIER_EVENTS:
+            with self.subTest(event_id=event["id"]):
+                box_calls, text_calls = self._draw_and_capture(event)
+                self.assertTrue(box_calls, "No box was drawn")
+                self.assertTrue(text_calls, "No text was drawn")
+
+                box_x, box_y_bottom, box_w, box_h = box_calls[0]
+                min_text_y = min(y for _, y, _ in text_calls)
+
+                self.assertGreaterEqual(
+                    min_text_y,
+                    box_y_bottom,
+                    f"Event {event['id']}: text baseline {min_text_y:.1f} is below "
+                    f"box bottom {box_y_bottom:.1f} (overflow by {box_y_bottom - min_text_y:.1f}pt)",
+                )
+
+    def test_text_stays_within_box_horizontally(self):
+        """No drawString right edge should exceed the grey box right edge."""
+        for event in self.OUTLIER_EVENTS:
+            with self.subTest(event_id=event["id"]):
+                box_calls, text_calls = self._draw_and_capture(event)
+                self.assertTrue(box_calls, "No box was drawn")
+                self.assertTrue(text_calls, "No text was drawn")
+
+                box_x, box_y_bottom, box_w, box_h = box_calls[0]
+                box_right = box_x + box_w
+
+                # Check each text string's right edge using real font metrics
+                for text_x, text_y, text in text_calls:
+                    text_width = pdfmetrics.stringWidth(text, self.font_name, 25)
+                    text_right = text_x + text_width
+                    self.assertLessEqual(
+                        text_right,
+                        box_right + 1.0,  # 1pt tolerance for rounding
+                        f"Event {event['id']}: text '{text[:40]}…' right edge {text_right:.1f} "
+                        f"exceeds box right {box_right:.1f}",
+                    )
 
 
 if __name__ == "__main__":

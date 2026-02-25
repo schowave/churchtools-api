@@ -43,8 +43,9 @@ RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy application source
+# Copy application source and fonts
 COPY app/ ./app/
+COPY fonts/ ./fonts/
 COPY run_fastapi.py ./
 
 ARG APP_VERSION=0.0.0

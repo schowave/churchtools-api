@@ -41,17 +41,26 @@ PREFERRED_FONT = "Bahnschrift"
 FALLBACK_FONT = "Helvetica"
 FALLBACK_FONT_BOLD = "Helvetica-Bold"
 
+# Resolve fonts/ directory relative to project root (two levels up from this file)
+_FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fonts")
+
+_cached_fonts = None
+
 
 def _register_fonts():
     """Register preferred fonts with fallback to Helvetica.
 
-    Returns (font_name, bold_font_name).
+    Returns (font_name, bold_font_name). Results are cached after first call.
     """
+    global _cached_fonts
+    if _cached_fonts is not None:
+        return _cached_fonts
+
     font_name = PREFERRED_FONT
     try:
         if font_name not in pdfmetrics.getRegisteredFontNames():
             try:
-                pdfmetrics.registerFont(TTFont(font_name, f"fonts/{font_name}.ttf"))
+                pdfmetrics.registerFont(TTFont(font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
             except Exception as e:
                 logger.error(f"Error registering font {font_name}: {e}")
                 font_name = FALLBACK_FONT
@@ -61,15 +70,17 @@ def _register_fonts():
             try:
                 if font_name == PREFERRED_FONT:
                     # Bahnschrift uses the same file for bold
-                    pdfmetrics.registerFont(TTFont(bold_font_name, f"fonts/{font_name}.ttf"))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
                 else:
-                    pdfmetrics.registerFont(TTFont(bold_font_name, f"fonts/{font_name}-Bold.ttf"))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}-Bold.ttf")))
             except Exception as e:
                 logger.error(f"Error registering bold font {bold_font_name}: {e}")
                 bold_font_name = FALLBACK_FONT_BOLD
                 if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
                     try:
-                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, "fonts/helvetica-bold.ttf"))
+                        pdfmetrics.registerFont(
+                            TTFont(FALLBACK_FONT_BOLD, os.path.join(_FONTS_DIR, "helvetica-bold.ttf"))
+                        )
                     except Exception as e2:
                         logger.error(f"Error registering font {FALLBACK_FONT_BOLD}: {e2}")
                         bold_font_name = FALLBACK_FONT
@@ -78,7 +89,8 @@ def _register_fonts():
         font_name = FALLBACK_FONT
         bold_font_name = FALLBACK_FONT_BOLD
 
-    return font_name, bold_font_name
+    _cached_fonts = (font_name, bold_font_name)
+    return _cached_fonts
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -204,14 +216,14 @@ def _draw_event(
 
     information = normalize_newlines(event.get("additional_info") or event.get("information") or "")
     info_max_width = LEFT_COLUMN_X + rect_width - RIGHT_COLUMN_X - INDENT
-    wrapped_info_lines, _ = wrap_text(
-        information, font_name, line_height_medium, info_max_width
-    )
+    wrapped_info_lines, _ = wrap_text(information, font_name, line_height_medium, info_max_width)
 
     left_col_max_width = RIGHT_COLUMN_X - LEFT_COLUMN_X - INDENT * 2
-    wrapped_meeting_at_lines, _ = wrap_text(
-        event["meetingAt"], font_name, font_size_medium, left_col_max_width
-    ) if event["meetingAt"] else ([], 0)
+    wrapped_meeting_at_lines, _ = (
+        wrap_text(event["meetingAt"], font_name, font_size_medium, left_col_max_width)
+        if event["meetingAt"]
+        else ([], 0)
+    )
 
     meeting_at_line_count = len(wrapped_meeting_at_lines) if event["meetingAt"] else 0
     medium_step = font_size_medium * LINE_SPACING_FACTOR

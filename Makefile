@@ -1,16 +1,18 @@
 .PHONY: run test lint format build push preview
 
+PYTHON := venv/bin/python
+
 run:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 5005
+	$(PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 5005
 
 test:
-	python -m pytest tests/ -q
+	$(PYTHON) -m pytest tests/ -q
 
 lint:
-	ruff check . && ruff format --check .
+	$(PYTHON) -m ruff check . && $(PYTHON) -m ruff format --check .
 
 format:
-	ruff check --fix . && ruff format .
+	$(PYTHON) -m ruff check --fix . && $(PYTHON) -m ruff format .
 
 build:
 	podman build -t churchtools-local .
@@ -19,4 +21,4 @@ push:
 	./build-and-push-docker-image.sh
 
 preview:
-	python scripts/preview_pdf.py && open app/saved_files/*_Termine.pdf
+	$(PYTHON) scripts/preview_pdf.py && open app/saved_files/*_Termine.pdf
