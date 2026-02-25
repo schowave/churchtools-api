@@ -63,51 +63,18 @@
 
 /* Safari-specific adjustments */
 @supports (-webkit-touch-callout: none) {
-    /* Only for Safari on iOS */
     .tile {
         -webkit-appearance: none;
         appearance: none;
-        border-radius: 8px;
-        background-color: var(--primary-color);
-        color: white;
-        border: 2px solid var(--primary-color);
         display: block;
         width: 100%;
         max-width: 100%;
         margin: 10px 0;
-        padding: 20px;
-        font-size: 16px;
-        text-align: center;
         height: auto;
         min-height: 100px;
-    }
-    
-    /* Logout button */
-    input[type="submit"].btn--danger,
-    .btn.btn--danger,
-    .btn--danger {
-        -webkit-appearance: none;
-        appearance: none;
-        border-radius: var(--border-radius);
-        width: 100%;
-        padding: 15px; /* Larger buttons for touch devices */
-        background-color: var(--danger-color);
-        color: white;
-        border: 2px solid var(--danger-color);
-        display: block;
-        margin: 10px 0;
-        font-size: 16px;
         text-align: center;
     }
-    
-    /* Container adjustments */
-    .container {
-        width: 100%;
-        max-width: 100%;
-        padding: 15px;
-    }
-    
-    /* Tiles container adjustments */
+
     .tiles-container {
         width: 100%;
         display: block;

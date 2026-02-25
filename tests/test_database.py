@@ -95,7 +95,7 @@ class TestDatabase(unittest.TestCase):
         # Check default values
         self.assertIsInstance(result, ColorSettings)
         self.assertEqual(result.name, 'nonexistent')
-        self.assertEqual(result.background_color, '#ffffff')
+        self.assertEqual(result.background_color, '#d3d3d3')
         self.assertEqual(result.background_alpha, 128)
         self.assertEqual(result.date_color, '#c1540c')
         self.assertEqual(result.description_color, '#4e4e4e')
@@ -158,7 +158,7 @@ class TestDatabase(unittest.TestCase):
             # Check that default settings were returned
             self.assertIsInstance(result, ColorSettings)
             self.assertEqual(result.name, 'test')
-            self.assertEqual(result.background_color, '#ffffff')
+            self.assertEqual(result.background_color, '#d3d3d3')
             mock_logger.error.assert_called_once()
             self.assertIn("An error occurred", mock_logger.error.call_args[0][0])
 
