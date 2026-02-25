@@ -1,19 +1,19 @@
-import os
-import logging
 import io
+import logging
+import os
 from datetime import datetime
 
-from reportlab.lib.utils import ImageReader
-from reportlab.lib.pagesizes import landscape
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import black, HexColor
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from babel.dates import format_date
 from PIL import Image, ImageColor
+from reportlab.lib.colors import HexColor, black
+from reportlab.lib.pagesizes import landscape
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
 
 from app.config import Config
-from app.utils import parse_iso_datetime, normalize_newlines
+from app.utils import normalize_newlines, parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +37,9 @@ LINE_SPACING_FACTOR = 1.5
 TOP_PADDING_FACTOR = 0.8
 
 # Preferred font (Bahnschrift for church display, Helvetica as fallback)
-PREFERRED_FONT = 'Bahnschrift'
-FALLBACK_FONT = 'Helvetica'
-FALLBACK_FONT_BOLD = 'Helvetica-Bold'
+PREFERRED_FONT = "Bahnschrift"
+FALLBACK_FONT = "Helvetica"
+FALLBACK_FONT_BOLD = "Helvetica-Bold"
 
 
 def _register_fonts():
@@ -51,25 +51,25 @@ def _register_fonts():
     try:
         if font_name not in pdfmetrics.getRegisteredFontNames():
             try:
-                pdfmetrics.registerFont(TTFont(font_name, f'fonts/{font_name}.ttf'))
+                pdfmetrics.registerFont(TTFont(font_name, f"fonts/{font_name}.ttf"))
             except Exception as e:
                 logger.error(f"Error registering font {font_name}: {e}")
                 font_name = FALLBACK_FONT
 
-        bold_font_name = font_name + '-Bold'
+        bold_font_name = font_name + "-Bold"
         if bold_font_name not in pdfmetrics.getRegisteredFontNames():
             try:
                 if font_name == PREFERRED_FONT:
                     # Bahnschrift uses the same file for bold
-                    pdfmetrics.registerFont(TTFont(bold_font_name, f'fonts/{font_name}.ttf'))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, f"fonts/{font_name}.ttf"))
                 else:
-                    pdfmetrics.registerFont(TTFont(bold_font_name, f'fonts/{font_name}-Bold.ttf'))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, f"fonts/{font_name}-Bold.ttf"))
             except Exception as e:
                 logger.error(f"Error registering bold font {bold_font_name}: {e}")
                 bold_font_name = FALLBACK_FONT_BOLD
                 if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
                     try:
-                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, 'fonts/helvetica-bold.ttf'))
+                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, "fonts/helvetica-bold.ttf"))
                     except Exception as e2:
                         logger.error(f"Error registering font {FALLBACK_FONT_BOLD}: {e2}")
                         bold_font_name = FALLBACK_FONT
@@ -99,7 +99,7 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
         x_position = (page_width - scaled_width) / 2
         y_position = (page_height - scaled_height) / 2
 
-        canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask='auto')
+        canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask="auto")
     except Exception as e:
         logger.error(f"Error drawing background image: {e}")
 
@@ -111,17 +111,17 @@ def create_transparent_image(width, height, background_color, alpha):
     rgba_color = ImageColor.getcolor(background_color, "RGBA")
     rgba_color = rgba_color[:-1] + (int(alpha),)
 
-    return Image.new('RGBA', (width, height), rgba_color)
+    return Image.new("RGBA", (width, height), rgba_color)
 
 
 def draw_transparent_rectangle(canvas, x, y, width, height, background_color, alpha):
     transparent_image = create_transparent_image(width, height, background_color, alpha)
 
     img_byte_arr = io.BytesIO()
-    transparent_image.save(img_byte_arr, format='PNG')
+    transparent_image.save(img_byte_arr, format="PNG")
     img_byte_arr.seek(0)
 
-    canvas.drawImage(ImageReader(img_byte_arr), x, y, width, height, mask='auto')
+    canvas.drawImage(ImageReader(img_byte_arr), x, y, width, height, mask="auto")
 
 
 def setup_new_page(canvas_obj, image_stream):
@@ -148,7 +148,7 @@ def wrap_text(text, font_name, line_height, max_width):
     wrapped_lines = []
     text_height = 0
 
-    original_lines = text.split('\n')
+    original_lines = text.split("\n")
 
     for line in original_lines:
         if pdfmetrics.stringWidth(line, font_name, line_height) <= max_width:
@@ -159,20 +159,30 @@ def wrap_text(text, font_name, line_height, max_width):
             wrapped_line = []
             while words:
                 wrapped_line.append(words.pop(0))
-                test_line = ' '.join(wrapped_line + words[:1])
+                test_line = " ".join(wrapped_line + words[:1])
                 if pdfmetrics.stringWidth(test_line, font_name, line_height) > max_width:
-                    wrapped_lines.append(' '.join(wrapped_line))
+                    wrapped_lines.append(" ".join(wrapped_line))
                     text_height += line_height
                     wrapped_line = []
             if wrapped_line:
-                wrapped_lines.append(' '.join(wrapped_line))
+                wrapped_lines.append(" ".join(wrapped_line))
                 text_height += line_height
 
     return wrapped_lines, text_height
 
 
-def _draw_event(c, event, y_position, font_name, font_name_bold,
-                date_color, background_color, description_color, alpha, image_stream):
+def _draw_event(
+    c,
+    event,
+    y_position,
+    font_name,
+    font_name_bold,
+    date_color,
+    background_color,
+    description_color,
+    alpha,
+    image_stream,
+):
     """Draw a single event on the PDF canvas. Returns the updated y_position."""
     # Derived typography sizes
     font_size_large = BASE_FONT_SIZE * LINE_SPACING_FACTOR
@@ -188,16 +198,16 @@ def _draw_event(c, event, y_position, font_name, font_name_bold,
     total_text_height = top_padding + line_height_large
 
     wrapped_description_lines, _ = wrap_text(
-        event['description'], font_name_bold, font_size_large, PAGE_WIDTH - RIGHT_COLUMN_X - INDENT
+        event["description"], font_name_bold, font_size_large, PAGE_WIDTH - RIGHT_COLUMN_X - INDENT
     )
 
-    information = normalize_newlines(event.get('additional_info') or event.get('information') or '')
+    information = normalize_newlines(event.get("additional_info") or event.get("information") or "")
     wrapped_info_lines, wrapped_info_height = wrap_text(
         information, font_name, line_height_medium, rect_width - RIGHT_COLUMN_X * 0.4
     )
 
-    time_and_meeting_at_height = line_height_medium + (line_height_medium if event['meetingAt'] != '' else 0)
-    wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != '' else 0
+    time_and_meeting_at_height = line_height_medium + (line_height_medium if event["meetingAt"] != "" else 0)
+    wrapped_info_height_with_padding = (wrapped_info_height + line_height_small) if information != "" else 0
 
     max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
     rect_height = total_text_height + max_height + line_height_medium
@@ -206,8 +216,9 @@ def _draw_event(c, event, y_position, font_name, font_name_bold,
     if y_position < (rect_height + BOTTOM_MARGIN):
         y_position = setup_new_page(c, image_stream)
 
-    draw_transparent_rectangle(c, LEFT_COLUMN_X, y_position - rect_height, rect_width, rect_height,
-                               background_color, alpha)
+    draw_transparent_rectangle(
+        c, LEFT_COLUMN_X, y_position - rect_height, rect_width, rect_height, background_color, alpha
+    )
 
     text_y_position = y_position - top_padding
 
@@ -215,9 +226,9 @@ def _draw_event(c, event, y_position, font_name, font_name_bold,
     c.setFillColor(HexColor(date_color))
     c.setFont(font_name_bold, font_size_large)
 
-    start_dt = parse_iso_datetime(event['startDate'])
-    end_dt = parse_iso_datetime(event['endDate'])
-    german_day_of_week = format_date(start_dt, format='EEEE', locale='de_DE')
+    start_dt = parse_iso_datetime(event["startDate"])
+    end_dt = parse_iso_datetime(event["endDate"])
+    german_day_of_week = format_date(start_dt, format="EEEE", locale="de_DE")
     day_date_str = f"{german_day_of_week}, {start_dt.strftime('%d.%m.%Y')}"
     c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large, day_date_str)
 
@@ -228,10 +239,12 @@ def _draw_event(c, event, y_position, font_name, font_name_bold,
     c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large - line_height_medium, time_str)
 
     # MeetingAt
-    if event['meetingAt']:
-        c.drawString(LEFT_COLUMN_X + INDENT,
-                     text_y_position - line_height_large - line_height_medium - line_height_medium,
-                     event['meetingAt'])
+    if event["meetingAt"]:
+        c.drawString(
+            LEFT_COLUMN_X + INDENT,
+            text_y_position - line_height_large - line_height_medium - line_height_medium,
+            event["meetingAt"],
+        )
 
     # Right column: Caption and Information
     c.setFillColor(black)
@@ -257,8 +270,8 @@ def _draw_event(c, event, y_position, font_name, font_name_bold,
 def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
     font_name, font_name_bold = _register_fonts()
 
-    current_day = datetime.now().strftime('%Y-%m-%d')
-    filename = f'{current_day}_Termine.pdf'
+    current_day = datetime.now().strftime("%Y-%m-%d")
+    filename = f"{current_day}_Termine.pdf"
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
     c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
     c.setTitle(filename)
@@ -273,8 +286,16 @@ def create_pdf(appointments, date_color, background_color, description_color, al
 
     for event in appointments:
         y_position = _draw_event(
-            c, event, y_position, font_name, font_name_bold,
-            date_color, background_color, description_color, alpha, image_stream,
+            c,
+            event,
+            y_position,
+            font_name,
+            font_name_bold,
+            date_color,
+            background_color,
+            description_color,
+            alpha,
+            image_stream,
         )
 
     c.save()

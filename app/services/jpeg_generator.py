@@ -17,14 +17,14 @@ def handle_jpeg_generation(pdf_filename):
 
     for i, image in enumerate(images):
         jpeg_stream = BytesIO()
-        image.save(jpeg_stream, 'JPEG')
+        image.save(jpeg_stream, "JPEG")
         jpeg_stream.seek(0)
-        jpeg_files.append((f'page_{i + 1}.jpg', jpeg_stream))
+        jpeg_files.append((f"page_{i + 1}.jpg", jpeg_stream))
 
     zip_filename = os.path.splitext(pdf_filename)[0] + ".zip"
     zip_path = os.path.join(Config.FILE_DIRECTORY, zip_filename)
 
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file_name, file_bytes in jpeg_files:
             zip_file.writestr(file_name, file_bytes.read())
 

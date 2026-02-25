@@ -38,13 +38,15 @@ def save_color_settings(db, settings: ColorSettings):
             color_setting.date_color = settings.date_color
             color_setting.description_color = settings.description_color
         else:
-            db.add(ColorSetting(
-                setting_name=settings.name,
-                background_color=settings.background_color,
-                background_alpha=settings.background_alpha,
-                date_color=settings.date_color,
-                description_color=settings.description_color,
-            ))
+            db.add(
+                ColorSetting(
+                    setting_name=settings.name,
+                    background_color=settings.background_color,
+                    background_alpha=settings.background_alpha,
+                    date_color=settings.date_color,
+                    description_color=settings.description_color,
+                )
+            )
         db.commit()
     except Exception as e:
         db.rollback()

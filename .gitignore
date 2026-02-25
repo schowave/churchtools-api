@@ -10,3 +10,20 @@ __pycache__/
 .aider*
 .env
 /.docker_source_hash
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+*.pyc
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+coverage.xml
+
+# IDE / OS
+.vscode/
+
+# Runtime data
+data/

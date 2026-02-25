@@ -1,20 +1,21 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Form, File, UploadFile
-from fastapi.responses import RedirectResponse, FileResponse
-from sqlalchemy.orm import Session
-from typing import List, Optional
 import os
 from io import BytesIO
+from typing import List, Optional
 
-from app.database import get_db, DEFAULT_SETTING_NAME
-from app.crud import save_additional_infos, get_additional_infos, save_color_settings, load_color_settings
-from app.schemas import ColorSettings
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
 from app.config import Config
-from app.shared import templates
-from app.services.pdf_generator import create_pdf
-from app.services.churchtools_client import fetch_calendars, fetch_appointments, appointment_to_dict
+from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
+from app.database import DEFAULT_SETTING_NAME, get_db
+from app.schemas import ColorSettings
+from app.services.churchtools_client import appointment_to_dict, fetch_appointments, fetch_calendars
 from app.services.jpeg_generator import handle_jpeg_generation
-from app.utils import parse_iso_datetime, normalize_newlines, get_date_range_from_form
+from app.services.pdf_generator import create_pdf
+from app.shared import templates
+from app.utils import get_date_range_from_form, normalize_newlines, parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ def _build_template_context(
     start_date: str,
     end_date: str,
     color_settings: ColorSettings,
-    **extra
+    **extra,
 ) -> dict:
     """Build the common template context dict for appointments.html."""
     context = {
@@ -64,7 +65,7 @@ async def _prepare_selected_appointments(
     form_data = await request.form()
     appointment_info_list = []
     for app_id in appointment_id:
-        additional_info = form_data.get(f'additional_info_{app_id}', "")
+        additional_info = form_data.get(f"additional_info_{app_id}", "")
         normalized_info = normalize_newlines(additional_info)
         appointment_info_list.append((app_id, normalized_info))
 
@@ -90,30 +91,29 @@ async def _prepare_selected_appointments(
 
     # Assign additional info from form
     for appointment in appointments:
-        app_id = appointment['id']
-        appointment['additional_info'] = form_data.get(f'additional_info_{app_id}', "")
+        app_id = appointment["id"]
+        appointment["additional_info"] = form_data.get(f"additional_info_{app_id}", "")
 
     # Filter selected appointments
     selected_appointments = []
     for app_id in appointment_id:
-        matching = [app for app in appointments if str(app['id']) == str(app_id)]
+        matching = [app for app in appointments if str(app["id"]) == str(app_id)]
         selected_appointments.extend(matching)
 
     # Sort by start date
-    selected_appointments.sort(key=lambda x: parse_iso_datetime(x['startDate']))
+    selected_appointments.sort(key=lambda x: parse_iso_datetime(x["startDate"]))
 
     logger.info(f"Number of selected appointments: {len(selected_appointments)}")
     for idx, app in enumerate(selected_appointments, 1):
-        logger.info(f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})")
+        logger.info(
+            f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})"
+        )
 
     return selected_appointments, background_image_stream
 
 
 @router.get("/appointments")
-async def appointments_page(
-    request: Request,
-    db: Session = Depends(get_db)
-):
+async def appointments_page(request: Request, db: Session = Depends(get_db)):
     login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -122,13 +122,13 @@ async def appointments_page(
     calendars = await fetch_calendars(login_token)
 
     # Preselection of all calendars
-    selected_calendar_ids = [str(calendar['id']) for calendar in calendars]
+    selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
 
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
 
     return templates.TemplateResponse(
         "appointments.html",
-        _build_template_context(request, calendars, selected_calendar_ids, start_date, end_date, color_settings)
+        _build_template_context(request, calendars, selected_calendar_ids, start_date, end_date, color_settings),
     )
 
 
@@ -140,69 +140,124 @@ async def _handle_fetch_appointments(
     appointments = [appointment_to_dict(app) for app in appointments_data]
 
     # Load additional information
-    additional_infos = get_additional_infos(db, [app['id'] for app in appointments])
+    additional_infos = get_additional_infos(db, [app["id"] for app in appointments])
     for appointment in appointments:
-        appointment['additional_info'] = additional_infos.get(appointment['id'], "")
+        appointment["additional_info"] = additional_infos.get(appointment["id"], "")
 
     # Reload color settings from DB (ignore form overrides for fetch)
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
 
     context = _build_template_context(
-        request, calendars, calendar_ids, start_date, end_date, color_settings,
+        request,
+        calendars,
+        calendar_ids,
+        start_date,
+        end_date,
+        color_settings,
         appointments=appointments,
     )
     response = templates.TemplateResponse("appointments.html", context)
-    response.set_cookie(key="fetchAppointments", value="true", max_age=1, path='/')
+    response.set_cookie(key="fetchAppointments", value="true", max_age=1, path="/")
     return response
 
 
 async def _handle_generate_pdf(
-    request, db, login_token, calendars, calendar_ids, calendar_ids_int,
-    start_date, end_date, appointment_id, color_settings, background_image,
+    request,
+    db,
+    login_token,
+    calendars,
+    calendar_ids,
+    calendar_ids_int,
+    start_date,
+    end_date,
+    appointment_id,
+    color_settings,
+    background_image,
 ):
     """Handle the 'generate PDF' button."""
     if not appointment_id:
         context = _build_template_context(
-            request, calendars, calendar_ids, start_date, end_date, color_settings,
+            request,
+            calendars,
+            calendar_ids,
+            start_date,
+            end_date,
+            color_settings,
             error="Please select at least one appointment.",
         )
         return templates.TemplateResponse("appointments.html", context)
 
     selected_appointments, bg_stream = await _prepare_selected_appointments(
-        request, db, login_token, appointment_id,
-        start_date, end_date, calendar_ids_int, color_settings, background_image,
+        request,
+        db,
+        login_token,
+        appointment_id,
+        start_date,
+        end_date,
+        calendar_ids_int,
+        color_settings,
+        background_image,
     )
 
     filename = create_pdf(
-        selected_appointments, color_settings.date_color, color_settings.background_color,
-        color_settings.description_color, color_settings.background_alpha, bg_stream,
+        selected_appointments,
+        color_settings.date_color,
+        color_settings.background_color,
+        color_settings.description_color,
+        color_settings.background_alpha,
+        bg_stream,
     )
 
     response = RedirectResponse(url=f"/download/{filename}", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(key="pdfGenerated", value="true", max_age=1, path='/')
+    response.set_cookie(key="pdfGenerated", value="true", max_age=1, path="/")
     return response
 
 
 async def _handle_generate_jpeg(
-    request, db, login_token, calendars, calendar_ids, calendar_ids_int,
-    start_date, end_date, appointment_id, color_settings, background_image,
+    request,
+    db,
+    login_token,
+    calendars,
+    calendar_ids,
+    calendar_ids_int,
+    start_date,
+    end_date,
+    appointment_id,
+    color_settings,
+    background_image,
 ):
     """Handle the 'generate JPEG' button: create PDF, convert to JPEG images, return ZIP."""
     if not appointment_id:
         context = _build_template_context(
-            request, calendars, calendar_ids, start_date, end_date, color_settings,
+            request,
+            calendars,
+            calendar_ids,
+            start_date,
+            end_date,
+            color_settings,
             error="Please select at least one appointment.",
         )
         return templates.TemplateResponse("appointments.html", context)
 
     selected_appointments, bg_stream = await _prepare_selected_appointments(
-        request, db, login_token, appointment_id,
-        start_date, end_date, calendar_ids_int, color_settings, background_image,
+        request,
+        db,
+        login_token,
+        appointment_id,
+        start_date,
+        end_date,
+        calendar_ids_int,
+        color_settings,
+        background_image,
     )
 
     filename = create_pdf(
-        selected_appointments, color_settings.date_color, color_settings.background_color,
-        color_settings.description_color, color_settings.background_alpha, bg_stream,
+        selected_appointments,
+        color_settings.date_color,
+        color_settings.background_color,
+        color_settings.description_color,
+        color_settings.background_alpha,
+        bg_stream,
     )
 
     zip_filename = handle_jpeg_generation(filename)
@@ -212,7 +267,7 @@ async def _handle_generate_jpeg(
         media_type="application/zip",
         filename=zip_filename,
     )
-    response.set_cookie(key="jpegGenerated", value="true", max_age=1, path='/')
+    response.set_cookie(key="jpegGenerated", value="true", max_age=1, path="/")
     return response
 
 
@@ -231,7 +286,7 @@ async def process_appointments(
     date_color: Optional[str] = Form(None),
     description_color: Optional[str] = Form(None),
     background_color: Optional[str] = Form(None),
-    alpha: Optional[int] = Form(None)
+    alpha: Optional[int] = Form(None),
 ):
     login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
@@ -252,44 +307,74 @@ async def process_appointments(
 
     # If no calendars are selected, use all available calendars
     if not calendar_ids_int and calendars:
-        calendar_ids_int = [calendar['id'] for calendar in calendars]
+        calendar_ids_int = [calendar["id"] for calendar in calendars]
         logger.info(f"No calendars selected, using all available calendars: {calendar_ids_int}")
 
     # Load color settings with form overrides
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
     overrides = {}
     if background_color:
-        overrides['background_color'] = background_color
+        overrides["background_color"] = background_color
     if alpha is not None:
-        overrides['background_alpha'] = alpha
+        overrides["background_alpha"] = alpha
     if date_color:
-        overrides['date_color'] = date_color
+        overrides["date_color"] = date_color
     if description_color:
-        overrides['description_color'] = description_color
+        overrides["description_color"] = description_color
     if overrides:
         color_settings = color_settings.copy(update=overrides)
 
     # Dispatch to the appropriate handler
     if fetch_appointments_btn:
         return await _handle_fetch_appointments(
-            request, db, login_token, calendars, calendar_ids, calendar_ids_int, start_date, end_date,
+            request,
+            db,
+            login_token,
+            calendars,
+            calendar_ids,
+            calendar_ids_int,
+            start_date,
+            end_date,
         )
 
     if generate_pdf_btn:
         return await _handle_generate_pdf(
-            request, db, login_token, calendars, calendar_ids, calendar_ids_int,
-            start_date, end_date, appointment_id, color_settings, background_image,
+            request,
+            db,
+            login_token,
+            calendars,
+            calendar_ids,
+            calendar_ids_int,
+            start_date,
+            end_date,
+            appointment_id,
+            color_settings,
+            background_image,
         )
 
     if generate_jpeg_btn:
         return await _handle_generate_jpeg(
-            request, db, login_token, calendars, calendar_ids, calendar_ids_int,
-            start_date, end_date, appointment_id, color_settings, background_image,
+            request,
+            db,
+            login_token,
+            calendars,
+            calendar_ids,
+            calendar_ids_int,
+            start_date,
+            end_date,
+            appointment_id,
+            color_settings,
+            background_image,
         )
 
     # Default: show form
     context = _build_template_context(
-        request, calendars, calendar_ids, start_date, end_date, color_settings,
+        request,
+        calendars,
+        calendar_ids,
+        start_date,
+        end_date,
+        color_settings,
     )
     return templates.TemplateResponse("appointments.html", context)
 
