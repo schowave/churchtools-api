@@ -1,13 +1,6 @@
 import pytz
 from datetime import datetime, timedelta
-from fastapi import Request
-from typing import Tuple, Dict, List, Any, Optional
-
-def get_login_token(request: Request) -> Optional[str]:
-    """
-    Extracts the login token from the request cookies.
-    """
-    return request.cookies.get('login_token')
+from typing import Tuple
 
 def parse_iso_datetime(dt_str: str) -> datetime:
     """

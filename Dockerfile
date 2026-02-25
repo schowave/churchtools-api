@@ -1,5 +1,5 @@
 # Use the builder image to install dependencies and fontconfig
-FROM python:3.10-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -17,12 +17,12 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy requirements files first to leverage Docker cache
-COPY requirements.txt requirements-base.txt ./
+# Copy requirements file first to leverage Docker cache
+COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Start the final stage of the build
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Install fontconfig in the final image
 RUN apt-get update && \
@@ -38,9 +38,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy installed dependencies from the builder
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-COPY --from=builder /usr/bin/pdftotext /usr/bin/pdftotext
-COPY --from=builder /usr/bin/pdfinfo /usr/bin/pdfinfo
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/bin/pdftoppm /usr/bin/pdftoppm
 COPY --from=builder /usr/share/fontconfig /usr/share/fontconfig
 COPY --from=builder /usr/share/fonts /usr/share/fonts
 

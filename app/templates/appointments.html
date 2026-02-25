@@ -6,8 +6,6 @@
     <title>Appointments</title>
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/static/css/normalize.css">
-    <link rel="stylesheet" href="/static/css/prefixed.css">
-    <link rel="stylesheet" href="/static/css/cross-browser.css">
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/appointments.css">
     <style>
@@ -18,286 +16,8 @@
     </style>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <script>
-        $(function () {
-            // Store initial values
-            var initialStartDate = "{{ start_date }}";
-            var initialEndDate = "{{ end_date }}";
-            
-            // Helper function to calculate week dates
-            function calculateThisWeekDates() {
-                var today = new Date();
-                var dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-                
-                // Calculate the next Sunday
-                var daysUntilNextSunday = (0 - dayOfWeek) % 7;
-                if (daysUntilNextSunday === 0) { // If today is Sunday, we use today as Sunday
-                    var nextSunday = new Date(today);
-                } else {
-                    var nextSunday = new Date(today);
-                    nextSunday.setDate(today.getDate() + daysUntilNextSunday + 7); // +7 because we want the next Sunday
-                }
-                
-                // Calculate the following Sunday (7 days after the first Sunday)
-                var nextNextSunday = new Date(nextSunday);
-                nextNextSunday.setDate(nextSunday.getDate() + 7);
-                
-                return {
-                    start: nextSunday,
-                    end: nextNextSunday
-                };
-            }
-            
-            // Initialize datepickers
-            $("#start_date").datepicker({
-                dateFormat: "yy-mm-dd", // This format should match the value you're passing from Flask
-                onSelect: function() {
-                    // If the date changes, hide the appointments area
-                    if ($('.appointments-container').length > 0) {
-                        $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
-                    }
-                }
-            });
-            $("#end_date").datepicker({
-                dateFormat: "yy-mm-dd",
-                onSelect: function() {
-                    // If the date changes, hide the appointments area
-                    if ($('.appointments-container').length > 0) {
-                        $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
-                    }
-                }
-            });
-            
-            // Set initial values to "This Week" if not already set
-            if (!$("#start_date").val() || !$("#end_date").val()) {
-                var thisWeek = calculateThisWeekDates();
-                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
-                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
-            }
-            
-            // Store the initial values after they've been set
-            var initialStartDate = $("#start_date").val();
-            var initialEndDate = $("#end_date").val();
-            
-            // Function to calculate next week (the week after the next Sunday)
-            function calculateNextWeekDates() {
-                var thisWeek = calculateThisWeekDates();
-                
-                // The week after the next Sunday
-                var nextWeekStart = new Date(thisWeek.start);
-                nextWeekStart.setDate(nextWeekStart.getDate() + 7);
-                
-                var nextWeekEnd = new Date(thisWeek.end);
-                nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
-                
-                return {
-                    start: nextWeekStart,
-                    end: nextWeekEnd
-                };
-            }
-            
-            // Date preset functionality
-            $("#today").click(function() {
-                var today = new Date();
-                var formattedDate = $.datepicker.formatDate("yy-mm-dd", today);
-                $("#start_date").val(formattedDate);
-                $("#end_date").val(formattedDate);
-            });
-            
-            $("#this-week").click(function() {
-                // Calculate the current week (next Sunday to the following Sunday)
-                var thisWeek = calculateThisWeekDates();
-                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
-                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
-                
-                // If the date changes, hide the appointments area
-                if ($('.appointments-container').length > 0) {
-                    $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
-                }
-            });
-            
-            $("#next-week").click(function() {
-                // Calculate the next week (the week after the next Sunday)
-                var nextWeek = calculateNextWeekDates();
-                $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
-                $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
-                
-                // If the date changes, hide the appointments area
-                if ($('.appointments-container').length > 0) {
-                    $('.appointments-container').html('<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>');
-                }
-            });
-        });
-    </script>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
-    <script>
-        function monitorDownload(cookieName) {
-            var checkCookie = setInterval(function () {
-                if (document.cookie.split(';').some((item) => item.trim().startsWith(cookieName + '='))) {
-                    clearInterval(checkCookie);
-                    document.cookie = cookieName + '=; Max-Age=-99999999;';  // delete the cookie
-                    $('#spinner-overlay').hide();  // hide the spinner
-                    
-                    // Trigger a custom event when the cookie is found
-                    document.dispatchEvent(new CustomEvent('cookieChanged', {
-                        detail: { name: cookieName }
-                    }));
-                }
-            }, 100); // check every 100ms
-        }
-
-        $(document).ready(function () {
-            $('input[name="generate_jpeg"]').click(function () {
-                // Show the spinner
-                $('#spinner-overlay').show();
-                // Start monitoring for the jpegGenerated cookie
-                monitorDownload('jpegGenerated');
-            });
-
-            $('input[name="generate_pdf"]').click(function () {
-                // Show the spinner
-                $('#spinner-overlay').show();
-                // Start monitoring for the pdfGenerated cookie
-                monitorDownload('pdfGenerated');
-            });
-            $('input[name="fetch_appointments"]').click(function () {
-                // Show the spinner
-                $('#spinner-overlay').show();
-                // Start monitoring for the fetchAppointments cookie
-                monitorDownload('fetchAppointments');
-                
-                // Direct scrolling after submitting the form
-                localStorage.setItem('scrollToAppointments', 'true');
-            });
-            
-            // Check if scrolling should occur when the page loads
-            $(document).ready(function() {
-                // If appointments are available and the flag is set
-                if ($('.appointments-container').length > 0 && localStorage.getItem('scrollToAppointments') === 'true') {
-                    // Reset flag
-                    localStorage.removeItem('scrollToAppointments');
-
-                    // Scroll with delay to ensure the page is fully loaded
-                    setTimeout(function() {
-                        // Scroll to the Appointments-Actions (buttons above the appointments)
-                        $('html, body').animate({
-                            scrollTop: $('.appointments-actions').offset().top - 20
-                        }, 1000);
-                    }, 500);
-                }
-            });
-        });
-    </script>
-    <script>
-        const alphaSlider = document.getElementById('alpha');
-        const alphaValueDisplay = document.getElementById('alphaValue');
-
-        alphaSlider.addEventListener('input', function() {
-        alphaValueDisplay.textContent = this.value;
-        });
-    </script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const selectAllButton = document.getElementById('selectAllAppointments');
-            const deselectAllButton = document.getElementById('deselectAllAppointments');
-            const checkboxes = document.querySelectorAll('.appointment-checkbox');
-
-            selectAllButton.addEventListener('click', function() {
-                checkboxes.forEach(function(checkbox) {
-                    checkbox.checked = true;
-                });
-            });
-
-            deselectAllButton.addEventListener('click', function() {
-                checkboxes.forEach(function(checkbox) {
-                    checkbox.checked = false;
-                });
-            });
-        });
-    </script>
-    <script>
-        // Ensure the DOM is fully loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            var applyButton = document.getElementById('applyPreset');
-            var colorPresetsSelect = document.getElementById('color_presets');
-
-            // Define presets
-            var presets = {
-                'preset1': {
-                    'date_color': '#c1540c',
-                    'description_color': '#4e4e4e',
-                    'background_color': '#ffffff',
-                    'background_alpha': 128
-                },
-                'preset2': {
-                    // Add your preset2 values
-                }
-                // Add more presets as needed
-            };
-
-            // Event listener for the Apply button
-            if (applyButton) {
-                applyButton.addEventListener('click', function() {
-                    var selectedPreset = colorPresetsSelect.value;
-                    if (presets[selectedPreset]) {
-                        document.getElementById('date_color').value = presets[selectedPreset].date_color;
-                        document.getElementById('description_color').value = presets[selectedPreset].description_color;
-                        document.getElementById('background_color').value = presets[selectedPreset].background_color;
-                        document.getElementById('alpha').value = presets[selectedPreset].background_alpha;
-                        document.getElementById('alphaValue').textContent = presets[selectedPreset].background_alpha;
-                    }
-                });
-            }
-        });
-    </script>
-    
-    <!-- Script for automatic height adjustment of textareas -->
-    <script>
-        function autoResizeTextarea(textarea) {
-            // Save current height
-            var originalHeight = textarea.style.height;
-
-            // Reset height to determine the actual scroll height
-            textarea.style.height = '24px';
-
-            // Set height to scroll height if text is present
-            if (textarea.value.trim().length > 0) {
-                if (textarea.scrollHeight > 24) {
-                    textarea.style.height = textarea.scrollHeight + 'px';
-                }
-            }
-        }
-        
-        // Wait for the page to fully load
-        window.addEventListener('load', function() {
-            // Select all textareas
-            const textareas = document.querySelectorAll('textarea[name^="additional_info_"]');
-
-            // For each textarea
-            textareas.forEach(function(textarea) {
-                // Short delay for correct calculation
-                setTimeout(function() {
-                    autoResizeTextarea(textarea);
-                }, 100);
-                
-                // Adjust on input
-                textarea.addEventListener('input', function() {
-                    autoResizeTextarea(this);
-                });
-                
-                // Adjust on focus
-                textarea.addEventListener('focus', function() {
-                    autoResizeTextarea(this);
-                });
-                
-                // Adjust on blur (when leaving the field)
-                textarea.addEventListener('blur', function() {
-                    autoResizeTextarea(this);
-                });
-            });
-        });
-    </script>
-
+    <script src="/static/js/appointments.js"></script>
 </head>
 <body>
 <!-- Spinner Overlay -->
@@ -312,7 +32,7 @@
     <h1>Terminübersicht</h1>
     <h2>{{ base_url }}</h2>
     <a href="/overview" class="btn btn-back">Zurück</a>
-    
+
     {% if error %}
     <div class="alert alert-error">{{ error }}</div>
     {% endif %}
@@ -328,14 +48,14 @@
                         <input type="text" id="start_date" name="start_date"
                                value="{{ start_date }}" required>
                     </div>
-                    
+
                     <div class="date-field">
                         <label for="end_date">Enddatum:</label>
                         <input type="text" id="end_date" name="end_date"
                                value="{{ end_date }}" required>
                     </div>
                 </div>
-                
+
                 <!-- Quick date selection -->
                 <div class="date-quick-select">
                     <button type="button" id="today" class="date-preset">Heute</button>
@@ -343,12 +63,12 @@
                     <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
                 </div>
             </div>
-            
+
             <!-- Submit button for fetching appointments -->
             <input type="submit" name="fetch_appointments"
                    value="Termine abholen" class="btn btn-fetch">
         </div>
-        
+
         <!-- Calendars selection -->
         <div class="calendar-selection-header">
             <h3>Kalender auswählen</h3>
@@ -370,12 +90,12 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
-            <!-- Versteckte Felder für Datumsparameter -->
+            <!-- Hidden fields for date parameters -->
             <input type="hidden" name="start_date" value="{{ start_date }}">
             <input type="hidden" name="end_date" value="{{ end_date }}">
             <!-- Two-column layout for appointments and formatting options -->
             <div class="appointments-layout">
-                <!-- Linke Spalte: Termine -->
+                <!-- Left column: Appointments -->
                 <div class="appointments-main">
                     <div class="appointments-actions">
                         <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
@@ -399,46 +119,46 @@
                         {% endfor %}
                     </div>
                 </div>
-                
-                <!-- Rechte Spalte: Formatierungsoptionen -->
+
+                <!-- Right column: Formatting options -->
                 <div class="appointments-sidebar">
-                    <!-- Hintergrund-Sektion -->
+                    <!-- Background section -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Formatierung</div>
                         <div class="format-options">
-                            <!-- Hintergrundfarbe -->
+                            <!-- Background color -->
                             <div class="format-option">
                                 <div class="format-option-label">Hintergrundfarbe</div>
                                 <input type="color" id="background_color" name="background_color"
-                                       value="{{ color_settings['background_color'] }}" class="color-input">
+                                       value="{{ color_settings.background_color }}" class="color-input">
                             </div>
-                            
-                            <!-- Datumsfarbe -->
+
+                            <!-- Date color -->
                             <div class="format-option">
                                 <div class="format-option-label">Datumsfarbe</div>
                                 <input type="color" id="date_color" name="date_color"
-                                       value="{{ color_settings['date_color'] }}" class="color-input">
+                                       value="{{ color_settings.date_color }}" class="color-input">
                             </div>
-                            
-                            <!-- Beschreibungsfarbe -->
+
+                            <!-- Description color -->
                             <div class="format-option">
                                 <div class="format-option-label">Beschreibungsfarbe</div>
                                 <input type="color" id="description_color" name="description_color"
-                                       value="{{ color_settings['description_color'] }}" class="color-input">
+                                       value="{{ color_settings.description_color }}" class="color-input">
                             </div>
-                            
-                            <!-- Transparenz -->
+
+                            <!-- Transparency -->
                             <div class="format-option">
                                 <div class="format-option-label">Transparenz</div>
                                 <div class="transparency-container">
                                     <input type="range" id="alpha" name="alpha" class="transparency-slider"
-                                           min="0" max="255" step="1" value="{{ color_settings['background_alpha'] }}"
+                                           min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
                                            oninput="document.getElementById('alphaValue').textContent = this.value">
-                                    <span id="alphaValue" class="transparency-value">{{ color_settings['background_alpha'] }}</span>
+                                    <span id="alphaValue" class="transparency-value">{{ color_settings.background_alpha }}</span>
                                 </div>
                             </div>
-                            
-                            <!-- Hintergrundbild -->
+
+                            <!-- Background image -->
                             <div class="format-option format-option-full">
                                 <div class="format-option-label">Hintergrundbild</div>
                                 <input type="file" id="background_image" name="background_image"
@@ -446,12 +166,12 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Textfarben-Sektion -->
+
+                    <!-- Text colors section -->
                     <div class="sidebar-section">
                     </div>
-                    
-                    <!-- Voreinstellungen (versteckt) -->
+
+                    <!-- Presets (hidden) -->
                     <div class="sidebar-section" style="display: none;">
                         <div class="sidebar-section-title">Voreinstellungen</div>
                         <div class="color-picker-container">
@@ -464,8 +184,8 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Generate-Buttons-Sektion -->
+
+                    <!-- Generate buttons section -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Ausgabe generieren</div>
                         <div class="generate-buttons">
@@ -476,41 +196,6 @@
                             Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.
                         </div>
                     </div>
-                    
-                    <script>
-                        // Funktion zum Prüfen, ob Termine vorhanden sind
-                        function checkAppointments() {
-                            var hasAppointments = $('.appointment-checkbox').length > 0;
-                            
-                            // Aktiviere oder deaktiviere die Generierungs-Buttons
-                            $('#generate_pdf_btn, #generate_jpeg_btn').prop('disabled', !hasAppointments);
-                            
-                            // Zeige oder verstecke die Fehlermeldung
-                            if (!hasAppointments) {
-                                $('#generate_error').show();
-                                
-                                // Verhindere das Absenden des Formulars, wenn keine Termine vorhanden sind
-                                $('#generate_pdf_btn, #generate_jpeg_btn').on('click', function(e) {
-                                    if (!hasAppointments) {
-                                        e.preventDefault();
-                                        alert('Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.');
-                                    }
-                                });
-                            } else {
-                                $('#generate_error').hide();
-                            }
-                        }
-                        
-                        // Prüfe beim Laden der Seite
-                        $(document).ready(function() {
-                            checkAppointments();
-                        });
-                        
-                        // Prüfe, wenn der Appointments-Bereich geändert wird
-                        $(document).on('DOMSubtreeModified', '.appointments-container', function() {
-                            checkAppointments();
-                        });
-                    </script>
                 </div>
             </div>
         </form>

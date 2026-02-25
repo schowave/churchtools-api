@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 import httpx
 from app.config import Config
+from app.shared import templates
 from typing import Optional
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/")
 async def login_page(request: Request):
@@ -33,7 +32,12 @@ async def login(
             if token_response.status_code == 200:
                 login_token = token_response.json()['data']
                 redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-                redirect.set_cookie(key="login_token", value=login_token)
+                redirect.set_cookie(
+                    key=Config.COOKIE_LOGIN_TOKEN,
+                    value=login_token,
+                    httponly=True,
+                    samesite="lax",
+                )
                 return redirect
             else:
                 return templates.TemplateResponse(
@@ -49,12 +53,12 @@ async def login(
 @router.post("/logout")
 async def logout():
     response = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(key="login_token")
+    response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
     return response
 
 @router.get("/overview")
 async def overview(request: Request):
-    login_token = request.cookies.get("login_token")
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     
