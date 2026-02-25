@@ -52,24 +52,27 @@ async def fetch_appointments(login_token: str, start_date: str, end_date: str, c
             url = f'{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments'
             response = await client.get(url, headers=headers, params=query_params)
             
-            if response.status_code == 200:
-                appointment_counts = {}  # Dictionary to keep track of appointment counts
+            if response.status_code != 200:
+                logger.warning(f"Failed to fetch appointments for calendar {calendar_id}: HTTP {response.status_code}")
+                continue
 
-                for appointment in response.json()['data']:
-                    base_id = str(appointment['base']['id'])
-                    appointment_id = str(calendar_id) + "_" + base_id
+            appointment_counts = {}  # Dictionary to keep track of appointment counts
 
-                    # Check if the appointment_id already exists, and increment the count
-                    if appointment_id in appointment_counts:
-                        appointment_counts[appointment_id] += 1
-                        appointment_id += f"_{appointment_counts[appointment_id]}"
-                    else:
-                        appointment_counts[appointment_id] = 0  # Initialize count for new ID
+            for appointment in response.json()['data']:
+                base_id = str(appointment['base']['id'])
+                appointment_id = str(calendar_id) + "_" + base_id
 
-                    if appointment_id not in seen_ids:
-                        seen_ids.add(appointment_id)
-                        appointment['base']['id'] = appointment_id
-                        appointments.append(appointment)
+                # Check if the appointment_id already exists, and increment the count
+                if appointment_id in appointment_counts:
+                    appointment_counts[appointment_id] += 1
+                    appointment_id += f"_{appointment_counts[appointment_id]}"
+                else:
+                    appointment_counts[appointment_id] = 0  # Initialize count for new ID
+
+                if appointment_id not in seen_ids:
+                    seen_ids.add(appointment_id)
+                    appointment['base']['id'] = appointment_id
+                    appointments.append(appointment)
 
     appointments.sort(key=lambda x: parse_iso_datetime(x['calculated']['startDate']))
     return appointments
@@ -391,8 +394,9 @@ async def process_appointments(
 
 @router.get("/download/{filename}")
 async def download_file(filename: str):
-    file_path = os.path.join(Config.FILE_DIRECTORY, filename)
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(Config.FILE_DIRECTORY, safe_filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
-    
-    return FileResponse(file_path, filename=filename)
+
+    return FileResponse(file_path, filename=safe_filename)

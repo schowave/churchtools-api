@@ -32,7 +32,12 @@ async def login(
             if token_response.status_code == 200:
                 login_token = token_response.json()['data']
                 redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-                redirect.set_cookie(key=Config.COOKIE_LOGIN_TOKEN, value=login_token)
+                redirect.set_cookie(
+                    key=Config.COOKIE_LOGIN_TOKEN,
+                    value=login_token,
+                    httponly=True,
+                    samesite="lax",
+                )
                 return redirect
             else:
                 return templates.TemplateResponse(
