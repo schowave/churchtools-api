@@ -1,13 +1,10 @@
-# Use the builder image to install dependencies and fontconfig
 FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
-# Install Poppler utilities and clean up in one layer to reduce image size
+# Install build dependencies for Python packages with C extensions
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    poppler-utils \
-    fontconfig \
     libfreetype6-dev \
     libfribidi-dev \
     libharfbuzz-dev \
@@ -17,14 +14,13 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file first to leverage Docker cache
 COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Start the final stage of the build
+# Final stage
 FROM python:3.12-slim
 
-# Install fontconfig in the final image
+# Install runtime dependencies only
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     poppler-utils \
@@ -37,37 +33,23 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy installed dependencies from the builder
+# Copy Python packages and scripts from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/bin/pdftoppm /usr/bin/pdftoppm
-COPY --from=builder /usr/share/fontconfig /usr/share/fontconfig
-COPY --from=builder /usr/share/fonts /usr/share/fonts
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
-# Copy the necessary font files
-COPY fonts/helvetica.ttf /usr/share/fonts/custom/
-COPY fonts/helvetica-bold.ttf /usr/share/fonts/custom/
-COPY fonts/Bahnschrift.ttf /usr/share/fonts/custom/
-
-# Update the font cache
+# Copy custom fonts and rebuild font cache
+COPY fonts/ /usr/share/fonts/custom/
 RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy the application source code
-COPY . .
+# Copy application source
+COPY app/ ./app/
+COPY run_fastapi.py ./
 
-# Set environment variables
-ENV PYTHONPATH=/app \
-    HOST=0.0.0.0 \
-    PORT=5005
+ENV PYTHONPATH=/app
 
-# The port number the container should expose
 EXPOSE 5005
-
-# this is where the sqlite database should be mounted
 VOLUME /app/data
 
-ENV CHURCHTOOLS_BASE=evkila.church.tools \
-    DB_PATH=/app/data/evkila.db
-
-CMD [ "python3", "run_fastapi.py"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5005"]
