@@ -49,7 +49,9 @@ COPY run_fastapi.py ./
 
 ARG APP_VERSION=0.0.0
 ENV PYTHONPATH=/app \
-    APP_VERSION=${APP_VERSION}
+    APP_VERSION=${APP_VERSION} \
+    CHURCHTOOLS_BASE=evkila.church.tools \
+    DB_PATH=/app/data/evkila.db
 
 EXPOSE 5005
 VOLUME /app/data
