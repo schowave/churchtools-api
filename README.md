@@ -81,6 +81,57 @@ Builds the image, starts a container with your `.env` configuration and a `data/
 
 The script auto-detects Podman or Docker, checks your Docker Hub login, and builds a multi-architecture image (amd64 + arm64). The version is defined at the top of the script.
 
+## Synology NAS Deployment
+
+### Initial Setup
+
+1. Open **Container Manager** on your Synology NAS
+2. Go to **Registry** → search for `schowave/churchtools` → **Download** → select `latest`
+3. Go to **Image** → select `schowave/churchtools:latest` → **Run**
+4. Configure the container:
+
+**General:**
+
+| Setting | Value |
+|---|---|
+| Container Name | `schowave-churchtools-1` |
+| Auto-Restart | Enable if desired |
+
+**Port:**
+
+| Container Port | Host Port | Protocol |
+|---|---|---|
+| 5005 | 56276 (or any free port) | TCP |
+
+**Volume:**
+
+| Host Path | Container Path | Mode |
+|---|---|---|
+| `/volume1/docker/churchtools` | `/app/data` | Read/Write |
+
+Create the host directory beforehand if it doesn't exist.
+
+**Environment Variables (already set in image):**
+
+| Variable | Value |
+|---|---|
+| `CHURCHTOOLS_BASE` | `evkila.church.tools` |
+| `DB_PATH` | `/app/data/evkila.db` |
+
+These are baked into the image as defaults. Override them in the container settings if you need different values.
+
+5. Click **Run** to start the container
+6. Access the app at `http://<your-nas-ip>:56276`
+
+### Updating to a New Version
+
+1. **Registry** → search `schowave/churchtools` → **Download** (`latest`)
+2. **Container** → select `schowave-churchtools-1` → **Stop**
+3. **Action** → **Reset** (recreates the container from the new image, keeps your settings)
+4. **Start**
+
+Your data in `/volume1/docker/churchtools` is preserved across updates.
+
 ## Contributing
 
 ```bash
