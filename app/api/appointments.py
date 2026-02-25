@@ -322,7 +322,7 @@ async def process_appointments(
     if description_color:
         overrides["description_color"] = description_color
     if overrides:
-        color_settings = color_settings.copy(update=overrides)
+        color_settings = color_settings.model_copy(update=overrides)
 
     # Dispatch to the appropriate handler
     if fetch_appointments_btn:
