@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=2.12.0
+VERSION=2.13.0
 IMAGE=schowave/churchtools
 
 set -e
