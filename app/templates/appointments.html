@@ -90,12 +90,12 @@
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
-            <!-- Versteckte Felder für Datumsparameter -->
+            <!-- Hidden fields for date parameters -->
             <input type="hidden" name="start_date" value="{{ start_date }}">
             <input type="hidden" name="end_date" value="{{ end_date }}">
             <!-- Two-column layout for appointments and formatting options -->
             <div class="appointments-layout">
-                <!-- Linke Spalte: Termine -->
+                <!-- Left column: Appointments -->
                 <div class="appointments-main">
                     <div class="appointments-actions">
                         <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
@@ -120,34 +120,34 @@
                     </div>
                 </div>
 
-                <!-- Rechte Spalte: Formatierungsoptionen -->
+                <!-- Right column: Formatting options -->
                 <div class="appointments-sidebar">
-                    <!-- Hintergrund-Sektion -->
+                    <!-- Background section -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Formatierung</div>
                         <div class="format-options">
-                            <!-- Hintergrundfarbe -->
+                            <!-- Background color -->
                             <div class="format-option">
                                 <div class="format-option-label">Hintergrundfarbe</div>
                                 <input type="color" id="background_color" name="background_color"
                                        value="{{ color_settings.background_color }}" class="color-input">
                             </div>
 
-                            <!-- Datumsfarbe -->
+                            <!-- Date color -->
                             <div class="format-option">
                                 <div class="format-option-label">Datumsfarbe</div>
                                 <input type="color" id="date_color" name="date_color"
                                        value="{{ color_settings.date_color }}" class="color-input">
                             </div>
 
-                            <!-- Beschreibungsfarbe -->
+                            <!-- Description color -->
                             <div class="format-option">
                                 <div class="format-option-label">Beschreibungsfarbe</div>
                                 <input type="color" id="description_color" name="description_color"
                                        value="{{ color_settings.description_color }}" class="color-input">
                             </div>
 
-                            <!-- Transparenz -->
+                            <!-- Transparency -->
                             <div class="format-option">
                                 <div class="format-option-label">Transparenz</div>
                                 <div class="transparency-container">
@@ -158,7 +158,7 @@
                                 </div>
                             </div>
 
-                            <!-- Hintergrundbild -->
+                            <!-- Background image -->
                             <div class="format-option format-option-full">
                                 <div class="format-option-label">Hintergrundbild</div>
                                 <input type="file" id="background_image" name="background_image"
@@ -167,11 +167,11 @@
                         </div>
                     </div>
 
-                    <!-- Textfarben-Sektion -->
+                    <!-- Text colors section -->
                     <div class="sidebar-section">
                     </div>
 
-                    <!-- Voreinstellungen (versteckt) -->
+                    <!-- Presets (hidden) -->
                     <div class="sidebar-section" style="display: none;">
                         <div class="sidebar-section-title">Voreinstellungen</div>
                         <div class="color-picker-container">
@@ -185,7 +185,7 @@
                         </div>
                     </div>
 
-                    <!-- Generate-Buttons-Sektion -->
+                    <!-- Generate buttons section -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Ausgabe generieren</div>
                         <div class="generate-buttons">
