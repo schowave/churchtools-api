@@ -47,7 +47,9 @@ WORKDIR /app
 COPY app/ ./app/
 COPY run_fastapi.py ./
 
-ENV PYTHONPATH=/app
+ARG APP_VERSION=0.0.0
+ENV PYTHONPATH=/app \
+    APP_VERSION=${APP_VERSION}
 
 EXPOSE 5005
 VOLUME /app/data
