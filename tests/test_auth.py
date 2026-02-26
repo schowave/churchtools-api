@@ -28,8 +28,9 @@ def config_mock():
 
 @pytest.mark.asyncio
 async def test_login_page(templates_mock, config_mock):
-    # Mock request
+    # Mock request without login token (not logged in)
     request_mock = MagicMock(spec=Request)
+    request_mock.cookies.get.return_value = None
 
     # Call the function
     result = await login_page(request_mock)
@@ -46,6 +47,20 @@ async def test_login_page(templates_mock, config_mock):
 
     # Check that the result is what was returned by templates.TemplateResponse
     assert result == templates_mock.TemplateResponse.return_value
+
+
+@pytest.mark.asyncio
+async def test_login_page_already_logged_in(config_mock):
+    # Mock request with login token (already logged in)
+    request_mock = MagicMock(spec=Request)
+    request_mock.cookies.get.return_value = "test_token"
+
+    with patch.multiple("app.api.auth.Config", COOKIE_LOGIN_TOKEN="login_token"):
+        result = await login_page(request_mock)
+
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
+    assert result.headers["location"] == "/appointments"
 
 
 @pytest.mark.asyncio
@@ -88,7 +103,7 @@ async def test_login_success(mock_client, config_mock):
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/overview"
+    assert result.headers["location"] == "/appointments"
 
     # Check that the cookie was set
     cookie_header = None
@@ -129,7 +144,7 @@ async def test_login_failure(mock_client, templates_mock, config_mock):
     assert "base_url" in context
     assert "error" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
-    assert context["error"] == "Invalid username or password."
+    assert context["error"] == "Benutzername oder Passwort ungültig."
 
     # Check that the result is what was returned by templates.TemplateResponse
     assert result == templates_mock.TemplateResponse.return_value
@@ -170,7 +185,7 @@ async def test_login_token_failure(mock_client, templates_mock, config_mock):
     assert "base_url" in context
     assert "error" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
-    assert context["error"] == "Failed to retrieve login token."
+    assert context["error"] == "Login-Token konnte nicht abgerufen werden."
 
     # Check that the result is what was returned by templates.TemplateResponse
     assert result == templates_mock.TemplateResponse.return_value
@@ -184,7 +199,7 @@ async def test_logout():
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/overview"
+    assert result.headers["location"] == "/"
 
     # Check that the cookie was deleted
     cookie_header = None

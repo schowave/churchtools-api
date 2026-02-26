@@ -183,7 +183,7 @@ async def _handle_generate_pdf(
             start_date,
             end_date,
             color_settings,
-            error="Please select at least one appointment.",
+            error="Bitte mindestens einen Termin auswählen.",
         )
         return templates.TemplateResponse("appointments.html", context)
 
@@ -235,7 +235,7 @@ async def _handle_generate_jpeg(
             start_date,
             end_date,
             color_settings,
-            error="Please select at least one appointment.",
+            error="Bitte mindestens einen Termin auswählen.",
         )
         return templates.TemplateResponse("appointments.html", context)
 

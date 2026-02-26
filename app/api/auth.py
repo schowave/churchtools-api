@@ -10,6 +10,10 @@ router = APIRouter()
 
 @router.get("/")
 async def login_page(request: Request):
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    if login_token:
+        return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
+
     context = {"request": request, "base_url": Config.CHURCHTOOLS_BASE, "version": Config.VERSION}
     return templates.TemplateResponse("login.html", context)
 
@@ -29,7 +33,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
             if token_response.status_code == 200:
                 login_token = token_response.json()["data"]
-                redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
+                redirect = RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
                 redirect.set_cookie(
                     key=Config.COOKIE_LOGIN_TOKEN,
                     value=login_token,
@@ -43,7 +47,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
                     {
                         "request": request,
                         "base_url": Config.CHURCHTOOLS_BASE,
-                        "error": "Failed to retrieve login token.",
+                        "error": "Login-Token konnte nicht abgerufen werden.",
                         "version": Config.VERSION,
                     },
                 )
@@ -53,7 +57,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
                 {
                     "request": request,
                     "base_url": Config.CHURCHTOOLS_BASE,
-                    "error": "Invalid username or password.",
+                    "error": "Benutzername oder Passwort ungültig.",
                     "version": Config.VERSION,
                 },
             )
@@ -61,7 +65,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
 @router.post("/logout")
 async def logout():
-    response = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
     return response
 

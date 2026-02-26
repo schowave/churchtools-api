@@ -61,7 +61,7 @@ function calculateNextWeekDates() {
 function showDateChangeMessage() {
     if ($('.appointments-container').length > 0) {
         $('.appointments-container').html(
-            '<p>Please click on "Fetch Appointments" to display appointments for the new time period.</p>'
+            '<p class="date-change-hint">Bitte "Termine abholen" klicken, um Termine für den neuen Zeitraum anzuzeigen.</p>'
         );
     }
 }

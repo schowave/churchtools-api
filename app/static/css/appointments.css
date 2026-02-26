@@ -2,7 +2,7 @@
 
 /* Appointments container */
 .container {
-    max-width: 1000px; /* Wider container for two-column layout */
+    max-width: 1150px; /* Wider container for two-column layout */
     animation: fadeIn 0.5s ease-in-out;
     width: 100%;
     padding: var(--spacing-md);
@@ -22,6 +22,36 @@
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+/* Page header */
+.page-header {
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+}
+
+.page-header h1 {
+    margin-bottom: var(--spacing-xs);
+}
+
+.page-header .subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin: 0;
+}
+
+.back-link {
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: color var(--transition-speed);
+}
+
+.back-link:hover {
+    color: var(--primary-color);
 }
 
 /* Sticky header for controls */
@@ -87,8 +117,8 @@
 .date-field label {
     display: block;
     margin-bottom: var(--spacing-xs);
-    font-weight: bold;
-    color: var(--primary-color);
+    font-weight: 600;
+    color: var(--text-color);
 }
 
 /* Date inputs */
@@ -208,8 +238,8 @@
 /* Generate button */
 .btn--generate,
 .btn-generate {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
     position: relative;
     display: block;
     width: 100%;
@@ -219,8 +249,8 @@
 
 .btn--generate:hover,
 .btn-generate:hover {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
 }
 
 .btn--generate:before {
@@ -242,22 +272,46 @@
     transform: scaleX(1);
 }
 
-/* Calendar selection header */
+/* Calendar selection (collapsible) */
+.calendar-selection {
+    margin-top: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
 .calendar-selection-header {
-    margin-top: var(--spacing-lg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+    list-style: none;
     text-align: left;
 }
 
+.calendar-selection-header::-webkit-details-marker {
+    display: none;
+}
+
+.calendar-selection-header::before {
+    content: "\25B6";
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform var(--transition-speed);
+}
+
+.calendar-selection[open] > .calendar-selection-header::before {
+    transform: rotate(90deg);
+}
+
 .calendar-selection-header h3 {
-    color: var(--primary-color);
-    margin-bottom: var(--spacing-xs);
-    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-bottom: 0;
+    font-size: 1.1rem;
 }
 
 .calendar-selection-info {
     color: var(--text-muted);
-    margin-bottom: var(--spacing-sm);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* Containers for calendars and appointments */
@@ -464,6 +518,29 @@
     box-shadow: var(--focus-ring);
 }
 
+/* Additional info toggle */
+.add-info-toggle {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 2px 0;
+    margin-left: 28px;
+    margin-top: var(--spacing-xs);
+    transition: color var(--transition-speed);
+}
+
+.add-info-toggle:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
+.add-info-toggle.hidden,
+textarea.hidden {
+    display: none;
+}
+
 /* Additional information textarea */
 textarea {
     width: 100%;
@@ -495,10 +572,17 @@ textarea:focus {
 
 /* Actions for appointments */
 .appointments-actions {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.appointment-count {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-right: auto;
 }
 
 .appointments-actions__button {
@@ -549,11 +633,10 @@ textarea:focus {
 /* Specific buttons */
 .appointments-actions__button--select-all,
 .select-all-btn {
-    background-color: var(--success-color);
+    background-color: var(--primary-color);
     position: relative;
     overflow: hidden;
     color: white;
-    border: none;
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     font-size: 0.9rem;
@@ -567,29 +650,23 @@ textarea:focus {
     justify-content: center;
     -webkit-appearance: none;
     appearance: none;
-    border: 2px solid var(--success-color);
+    border: 2px solid var(--primary-color);
 }
 
 .appointments-actions__button--select-all:hover,
 .select-all-btn:hover {
-    background-color: var(--success-color);
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.appointments-actions__button--select-all::before {
-    content: "✓";
-    margin-right: 5px;
-    font-weight: bold;
-}
-
 .appointments-actions__button--deselect-all,
 .deselect-all-btn {
-    background-color: var(--danger-color);
+    background-color: white;
     position: relative;
     overflow: hidden;
-    color: white;
-    border: none;
+    color: var(--primary-color);
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
     font-size: 0.9rem;
@@ -603,20 +680,15 @@ textarea:focus {
     justify-content: center;
     -webkit-appearance: none;
     appearance: none;
-    border: 2px solid var(--danger-color);
+    border: 2px solid var(--primary-color);
 }
 
 .appointments-actions__button--deselect-all:hover,
 .deselect-all-btn:hover {
-    background-color: var(--danger-color);
+    background-color: var(--primary-color);
+    color: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 8px var(--shadow-color);
-}
-
-.appointments-actions__button--deselect-all::before {
-    content: "✕";
-    margin-right: 5px;
-    font-weight: bold;
 }
 
 /* Formatierungsoptionen */
@@ -643,8 +715,8 @@ textarea:focus {
 /* Format-Option Label */
 .format-option-label {
     font-size: 0.8rem;
-    font-weight: bold;
-    color: var(--primary-color);
+    font-weight: 600;
+    color: var(--text-color);
     margin-bottom: 2px;
 }
 
@@ -848,12 +920,10 @@ textarea:focus {
 }
 
 .sidebar-section-title {
-    font-weight: bold;
-    color: var(--primary-color);
+    font-weight: 600;
+    color: var(--text-color);
     margin-bottom: var(--spacing-sm);
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 0.95rem;
 }
 
 /* Generate buttons container */
@@ -870,12 +940,37 @@ textarea:focus {
     -webkit-appearance: none; /* Prevents Safari-specific button display issues */
     appearance: none;
     padding: 15px; /* Larger buttons for touch devices */
-    background-color: var(--success-color);
+    background-color: var(--primary-color);
     color: white;
-    border: 2px solid var(--success-color);
+    border: 2px solid var(--primary-color);
     margin: 10px 0;
     display: block;
     font-size: 16px;
+}
+
+/* Empty state */
+.empty-state {
+    margin: var(--spacing-xl) 0;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--container-radius);
+    background-color: #f9f9f9;
+}
+
+.empty-state p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.empty-state p:first-child {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: var(--spacing-xs);
+}
+
+.empty-state-hint {
+    font-size: 0.9rem;
 }
 
 /* Spinner overlay */

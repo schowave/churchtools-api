@@ -409,8 +409,8 @@ footer {
     /* Function-specific buttons */
     input[type="submit"][name="generate_pdf"],
     input[type="submit"][name="generate_jpeg"] {
-        background-color: var(--success-color);
-        border-color: var(--success-color);
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
     }
     
     input[type="submit"][name="fetch_appointments"] {

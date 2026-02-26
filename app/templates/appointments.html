@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Appointments</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <title>Terminübersicht</title>
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/static/css/normalize.css">
     <link rel="stylesheet" href="/static/css/common.css">
@@ -29,9 +30,11 @@
 </div>
 
 <div class="container">
-    <h1>Terminübersicht</h1>
-    <h2>{{ base_url }}</h2>
-    <a href="/overview" class="btn btn-back">Zurück</a>
+    <div class="page-header">
+        <a href="/overview" class="back-link">&larr; Zurück</a>
+        <h1>Terminübersicht</h1>
+        <p class="subtitle">{{ base_url }}</p>
+    </div>
 
     {% if error %}
     <div class="alert alert-error">{{ error }}</div>
@@ -70,23 +73,25 @@
         </div>
 
         <!-- Calendars selection -->
-        <div class="calendar-selection-header">
-            <h3>Kalender auswählen</h3>
-            <p class="calendar-selection-info">Bitte wählen Sie die Kalender aus, von denen Sie Termine anzeigen möchten.</p>
-        </div>
-        <div class="calendars-container">
-            {% for calendar in calendars %}
-                <div class="calendar-item">
-                    <input type="checkbox" id="calendar-{{ calendar['id'] }}"
-                           name="calendar_ids" value="{{ calendar['id'] }}"
-                           class="calendar-checkbox"
-                            {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
-                    <label for="calendar-{{ calendar['id'] }}" class="calendar-label">
-                        {{ calendar['name'] }}
-                    </label>
-                </div>
-            {% endfor %}
-        </div>
+        <details class="calendar-selection" {% if not appointments %}open{% endif %}>
+            <summary class="calendar-selection-header">
+                <h3>Kalender auswählen</h3>
+                <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }} ausgewählt</span>
+            </summary>
+            <div class="calendars-container">
+                {% for calendar in calendars %}
+                    <div class="calendar-item">
+                        <input type="checkbox" id="calendar-{{ calendar['id'] }}"
+                               name="calendar_ids" value="{{ calendar['id'] }}"
+                               class="calendar-checkbox"
+                                {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
+                        <label for="calendar-{{ calendar['id'] }}" class="calendar-label">
+                            {{ calendar['name'] }}
+                        </label>
+                    </div>
+                {% endfor %}
+            </div>
+        </details>
     </form>
     {% if appointments %}
         <form method="POST" enctype="multipart/form-data">
@@ -98,6 +103,7 @@
                 <!-- Left column: Appointments -->
                 <div class="appointments-main">
                     <div class="appointments-actions">
+                        <span class="appointment-count">{{ appointments|length }} Termine geladen</span>
                         <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
                         <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
                     </div>
@@ -113,7 +119,13 @@
                                     </span>
                                     <span class="appointment-description">{{ appointment['description'] }}</span>
                                 </label>
+                                {% set has_info = appointment['additional_info'] | default('') | trim %}
+                                <button type="button" class="add-info-toggle{% if has_info %} hidden{% endif %}"
+                                        onclick="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.focus();">
+                                    + Info hinzufügen
+                                </button>
                                 <textarea name="additional_info_{{ appointment['id'] }}"
+                                          class="{% if not has_info %}hidden{% endif %}"
                                           placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
                             </div>
                         {% endfor %}
@@ -167,10 +179,6 @@
                         </div>
                     </div>
 
-                    <!-- Text colors section -->
-                    <div class="sidebar-section">
-                    </div>
-
                     <!-- Presets (hidden) -->
                     <div class="sidebar-section" style="display: none;">
                         <div class="sidebar-section-title">Voreinstellungen</div>
@@ -200,7 +208,10 @@
             </div>
         </form>
     {% else %}
-        <p>Keine Termine vorhanden.</p>
+        <div class="empty-state">
+            <p>Keine Termine vorhanden.</p>
+            <p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>
+        </div>
     {% endif %}
 </div>
 <footer>
