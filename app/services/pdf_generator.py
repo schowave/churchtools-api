@@ -154,8 +154,8 @@ def wrap_text(text, font_name, line_height, max_width):
     Returns a list of lines and the total height the text block will require.
     Preserves original line breaks and wraps text that exceeds max_width.
     """
-    # Ensure the font is registered (idempotent after first call)
-    font_name, _ = _register_fonts()
+    # Ensure fonts are registered (idempotent after first call)
+    _register_fonts()
 
     wrapped_lines = []
     text_height = 0

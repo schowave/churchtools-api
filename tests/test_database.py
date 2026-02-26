@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from sqlalchemy import create_engine, inspect
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
@@ -134,7 +135,7 @@ class TestDatabase(unittest.TestCase):
         with patch("app.crud.logger") as mock_logger:
             # Create a session that raises an exception when queried
             mock_session = MagicMock()
-            mock_session.query.side_effect = Exception("Database error")
+            mock_session.query.side_effect = SQLAlchemyError("Database error")
 
             # Call function with mocked session
             result = get_additional_infos(mock_session, ["appointment1"])
@@ -149,7 +150,7 @@ class TestDatabase(unittest.TestCase):
         with patch("app.crud.logger") as mock_logger:
             # Create a session that raises an exception when queried
             mock_session = MagicMock()
-            mock_session.query.side_effect = Exception("Database error")
+            mock_session.query.side_effect = SQLAlchemyError("Database error")
 
             # Call function with mocked session
             result = load_color_settings(mock_session, "test")
@@ -159,7 +160,7 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(result.name, "test")
             self.assertEqual(result.background_color, "#d3d3d3")
             mock_logger.error.assert_called_once()
-            self.assertIn("An error occurred", mock_logger.error.call_args[0][0])
+            self.assertIn("Database error", mock_logger.error.call_args[0][0])
 
     def test_create_schema(self):
         # Create a fresh in-memory database with no tables

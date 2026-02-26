@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.models import Appointment, ColorSetting
 from app.schemas import ColorSettings
 
@@ -15,7 +17,7 @@ def save_additional_infos(db, appointment_info_list):
             else:
                 db.add(Appointment(id=appointment_id, additional_info=additional_info))
         db.commit()
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.rollback()
         raise e
 
@@ -24,7 +26,7 @@ def get_additional_infos(db, appointment_ids):
     try:
         results = db.query(Appointment).filter(Appointment.id.in_(appointment_ids)).all()
         return {appointment.id: appointment.additional_info for appointment in results}
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         return {}
 
@@ -48,7 +50,7 @@ def save_color_settings(db, settings: ColorSettings):
                 )
             )
         db.commit()
-    except Exception as e:
+    except SQLAlchemyError as e:
         db.rollback()
         raise e
 
@@ -66,6 +68,6 @@ def load_color_settings(db, setting_name) -> ColorSettings:
             )
         else:
             return ColorSettings(name=setting_name)
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
         return ColorSettings(name=setting_name)
