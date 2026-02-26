@@ -19,8 +19,9 @@ app = FastAPI(title="ChurchTools API")
 # Include static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Make sure the directory for saved files exists
+# Make sure the directories for saved files and DB exist
 Path(Config.FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)
+Path(Config.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
 
 # Include routes
 app.include_router(auth.router, tags=["auth"])

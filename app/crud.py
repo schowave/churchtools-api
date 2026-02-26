@@ -17,9 +17,9 @@ def save_additional_infos(db, appointment_info_list):
             else:
                 db.add(Appointment(id=appointment_id, additional_info=additional_info))
         db.commit()
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.rollback()
-        raise e
+        raise
 
 
 def get_additional_infos(db, appointment_ids):
@@ -50,9 +50,9 @@ def save_color_settings(db, settings: ColorSettings):
                 )
             )
         db.commit()
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.rollback()
-        raise e
+        raise
 
 
 def load_color_settings(db, setting_name) -> ColorSettings:

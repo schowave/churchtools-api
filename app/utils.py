@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pytz
 
@@ -22,7 +22,7 @@ def parse_iso_datetime(dt_str: str) -> datetime:
     return berlin_dt
 
 
-def get_date_range_from_form(start_date: str = None, end_date: str = None) -> Tuple[str, str]:
+def get_date_range_from_form(start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[str, str]:
     """
     Calculates a date range based on the provided values or uses default values.
     """
