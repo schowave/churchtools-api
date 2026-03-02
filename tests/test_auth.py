@@ -192,9 +192,22 @@ async def test_login_token_failure(mock_client, templates_mock, config_mock):
 
 
 @pytest.mark.asyncio
-async def test_logout():
+@patch("httpx.AsyncClient")
+async def test_logout(mock_client):
+    # Mock httpx client for the API logout call
+    client_instance = AsyncMock()
+    mock_client.return_value.__aenter__.return_value = client_instance
+    client_instance.post.return_value = MagicMock(status_code=200)
+
+    # Mock request with login token
+    request_mock = MagicMock(spec=Request)
+    request_mock.cookies.get.return_value = "test_token"
+
     # Call the function
-    result = await logout()
+    result = await logout(request_mock)
+
+    # Check that the ChurchTools API logout was called
+    client_instance.post.assert_called_once()
 
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)

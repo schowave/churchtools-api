@@ -110,23 +110,23 @@
                     <div class="appointments-container">
                         {% for appointment in appointments %}
                             <div class="appointment-item">
-                                <input type="checkbox" id="appointment-{{ appointment['id'] }}" name="appointment_id"
-                                       value="{{ appointment['id'] }}" class="appointment-checkbox" checked>
-                                <label for="appointment-{{ appointment['id'] }}" class="appointment-label">
+                                <input type="checkbox" id="appointment-{{ appointment.id }}" name="appointment_id"
+                                       value="{{ appointment.id }}" class="appointment-checkbox" checked>
+                                <label for="appointment-{{ appointment.id }}" class="appointment-label">
                                     <span class="appointment-date">
-                                        {{ appointment['startDateView'] }}
-                                        ({{ appointment['startTimeView'] }}-{{ appointment['endTimeView'] }})
+                                        {{ appointment.start_date_view }}
+                                        ({{ appointment.start_time_view }}-{{ appointment.end_time_view }})
                                     </span>
-                                    <span class="appointment-description">{{ appointment['description'] }}</span>
+                                    <span class="appointment-description">{{ appointment.title }}</span>
                                 </label>
-                                {% set has_info = appointment['additional_info'] | default('') | trim %}
+                                {% set has_info = appointment.additional_info | default('') | trim %}
                                 <button type="button" class="add-info-toggle{% if has_info %} hidden{% endif %}"
                                         onclick="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.focus();">
                                     + Info hinzufügen
                                 </button>
-                                <textarea name="additional_info_{{ appointment['id'] }}"
+                                <textarea name="additional_info_{{ appointment.id }}"
                                           class="{% if not has_info %}hidden{% endif %}"
-                                          placeholder="Zusätzliche Informationen">{{ appointment['additional_info'] | default('') }}</textarea>
+                                          placeholder="Zusätzliche Informationen">{{ appointment.additional_info | default('') }}</textarea>
                             </div>
                         {% endfor %}
                     </div>

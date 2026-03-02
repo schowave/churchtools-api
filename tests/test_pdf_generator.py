@@ -7,6 +7,7 @@ from reportlab.lib.pagesizes import landscape
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
 
+from app.schemas import AppointmentData
 from app.services.pdf_generator import (
     create_pdf,
     create_transparent_image,
@@ -272,20 +273,17 @@ class TestPdfGenerator(unittest.TestCase):
         mock_pdfmetrics.getRegisteredFontNames.return_value = []
         mock_pdfmetrics.stringWidth.return_value = 50  # Simuliere eine Textbreite
 
-        # Mock appointments
+        # Use AppointmentData model
         appointments = [
-            {
-                "id": "1_101",
-                "description": "Test Event",
-                "startDate": "2023-01-15T10:00:00Z",
-                "endDate": "2023-01-15T12:00:00Z",
-                "information": "Test Info",
-                "meetingAt": "Test Location",
-                "startDateView": "15.01.2023",
-                "startTimeView": "11:00",
-                "endTimeView": "13:00",
-                "additional_info": "Additional Info",
-            }
+            AppointmentData(
+                id="1_101",
+                title="Test Event",
+                start_date="2023-01-15T10:00:00Z",
+                end_date="2023-01-15T12:00:00Z",
+                information="Test Info",
+                meeting_at="Test Location",
+                additional_info="Additional Info",
+            )
         ]
 
         # Mock parse_iso_datetime
@@ -325,6 +323,21 @@ class TestPdfGenerator(unittest.TestCase):
         self.assertEqual(result, "2023-01-15_Termine.pdf")
 
 
+def _make_appointment(**overrides) -> AppointmentData:
+    """Helper to create AppointmentData with sensible defaults for testing."""
+    defaults = {
+        "id": "1",
+        "title": "Test Event",
+        "start_date": "2026-03-27T17:00:00Z",
+        "end_date": "2026-03-27T19:00:00Z",
+        "meeting_at": "",
+        "information": "",
+        "additional_info": "",
+    }
+    defaults.update(overrides)
+    return AppointmentData(**defaults)
+
+
 class TestDrawEventOverflow(unittest.TestCase):
     """Integration test: verify all drawn text stays within the grey box boundaries.
 
@@ -333,38 +346,35 @@ class TestDrawEventOverflow(unittest.TestCase):
 
     # Outlier events (ids 11-15) from scripts/preview_pdf.py — stress-test every layout area
     OUTLIER_EVENTS = [
-        {
-            "id": "11",
-            "description": "Regionaler Jugendgottesdienst",
-            "startDate": "2026-03-27T17:00:00Z",
-            "endDate": "2026-03-27T19:00:00Z",
-            "meetingAt": (
+        _make_appointment(
+            id="11",
+            title="Regionaler Jugendgottesdienst",
+            start_date="2026-03-27T17:00:00Z",
+            end_date="2026-03-27T19:00:00Z",
+            meeting_at=(
                 "Evangelisches Gemeindezentrum an der Kreuzbergstraße 147, "
                 "Eingang über den Hinterhof neben dem Parkplatz"
             ),
-            "information": "",
-            "additional_info": "Thema: Glaube und Zweifel",
-        },
-        {
-            "id": "12",
-            "description": (
+            additional_info="Thema: Glaube und Zweifel",
+        ),
+        _make_appointment(
+            id="12",
+            title=(
                 "Festlicher Gemeinschaftsgottesdienst mit Einführung der neuen Kirchenvorsteherin "
                 "und anschließendem Empfang im Gemeindehaus mit Kaffee und Kuchen für alle Gemeindemitglieder"
             ),
-            "startDate": "2026-03-29T10:00:00Z",
-            "endDate": "2026-03-29T12:30:00Z",
-            "meetingAt": "Stadtkirche",
-            "information": "",
-            "additional_info": "Bitte Kuchen mitbringen!",
-        },
-        {
-            "id": "13",
-            "description": "Karfreitagsgottesdienst",
-            "startDate": "2026-04-03T10:00:00Z",
-            "endDate": "2026-04-03T11:30:00Z",
-            "meetingAt": "Stadtkirche",
-            "information": "",
-            "additional_info": (
+            start_date="2026-03-29T10:00:00Z",
+            end_date="2026-03-29T12:30:00Z",
+            meeting_at="Stadtkirche",
+            additional_info="Bitte Kuchen mitbringen!",
+        ),
+        _make_appointment(
+            id="13",
+            title="Karfreitagsgottesdienst",
+            start_date="2026-04-03T10:00:00Z",
+            end_date="2026-04-03T11:30:00Z",
+            meeting_at="Stadtkirche",
+            information=(
                 "Wochenspruch: Also hat Gott die Welt geliebt, dass er seinen "
                 "eingeborenen Sohn gab, damit alle, die an ihn glauben, nicht "
                 "verloren werden, sondern das ewige Leben haben. (Johannes 3,16)\n"
@@ -378,34 +388,32 @@ class TestDrawEventOverflow(unittest.TestCase):
                 "Abendmahl in beiderlei Gestalt\n"
                 "Anschließend stilles Beisammensein im Gemeindehaus"
             ),
-        },
-        {
-            "id": "14",
-            "description": (
+        ),
+        _make_appointment(
+            id="14",
+            title=(
                 "Ökumenischer Gottesdienst zum Tag der Deutschen Einheit mit Friedensgebet "
                 "und Segnung der neuen Gemeindefahne durch Superintendent Dr. Hoffmann"
             ),
-            "startDate": "2026-04-05T10:00:00Z",
-            "endDate": "2026-04-05T12:00:00Z",
-            "meetingAt": (
+            start_date="2026-04-05T10:00:00Z",
+            end_date="2026-04-05T12:00:00Z",
+            meeting_at=(
                 "Evangelisch-Lutherische Hauptkirche St. Petri am Alten Marktplatz, Seiteneingang barrierefrei"
             ),
-            "information": "",
-            "additional_info": (
+            additional_info=(
                 "Mitwirkende: Posaunenchor, Gospelchor »Joyful Noise«, Bläserensemble der Musikschule\n"
                 "Predigt: Superintendent Dr. Hoffmann und Pfarrer Benedikt (kath.)\n"
                 "Kollekte: Renovierung des Gemeindehauses\n"
                 "Anschließend Stehempfang auf dem Kirchplatz bei hoffentlich gutem Wetter\n"
                 "Kinderbetreuung im Gemeindehaus während des gesamten Gottesdienstes"
             ),
-        },
-        {
-            "id": "15",
-            "description": "Gemeindeausflug",
-            "startDate": "2026-04-07T08:00:00Z",
-            "endDate": "2026-04-07T18:00:00Z",
-            "meetingAt": "",
-            "information": (
+        ),
+        _make_appointment(
+            id="15",
+            title="Gemeindeausflug",
+            start_date="2026-04-07T08:00:00Z",
+            end_date="2026-04-07T18:00:00Z",
+            information=(
                 "Abfahrt: 08:00 Uhr am Gemeindehaus (bitte pünktlich!). "
                 "Ziel: Kloster Maulbronn mit Führung und anschließender Wanderung "
                 "durch das Salzachtal. Mittagessen im Klosterhof (Selbstzahler). "
@@ -413,8 +421,7 @@ class TestDrawEventOverflow(unittest.TestCase):
                 "Rückfahrt gegen 17:00 Uhr. Kosten: 15 € pro Person (Busfahrt + Eintritt). "
                 "Anmeldung bis 25.03. im Pfarrbüro. Bitte festes Schuhwerk mitbringen!"
             ),
-            "additional_info": "",
-        },
+        ),
     ]
 
     def setUp(self):
@@ -425,7 +432,7 @@ class TestDrawEventOverflow(unittest.TestCase):
         self.font_name, self.font_name_bold = pg._register_fonts()
         self.y_start = pg.PAGE_HEIGHT - pg.BOTTOM_MARGIN
 
-    def _draw_and_capture(self, event):
+    def _draw_and_capture(self, event: AppointmentData):
         """Draw a single event on a real canvas and capture box + text positions.
 
         Returns (box_calls, text_calls) where:
@@ -475,7 +482,7 @@ class TestDrawEventOverflow(unittest.TestCase):
     def test_text_stays_within_box_vertically(self):
         """No drawString baseline should fall below the grey box bottom edge."""
         for event in self.OUTLIER_EVENTS:
-            with self.subTest(event_id=event["id"]):
+            with self.subTest(event_id=event.id):
                 box_calls, text_calls = self._draw_and_capture(event)
                 self.assertTrue(box_calls, "No box was drawn")
                 self.assertTrue(text_calls, "No text was drawn")
@@ -486,14 +493,14 @@ class TestDrawEventOverflow(unittest.TestCase):
                 self.assertGreaterEqual(
                     min_text_y,
                     box_y_bottom,
-                    f"Event {event['id']}: text baseline {min_text_y:.1f} is below "
+                    f"Event {event.id}: text baseline {min_text_y:.1f} is below "
                     f"box bottom {box_y_bottom:.1f} (overflow by {box_y_bottom - min_text_y:.1f}pt)",
                 )
 
     def test_text_stays_within_box_horizontally(self):
         """No drawString right edge should exceed the grey box right edge."""
         for event in self.OUTLIER_EVENTS:
-            with self.subTest(event_id=event["id"]):
+            with self.subTest(event_id=event.id):
                 box_calls, text_calls = self._draw_and_capture(event)
                 self.assertTrue(box_calls, "No box was drawn")
                 self.assertTrue(text_calls, "No text was drawn")
@@ -508,7 +515,7 @@ class TestDrawEventOverflow(unittest.TestCase):
                     self.assertLessEqual(
                         text_right,
                         box_right + 1.0,  # 1pt tolerance for rounding
-                        f"Event {event['id']}: text '{text[:40]}…' right edge {text_right:.1f} "
+                        f"Event {event.id}: text '{text[:40]}…' right edge {text_right:.1f} "
                         f"exceeds box right {box_right:.1f}",
                     )
 

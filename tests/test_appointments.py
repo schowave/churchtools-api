@@ -7,8 +7,8 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.appointments import appointments_page, download_file, process_appointments
-from app.schemas import ColorSettings
-from app.services.churchtools_client import appointment_to_dict, fetch_appointments, fetch_calendars
+from app.schemas import AppointmentData, ColorSettings
+from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
 
 
@@ -72,19 +72,18 @@ async def test_fetch_calendars_success(mock_client, config_mock):
 
 @pytest.mark.asyncio
 @patch("httpx.AsyncClient")
-async def test_fetch_calendars_error(mock_client):
+async def test_fetch_calendars_auth_error(mock_client):
     # Mock httpx client and response
     client_instance = AsyncMock()
     mock_client.return_value.__aenter__.return_value = client_instance
 
-    # Mock error response
+    # Mock 401 response
     response = MagicMock()
     response.status_code = 401
-    response.raise_for_status.side_effect = Exception("Unauthorized")
     client_instance.get.return_value = response
 
-    # Call the function and check that it raises the exception
-    with pytest.raises(Exception):
+    # Call the function and check that it raises AuthenticationError
+    with pytest.raises(AuthenticationError):
         await fetch_calendars("invalid_token")
 
 
@@ -153,9 +152,9 @@ async def test_fetch_appointments(mock_client, config_mock):
     assert result[1]["base"]["id"] == "2_102"
 
 
-def test_appointment_to_dict():
-    # Test appointment with all fields
-    appointment = {
+def test_parse_appointment():
+    # Test with deprecated fields (caption/information) - fallback path
+    raw = {
         "base": {
             "id": "1_101",
             "caption": "Test Event",
@@ -165,30 +164,74 @@ def test_appointment_to_dict():
         "calculated": {"startDate": "2023-01-15T10:00:00Z", "endDate": "2023-01-15T12:00:00Z"},
     }
 
-    result = appointment_to_dict(appointment)
+    result = parse_appointment(raw)
 
-    # Check that all fields were correctly mapped
-    assert result["id"] == "1_101"
-    assert result["description"] == "Test Event"
-    assert result["startDate"] == "2023-01-15T10:00:00Z"
-    assert result["endDate"] == "2023-01-15T12:00:00Z"
-    assert result["information"] == "Test Info"
-    assert result["meetingAt"] == "Test Location"
-    assert result["startDateView"] == "15.01.2023"
-    assert result["startTimeView"] == "11:00"  # UTC+1 for Berlin
-    assert result["endTimeView"] == "13:00"  # UTC+1 for Berlin
-    assert result["additional_info"] == ""
+    assert isinstance(result, AppointmentData)
+    assert result.id == "1_101"
+    assert result.title == "Test Event"
+    assert result.start_date == "2023-01-15T10:00:00Z"
+    assert result.end_date == "2023-01-15T12:00:00Z"
+    assert result.information == "Test Info"
+    assert result.meeting_at == "Test Location"
+    assert result.start_date_view == "15.01.2023"
+    assert result.start_time_view == "11:00"  # UTC+1 for Berlin
+    assert result.end_time_view == "13:00"  # UTC+1 for Berlin
+    assert result.additional_info == ""
 
-    # Test appointment with missing address
-    appointment = {
+
+def test_parse_appointment_with_new_fields():
+    # Test with new API fields (title/description) - preferred path
+    raw = {
+        "base": {
+            "id": "1_101",
+            "title": "New Title",
+            "caption": "Old Caption",
+            "description": "New Description",
+            "information": "Old Info",
+            "address": {"name": "Church Hall"},
+        },
+        "calculated": {"startDate": "2023-01-15T10:00:00Z", "endDate": "2023-01-15T12:00:00Z"},
+    }
+
+    result = parse_appointment(raw)
+
+    # Should prefer new fields over deprecated ones
+    assert result.title == "New Title"
+    assert result.information == "New Description"
+    assert result.meeting_at == "Church Hall"
+
+
+def test_parse_appointment_missing_address():
+    raw = {
         "base": {"id": "1_102", "caption": "Test Event 2", "information": "Test Info 2", "address": None},
         "calculated": {"startDate": "2023-01-16T14:00:00Z", "endDate": "2023-01-16T16:00:00Z"},
     }
 
-    result = appointment_to_dict(appointment)
+    result = parse_appointment(raw)
 
-    # Check that meetingAt is empty when address is None
-    assert result["meetingAt"] == ""
+    assert result.meeting_at == ""
+
+
+def test_parse_appointment_nested_format():
+    # Test the OpenAPI spec format: data[].appointment.base
+    raw = {
+        "appointment": {
+            "base": {
+                "id": "1_103",
+                "title": "Nested Event",
+                "address": {},
+            },
+            "calculated": {"startDate": "2023-01-17T09:00:00Z", "endDate": "2023-01-17T10:00:00Z"},
+        }
+    }
+
+    from app.services.churchtools_client import _extract_appointment
+
+    extracted = _extract_appointment(raw)
+    result = parse_appointment(extracted)
+
+    assert result.id == "1_103"
+    assert result.title == "Nested Event"
 
 
 @patch("app.services.jpeg_generator.convert_from_path")
@@ -420,13 +463,15 @@ async def test_process_appointments_fetch(
     # Should call fetch_appointments with integer calendar IDs
     mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2])
 
-    # Should render template with appointments in context
+    # Should render template with AppointmentData objects in context
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args
     context = call_args[0][1]
     assert "appointments" in context
     assert len(context["appointments"]) == 1
-    assert context["appointments"][0]["additional_info"] == "Saved info"
+    appointment = context["appointments"][0]
+    assert isinstance(appointment, AppointmentData)
+    assert appointment.additional_info == "Saved info"
 
     # Response should set fetchAppointments cookie
     response = templates_mock.TemplateResponse.return_value

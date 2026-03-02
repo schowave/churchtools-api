@@ -27,6 +27,9 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
         if response.status_code == 200:
             person_id = response.json()["data"]["personId"]
+            # Use session cookies from the login response to retrieve the long-lived login token.
+            # The OpenAPI spec documents Authorization header auth for this endpoint,
+            # but right after login we only have session cookies (no login token yet).
             token_response = await client.get(
                 f"{Config.CHURCHTOOLS_BASE_URL}/api/persons/{person_id}/logintoken", cookies=response.cookies
             )
@@ -64,7 +67,18 @@ async def login(request: Request, username: str = Form(...), password: str = For
 
 
 @router.post("/logout")
-async def logout():
+async def logout(request: Request):
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    if login_token:
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"{Config.CHURCHTOOLS_BASE_URL}/api/logout",
+                    headers={"Authorization": f"Login {login_token}"},
+                )
+        except Exception:
+            pass  # Best-effort: still clear local cookie even if API call fails
+
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
     return response

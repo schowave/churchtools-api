@@ -11,11 +11,11 @@ from app.config import Config
 from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
 from app.database import DEFAULT_SETTING_NAME, get_db
 from app.schemas import ColorSettings
-from app.services.churchtools_client import appointment_to_dict, fetch_appointments, fetch_calendars
+from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
 from app.services.pdf_generator import create_pdf
 from app.shared import templates
-from app.utils import get_date_range_from_form, normalize_newlines, parse_iso_datetime
+from app.utils import get_date_range_from_form, normalize_newlines
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ async def _prepare_selected_appointments(
 ):
     """Shared preparation logic for PDF and JPEG generation.
 
-    Returns (selected_appointments, background_image_stream).
+    Returns (selected_appointments: List[AppointmentData], background_image_stream).
     """
     # Save additional information from form
     form_data = await request.form()
@@ -85,29 +85,26 @@ async def _prepare_selected_appointments(
     # Fetch and convert appointments
     logger.info(f"Selected appointment IDs: {appointment_id}")
     logger.info(f"Retrieving appointments for period {start_date} to {end_date} and calendars {calendar_ids_int}")
-    appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-    logger.info(f"Number of retrieved appointments: {len(appointments_data)}")
-    appointments = [appointment_to_dict(app) for app in appointments_data]
+    raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+    logger.info(f"Number of retrieved appointments: {len(raw_appointments)}")
+    appointments = [parse_appointment(raw) for raw in raw_appointments]
 
     # Assign additional info from form
     for appointment in appointments:
-        app_id = appointment["id"]
-        appointment["additional_info"] = form_data.get(f"additional_info_{app_id}", "")
+        info = form_data.get(f"additional_info_{appointment.id}", "")
+        appointment.additional_info = info
 
     # Filter selected appointments
-    selected_appointments = []
-    for app_id in appointment_id:
-        matching = [app for app in appointments if str(app["id"]) == str(app_id)]
-        selected_appointments.extend(matching)
+    selected_ids = set(appointment_id)
+    selected_appointments = [app for app in appointments if app.id in selected_ids]
 
-    # Sort by start date
-    selected_appointments.sort(key=lambda x: parse_iso_datetime(x["startDate"]))
+    # Preserve order from appointment_id list
+    id_order = {app_id: idx for idx, app_id in enumerate(appointment_id)}
+    selected_appointments.sort(key=lambda app: id_order.get(app.id, 0))
 
     logger.info(f"Number of selected appointments: {len(selected_appointments)}")
     for idx, app in enumerate(selected_appointments, 1):
-        logger.info(
-            f"  {idx}. {app['description']} am {app['startDateView']} ({app['startTimeView']}-{app['endTimeView']})"
-        )
+        logger.info(f"  {idx}. {app.title} am {app.start_date_view} ({app.start_time_view}-{app.end_time_view})")
 
     return selected_appointments, background_image_stream
 
@@ -119,7 +116,12 @@ async def appointments_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     start_date, end_date = get_date_range_from_form()
-    calendars = await fetch_calendars(login_token)
+    try:
+        calendars = await fetch_calendars(login_token)
+    except AuthenticationError:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        return response
 
     # Preselection of all calendars
     selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
@@ -136,13 +138,13 @@ async def _handle_fetch_appointments(
     request, db, login_token, calendars, calendar_ids, calendar_ids_int, start_date, end_date
 ):
     """Handle the 'fetch appointments' button: load appointments and render the template."""
-    appointments_data = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-    appointments = [appointment_to_dict(app) for app in appointments_data]
+    raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+    appointments = [parse_appointment(raw) for raw in raw_appointments]
 
-    # Load additional information
-    additional_infos = get_additional_infos(db, [app["id"] for app in appointments])
+    # Load additional information from DB
+    additional_infos = get_additional_infos(db, [app.id for app in appointments])
     for appointment in appointments:
-        appointment["additional_info"] = additional_infos.get(appointment["id"], "")
+        appointment.additional_info = additional_infos.get(appointment.id, "")
 
     # Reload color settings from DB (ignore form overrides for fetch)
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
@@ -298,7 +300,12 @@ async def process_appointments(
         start_date = start_date or start_date_default
         end_date = end_date or end_date_default
 
-    calendars = await fetch_calendars(login_token)
+    try:
+        calendars = await fetch_calendars(login_token)
+    except AuthenticationError:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        return response
 
     # Convert calendar_ids to integers if available
     calendar_ids_int = []
@@ -324,48 +331,55 @@ async def process_appointments(
     if overrides:
         color_settings = color_settings.model_copy(update=overrides)
 
-    # Dispatch to the appropriate handler
-    if fetch_appointments_btn:
-        return await _handle_fetch_appointments(
-            request,
-            db,
-            login_token,
-            calendars,
-            calendar_ids,
-            calendar_ids_int,
-            start_date,
-            end_date,
-        )
+    # Dispatch to the appropriate handler.
+    # All handlers call fetch_appointments which may raise AuthenticationError
+    # if the token expires mid-session.
+    try:
+        if fetch_appointments_btn:
+            return await _handle_fetch_appointments(
+                request,
+                db,
+                login_token,
+                calendars,
+                calendar_ids,
+                calendar_ids_int,
+                start_date,
+                end_date,
+            )
 
-    if generate_pdf_btn:
-        return await _handle_generate_pdf(
-            request,
-            db,
-            login_token,
-            calendars,
-            calendar_ids,
-            calendar_ids_int,
-            start_date,
-            end_date,
-            appointment_id,
-            color_settings,
-            background_image,
-        )
+        if generate_pdf_btn:
+            return await _handle_generate_pdf(
+                request,
+                db,
+                login_token,
+                calendars,
+                calendar_ids,
+                calendar_ids_int,
+                start_date,
+                end_date,
+                appointment_id,
+                color_settings,
+                background_image,
+            )
 
-    if generate_jpeg_btn:
-        return await _handle_generate_jpeg(
-            request,
-            db,
-            login_token,
-            calendars,
-            calendar_ids,
-            calendar_ids_int,
-            start_date,
-            end_date,
-            appointment_id,
-            color_settings,
-            background_image,
-        )
+        if generate_jpeg_btn:
+            return await _handle_generate_jpeg(
+                request,
+                db,
+                login_token,
+                calendars,
+                calendar_ids,
+                calendar_ids_int,
+                start_date,
+                end_date,
+                appointment_id,
+                color_settings,
+                background_image,
+            )
+    except AuthenticationError:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        return response
 
     # Default: show form
     context = _build_template_context(

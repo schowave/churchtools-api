@@ -1,16 +1,33 @@
+import asyncio
 import logging
 from typing import List
 
 import httpx
 
 from app.config import Config
+from app.schemas import AppointmentData
 from app.utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
 
+class AuthenticationError(Exception):
+    """Raised when the ChurchTools API rejects the login token (401/403)."""
+
+
 def _auth_headers(login_token: str) -> dict:
     return {"Authorization": f"Login {login_token}"}
+
+
+def _extract_appointment(item: dict) -> dict:
+    """Extract appointment data, handling both API response formats.
+
+    The OpenAPI spec documents data[].appointment.base but the actual API
+    returns data[].base directly. This handles both variants defensively.
+    """
+    if "appointment" in item:
+        return item["appointment"]
+    return item
 
 
 async def fetch_calendars(login_token: str):
@@ -19,12 +36,34 @@ async def fetch_calendars(login_token: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=_auth_headers(login_token))
 
+        if response.status_code in (401, 403):
+            raise AuthenticationError("Login token is invalid or expired")
+
         if response.status_code == 200:
             all_calendars = response.json().get("data", [])
+            # isPublic is deprecated in the API but no replacement is documented yet.
+            # We keep using it until ChurchTools provides a documented alternative.
             public_calendars = [calendar for calendar in all_calendars if calendar.get("isPublic") is True]
             return public_calendars
         else:
             response.raise_for_status()
+
+
+async def _fetch_calendar_appointments(
+    client: httpx.AsyncClient, calendar_id: int, headers: dict, query_params: dict
+) -> list[tuple[int, dict]]:
+    """Fetch appointments for a single calendar. Returns list of (calendar_id, appointment_dict) tuples."""
+    url = f"{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments"
+    response = await client.get(url, headers=headers, params=query_params)
+
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
+
+    if response.status_code != 200:
+        logger.warning(f"Failed to fetch appointments for calendar {calendar_id}: HTTP {response.status_code}")
+        return []
+
+    return [(calendar_id, _extract_appointment(item)) for item in response.json()["data"]]
 
 
 async def fetch_appointments(login_token: str, start_date: str, end_date: str, calendar_ids: List[int]):
@@ -37,17 +76,14 @@ async def fetch_appointments(login_token: str, start_date: str, end_date: str, c
     seen_ids = set()
 
     async with httpx.AsyncClient() as client:
-        for calendar_id in calendar_ids:
-            url = f"{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments"
-            response = await client.get(url, headers=headers, params=query_params)
+        # Fetch all calendars in parallel
+        tasks = [_fetch_calendar_appointments(client, cal_id, headers, query_params) for cal_id in calendar_ids]
+        results = await asyncio.gather(*tasks)
 
-            if response.status_code != 200:
-                logger.warning(f"Failed to fetch appointments for calendar {calendar_id}: HTTP {response.status_code}")
-                continue
-
+        for calendar_results in results:
             appointment_counts = {}
 
-            for appointment in response.json()["data"]:
+            for calendar_id, appointment in calendar_results:
                 base_id = str(appointment["base"]["id"])
                 appointment_id = str(calendar_id) + "_" + base_id
 
@@ -66,25 +102,19 @@ async def fetch_appointments(login_token: str, start_date: str, end_date: str, c
     return appointments
 
 
-def appointment_to_dict(appointment):
-    start_date_from_appointment = appointment["calculated"]["startDate"]
-    start_date_datetime = parse_iso_datetime(start_date_from_appointment)
+def parse_appointment(raw: dict) -> AppointmentData:
+    """Convert a raw API appointment dict to a structured AppointmentData model."""
+    address = raw["base"].get("address") or {}
+    # meetingAt is undocumented in the OpenAPI spec; fall back to address name
+    meeting_at = address.get("meetingAt") or address.get("name") or ""
 
-    end_date_from_appointment = appointment["calculated"]["endDate"]
-    end_date_datetime = parse_iso_datetime(end_date_from_appointment)
-
-    meeting_at = (appointment["base"].get("address") or {}).get("meetingAt", "")
-
-    return {
-        "id": appointment["base"]["id"],
-        "description": appointment["base"]["caption"],
-        "startDate": start_date_from_appointment,
-        "endDate": appointment["calculated"]["endDate"],
-        "address": appointment["base"].get("address", ""),
-        "meetingAt": meeting_at,
-        "information": appointment["base"]["information"],
-        "startDateView": start_date_datetime.strftime("%d.%m.%Y"),
-        "startTimeView": start_date_datetime.strftime("%H:%M"),
-        "endTimeView": end_date_datetime.strftime("%H:%M"),
-        "additional_info": "",
-    }
+    return AppointmentData(
+        id=str(raw["base"]["id"]),
+        # Prefer "title" (current API field) with fallback to deprecated "caption"
+        title=raw["base"].get("title") or raw["base"].get("caption", ""),
+        start_date=raw["calculated"]["startDate"],
+        end_date=raw["calculated"]["endDate"],
+        meeting_at=meeting_at,
+        # API field "description" replaces deprecated "information"
+        information=raw["base"].get("description") or raw["base"].get("information") or "",
+    )

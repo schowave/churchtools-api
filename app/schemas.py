@@ -1,8 +1,37 @@
 import re
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
+
+from app.utils import parse_iso_datetime
 
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+class AppointmentData(BaseModel):
+    """Structured representation of a ChurchTools appointment for display and export."""
+
+    id: str
+    title: str
+    start_date: str  # ISO datetime string from API
+    end_date: str  # ISO datetime string from API
+    meeting_at: str = ""
+    information: str = ""
+    additional_info: str = ""
+
+    @computed_field
+    @property
+    def start_date_view(self) -> str:
+        return parse_iso_datetime(self.start_date).strftime("%d.%m.%Y")
+
+    @computed_field
+    @property
+    def start_time_view(self) -> str:
+        return parse_iso_datetime(self.start_date).strftime("%H:%M")
+
+    @computed_field
+    @property
+    def end_time_view(self) -> str:
+        return parse_iso_datetime(self.end_date).strftime("%H:%M")
 
 
 class ColorSettings(BaseModel):
