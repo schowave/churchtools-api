@@ -42,8 +42,8 @@ echo "Using $ENGINE to build and push multi-architecture image..."
 
 if [ "$ENGINE" = "podman" ]; then
     # Build for each platform
-    podman build --build-arg APP_VERSION=${VERSION} --platform linux/amd64 -t ${IMAGE}:${VERSION}-amd64 .
-    podman build --build-arg APP_VERSION=${VERSION} --platform linux/arm64 -t ${IMAGE}:${VERSION}-arm64 .
+    podman build --platform linux/amd64 -t ${IMAGE}:${VERSION}-amd64 .
+    podman build --platform linux/arm64 -t ${IMAGE}:${VERSION}-arm64 .
 
     # Create and push versioned manifest
     podman manifest rm ${IMAGE}:${VERSION} 2>/dev/null || true
@@ -61,7 +61,7 @@ if [ "$ENGINE" = "podman" ]; then
 else
     # Docker buildx multi-arch build
     docker buildx create --use --name multi-platform-builder || true
-    docker buildx build --build-arg APP_VERSION=${VERSION} --platform linux/amd64,linux/arm64 \
+    docker buildx build --platform linux/amd64,linux/arm64 \
         --tag ${IMAGE}:${VERSION} --tag ${IMAGE}:latest --push .
 fi
 

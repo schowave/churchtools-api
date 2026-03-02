@@ -43,14 +43,12 @@ RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy application source and fonts
+# Copy application source, config, and fonts
 COPY app/ ./app/
 COPY fonts/ ./fonts/
-COPY run_fastapi.py ./
+COPY pyproject.toml run_fastapi.py ./
 
-ARG APP_VERSION=0.0.0
 ENV PYTHONPATH=/app \
-    APP_VERSION=${APP_VERSION} \
     CHURCHTOOLS_BASE=evkila.church.tools \
     DB_PATH=/app/data/evkila.db
 

@@ -5,11 +5,8 @@ import tomllib
 logger = logging.getLogger(__name__)
 
 
-# Read version from APP_VERSION env var (set in Docker), or pyproject.toml (local dev)
 def get_version():
-    version = os.getenv("APP_VERSION")
-    if version:
-        return version
+    """Read version from pyproject.toml (single source of truth)."""
     try:
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         with open(os.path.join(base_dir, "pyproject.toml"), "rb") as f:

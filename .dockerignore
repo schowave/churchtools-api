@@ -16,8 +16,6 @@ htmlcov
 *.md
 *.egg-info
 Makefile
-pyproject.toml
-requirements-dev.txt
 run_local_docker.sh
 build-and-push-docker-image.sh
 scripts
