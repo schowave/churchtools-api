@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g. 3.0.2)'
-        required: true
+        description: 'Release version (leave empty for next patch, e.g. 3.0.2 → 3.0.3)'
+        required: false
         type: string
 
 permissions:
@@ -23,6 +23,18 @@ jobs:
       with:
         python-version: "3.12"
 
+    - name: Determine version
+      id: version
+      run: |
+        if [ -n "${{ steps.version.outputs.VERSION }}" ]; then
+          echo "VERSION=${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+        else
+          CURRENT=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          NEXT=$(python3 -c "v='$CURRENT'.split('.'); v[-1]=str(int(v[-1])+1); print('.'.join(v))")
+          echo "VERSION=$NEXT" >> $GITHUB_OUTPUT
+          echo "Auto-incremented: $CURRENT → $NEXT"
+        fi
+
     - name: Install dependencies
       run: pip install -e ".[dev]"
 
@@ -34,8 +46,8 @@ jobs:
 
     - name: Update version in pyproject.toml
       run: |
-        sed -i "s/^version = \".*\"/version = \"${{ inputs.version }}\"/" pyproject.toml
-        echo "Updated pyproject.toml to version ${{ inputs.version }}"
+        sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
+        echo "Updated pyproject.toml to version ${{ steps.version.outputs.VERSION }}"
         grep '^version' pyproject.toml
 
     - name: Create git tag
@@ -43,9 +55,9 @@ jobs:
         git config user.name "github-actions"
         git config user.email "github-actions@github.com"
         git add pyproject.toml
-        git commit -m "Release v${{ inputs.version }}" || echo "No version change needed"
-        git tag "v${{ inputs.version }}"
-        git push origin main "v${{ inputs.version }}"
+        git commit -m "Release v${{ steps.version.outputs.VERSION }}" || echo "No version change needed"
+        git tag "v${{ steps.version.outputs.VERSION }}"
+        git push origin main "v${{ steps.version.outputs.VERSION }}"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -63,7 +75,7 @@ jobs:
         platforms: linux/amd64,linux/arm64
         push: true
         tags: |
-          schowave/churchtools:${{ inputs.version }}
+          schowave/churchtools:${{ steps.version.outputs.VERSION }}
           schowave/churchtools:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
@@ -71,5 +83,5 @@ jobs:
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v${{ inputs.version }}
+        tag_name: v${{ steps.version.outputs.VERSION }}
         generate_release_notes: true
