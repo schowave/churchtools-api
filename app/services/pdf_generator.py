@@ -273,6 +273,30 @@ def _draw_event(
         y_position = setup_new_page(c, image_stream, logo_stream)
         is_first_on_page = True
 
+    # Limit info lines to prevent overflow into the logo area (after page break)
+    info_step = font_size_medium * LINE_SPACING_FACTOR
+    logo_top = 65 - info_step  # logo area with one extra line of tolerance
+    info_start_y = y_position - top_padding - line_height_large - len(wrapped_description_lines) * description_step
+    max_info_lines = max(1, int((info_start_y - logo_top) / info_step))
+
+    if len(wrapped_info_lines) > max_info_lines:
+        wrapped_info_lines = wrapped_info_lines[:max_info_lines]
+        last_line = wrapped_info_lines[-1]
+        while pdfmetrics.stringWidth(last_line + "...", font_name, font_size_medium) > info_max_width and last_line:
+            last_line = last_line.rsplit(" ", 1)[0] if " " in last_line else last_line[:-1]
+        wrapped_info_lines[-1] = last_line + "..."
+
+        # Recalculate rect_height with truncated info
+        actual_info_height = len(wrapped_info_lines) * info_step
+        wrapped_info_height_with_padding = (actual_info_height + line_height_small) if information != "" else 0
+        max_height = max(wrapped_info_height_with_padding, time_and_meeting_at_height)
+        rect_height = total_text_height + max_height + line_height_medium
+
+    # Ensure the background rectangle doesn't overlap the logo
+    max_rect_height = y_position - 75
+    if rect_height > max_rect_height:
+        rect_height = max_rect_height
+
     draw_transparent_rectangle(
         c, LEFT_COLUMN_X, y_position - rect_height, rect_width, rect_height, background_color, alpha
     )
