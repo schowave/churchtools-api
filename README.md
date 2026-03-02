@@ -8,7 +8,7 @@
 A web application for viewing and exporting appointments from any [ChurchTools](https://www.church.tools/) instance as styled PDF documents or JPEG images.
 
 <p align="center">
-  <img src="images/overview.png" alt="Dashboard" width="700">
+  <img src="images/dashboard.png" alt="Dashboard" width="700">
 </p>
 
 ## Features
