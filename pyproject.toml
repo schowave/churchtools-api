@@ -3,14 +3,14 @@ name = "churchtools-api"
 version = "3.0.5"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.133",
+    "fastapi>=0.135",
     "uvicorn>=0.41",
-    "sqlalchemy>=2.0",
+    "sqlalchemy>=2.0.48",
     "pydantic>=2.12",
     "python-multipart>=0.0.22",
     "httpx>=0.28",
     "jinja2>=3.1",
-    "python-dotenv>=1.2",
+    "python-dotenv>=1.2.2",
     "pdf2image>=1.17",
     "python-dateutil>=2.9",
     "pytz>=2025.2",
@@ -23,7 +23,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.23",
     "pytest-cov>=6.1",
-    "ruff>=0.11",
+    "ruff>=0.15",
 ]
 
 [tool.setuptools.packages.find]

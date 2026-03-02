@@ -35,31 +35,17 @@ if ! $ENGINE login --get-login docker.io &> /dev/null; then
     $ENGINE login docker.io
 fi
 
-echo "Using $ENGINE to build and push multi-architecture image..."
+echo "Using $ENGINE to build and push image..."
 
 if [ "$ENGINE" = "podman" ]; then
-    # Build for each platform
-    podman build --platform linux/amd64 -t ${IMAGE}:${VERSION}-amd64 .
-    podman build --platform linux/arm64 -t ${IMAGE}:${VERSION}-arm64 .
-
-    # Create and push versioned manifest
-    podman manifest rm ${IMAGE}:${VERSION} 2>/dev/null || true
-    podman manifest create ${IMAGE}:${VERSION}
-    podman manifest add ${IMAGE}:${VERSION} ${IMAGE}:${VERSION}-amd64
-    podman manifest add ${IMAGE}:${VERSION} ${IMAGE}:${VERSION}-arm64
-    podman manifest push ${IMAGE}:${VERSION} docker://docker.io/${IMAGE}:${VERSION}
-
-    # Create and push latest manifest
-    podman manifest rm ${IMAGE}:latest 2>/dev/null || true
-    podman manifest create ${IMAGE}:latest
-    podman manifest add ${IMAGE}:latest ${IMAGE}:${VERSION}-amd64
-    podman manifest add ${IMAGE}:latest ${IMAGE}:${VERSION}-arm64
-    podman manifest push ${IMAGE}:latest docker://docker.io/${IMAGE}:latest
+    podman build --platform linux/amd64 -t ${IMAGE}:${VERSION} .
+    podman push ${IMAGE}:${VERSION} docker://docker.io/${IMAGE}:${VERSION}
+    podman tag ${IMAGE}:${VERSION} ${IMAGE}:latest
+    podman push ${IMAGE}:latest docker://docker.io/${IMAGE}:latest
 else
-    # Docker buildx multi-arch build
-    docker buildx create --use --name multi-platform-builder || true
-    docker buildx build --platform linux/amd64,linux/arm64 \
-        --tag ${IMAGE}:${VERSION} --tag ${IMAGE}:latest --push .
+    docker build --tag ${IMAGE}:${VERSION} --tag ${IMAGE}:latest .
+    docker push ${IMAGE}:${VERSION}
+    docker push ${IMAGE}:latest
 fi
 
 echo "${IMAGE}:${VERSION} and ${IMAGE}:latest built and pushed successfully."

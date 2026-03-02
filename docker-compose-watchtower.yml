@@ -1,0 +1,8 @@
+services:
+  watchtower:
+    image: nickfedor/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --interval 300 --cleanup
+    restart: unless-stopped

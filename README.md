@@ -68,7 +68,7 @@ The included [Watchtower](https://containrrr.dev/watchtower/) service monitors D
 
 ### Other Platforms
 
-The Docker image `schowave/churchtools` is built for `linux/amd64` and `linux/arm64`. It works on any platform that supports Docker or Podman.
+The Docker image `schowave/churchtools` is built for `linux/amd64`. It works on any x86_64 platform that supports Docker or Podman.
 
 ```yaml
 # docker-compose.yml
