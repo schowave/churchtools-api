@@ -17,14 +17,6 @@ A web application for viewing and exporting appointments from any [ChurchTools](
 - **PDF & JPEG export** — generate formatted appointment lists with customizable styling
 - **Responsive dashboard** — manage calendars, formatting, and exports from a single interface
 
-<details>
-<summary>Screenshots</summary>
-
-| Calendar Selection | Export Options | Output Example |
-|---|---|---|
-| ![Calendars](images/calendars.png) | ![Formatting](images/formatting.png) | ![Result](images/result.png) |
-
-</details>
 
 ## Quick Start
 
