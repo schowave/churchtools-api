@@ -1,31 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
     <title>Terminübersicht</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/static/css/normalize.css">
     <link rel="stylesheet" href="/static/css/common.css">
     <link rel="stylesheet" href="/static/css/appointments.css">
-    <style>
-        /* Override jQuery UI Datepicker styles to ensure it appears above other elements */
-        .ui-datepicker {
-            z-index: 9999 !important;
-        }
-    </style>
+    <style>.ui-datepicker { z-index: 9999 !important; }</style>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
     <script src="/static/js/appointments.js"></script>
 </head>
 <body>
 <!-- Spinner Overlay -->
-<div id="spinner-overlay"
-     style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(255,255,255,0.9); z-index:1000;">
-    <div class="spinner" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);">
-        <i class="fas fa-spinner fa-spin" style="font-size:3rem; color: #09f;"></i>
+<div id="spinner-overlay">
+    <div class="spinner">
+        <div class="spinner-ring"></div>
     </div>
 </div>
 
@@ -45,29 +41,23 @@
         <div class="controls-header">
             <div class="date-controls">
                 <div class="date-fields-container">
-                    <!-- Date selection -->
                     <div class="date-field">
-                        <label for="start_date">Startdatum:</label>
+                        <label for="start_date">Startdatum</label>
                         <input type="text" id="start_date" name="start_date"
                                value="{{ start_date }}" required>
                     </div>
-
                     <div class="date-field">
-                        <label for="end_date">Enddatum:</label>
+                        <label for="end_date">Enddatum</label>
                         <input type="text" id="end_date" name="end_date"
                                value="{{ end_date }}" required>
                     </div>
                 </div>
-
-                <!-- Quick date selection -->
                 <div class="date-quick-select">
                     <button type="button" id="today" class="date-preset">Heute</button>
                     <button type="button" id="this-week" class="date-preset">Diese Woche</button>
                     <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
                 </div>
             </div>
-
-            <!-- Submit button for fetching appointments -->
             <input type="submit" name="fetch_appointments"
                    value="Termine abholen" class="btn btn-fetch">
         </div>
@@ -93,12 +83,12 @@
             </div>
         </details>
     </form>
+
     {% if appointments %}
         <form method="POST">
-            <!-- Hidden fields for date parameters -->
             <input type="hidden" name="start_date" value="{{ start_date }}">
             <input type="hidden" name="end_date" value="{{ end_date }}">
-            <!-- Two-column layout for appointments and formatting options -->
+
             <div class="appointments-layout">
                 <!-- Left column: Appointments -->
                 <div class="appointments-main">
@@ -132,34 +122,27 @@
                     </div>
                 </div>
 
-                <!-- Right column: Formatting options -->
+                <!-- Right column: Sidebar -->
                 <div class="appointments-sidebar">
-                    <!-- Background section -->
+                    <!-- Formatting section -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Formatierung</div>
                         <div class="format-options">
-                            <!-- Background color -->
                             <div class="format-option">
                                 <div class="format-option-label">Hintergrundfarbe</div>
                                 <input type="color" id="background_color" name="background_color"
                                        value="{{ color_settings.background_color }}" class="color-input">
                             </div>
-
-                            <!-- Date color -->
                             <div class="format-option">
                                 <div class="format-option-label">Datumsfarbe</div>
                                 <input type="color" id="date_color" name="date_color"
                                        value="{{ color_settings.date_color }}" class="color-input">
                             </div>
-
-                            <!-- Description color -->
                             <div class="format-option">
                                 <div class="format-option-label">Beschreibungsfarbe</div>
                                 <input type="color" id="description_color" name="description_color"
                                        value="{{ color_settings.description_color }}" class="color-input">
                             </div>
-
-                            <!-- Transparency -->
                             <div class="format-option">
                                 <div class="format-option-label">Transparenz</div>
                                 <div class="transparency-container">
@@ -173,18 +156,14 @@
                             <!-- Background image -->
                             <div class="format-option format-option-full">
                                 <div class="format-option-label">Hintergrundbild</div>
-                                <div id="bg-preview" style="margin-bottom: 8px; {% if not has_background_image %}display:none;{% endif %}">
-                                    <img id="bg-img" src="/background" alt="Hintergrundbild"
-                                         style="max-height: 80px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 4px;">
+                                <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
+                                    <img id="bg-img" src="/background" alt="Hintergrundbild">
                                 </div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <button type="button" id="bg_upload_btn" class="btn btn-fetch"
-                                            style="cursor: pointer; margin: 0; font-size: 0.85rem; padding: 4px 10px;">
-                                        Bild hochladen
-                                    </button>
+                                <div class="image-actions">
+                                    <button type="button" id="bg_upload_btn" class="btn-upload">Bild hochladen</button>
                                     <input type="file" id="bg_upload" accept="image/*" style="display: none;">
-                                    <button type="button" id="bg_delete" class="btn"
-                                            style="font-size: 0.85rem; padding: 4px 10px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; {% if not has_background_image %}display:none;{% endif %}">
+                                    <button type="button" id="bg_delete" class="btn-delete-img"
+                                            {% if not has_background_image %}style="display:none;"{% endif %}>
                                         Löschen
                                     </button>
                                 </div>
@@ -197,19 +176,14 @@
                         <div class="sidebar-section-title">Logo</div>
                         <div class="format-options">
                             <div class="format-option format-option-full">
-                                <div id="logo-preview" style="margin-bottom: 8px; {% if not has_logo %}display:none;{% endif %}">
-                                    <img id="logo-img" src="/logo" alt="Logo"
-                                         style="max-height: 80px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 4px;">
+                                <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
+                                    <img id="logo-img" src="/logo" alt="Logo">
                                 </div>
-                                <div style="display: flex; gap: 8px; align-items: center;">
-                                    <button type="button" id="logo_upload_btn" class="btn btn-fetch"
-                                            style="cursor: pointer; margin: 0; font-size: 0.85rem; padding: 4px 10px;">
-                                        Logo hochladen
-                                    </button>
-                                    <input type="file" id="logo_upload" accept="image/*"
-                                           style="display: none;">
-                                    <button type="button" id="logo_delete" class="btn"
-                                            style="font-size: 0.85rem; padding: 4px 10px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; {% if not has_logo %}display:none;{% endif %}">
+                                <div class="image-actions">
+                                    <button type="button" id="logo_upload_btn" class="btn-upload">Logo hochladen</button>
+                                    <input type="file" id="logo_upload" accept="image/*" style="display: none;">
+                                    <button type="button" id="logo_delete" class="btn-delete-img"
+                                            {% if not has_logo %}style="display:none;"{% endif %}>
                                         Löschen
                                     </button>
                                 </div>
@@ -223,19 +197,19 @@
                         <div class="color-picker-container">
                             <div class="color-picker-row">
                                 <label for="color_presets">Preset:</label>
-                                <select id="color_presets" name="color_presets" style="flex: 1; height: 26px; font-size: 0.8rem;">
+                                <select id="color_presets" name="color_presets">
                                     <option value="preset1">Herbst '23</option>
                                 </select>
-                                <button type="button" id="applyPreset" style="padding: 2px 5px; font-size: 0.8rem; height: 26px;">OK</button>
+                                <button type="button" id="applyPreset">OK</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Generate buttons section -->
+                    <!-- Generate buttons -->
                     <div class="sidebar-section">
                         <div class="sidebar-section-title">Ausgabe generieren</div>
                         <div class="generate-buttons">
-                            <input type="submit" name="generate_pdf" value="PDF Generieren" class="btn btn-generate" id="generate_pdf_btn">
+                            <input type="submit" name="generate_pdf" value="PDF generieren" class="btn btn-generate" id="generate_pdf_btn">
                             <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate" id="generate_jpeg_btn">
                         </div>
                         <div id="generate_error" class="alert alert-error" style="display: none; margin-top: 10px;">

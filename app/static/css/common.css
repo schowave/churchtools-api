@@ -1,45 +1,55 @@
-/* common.css - Basic styles for all pages */
+/* common.css - Design system for all pages */
+/* Fonts loaded via <link> in HTML for non-blocking rendering */
+
 :root {
-    /* Color palette */
-    --primary-color: #0066cc; /* Darker blue for better contrast */
-    --primary-hover: #004c99;
-    --success-color: #2e8540; /* Darker green for better contrast */
-    --success-hover: #1e5c2c;
-    --danger-color: #d83933; /* Adjusted red for better contrast */
-    --danger-hover: #b32d29;
-    --light-bg: #f5f7fa;
-    --container-bg: white;
-    --text-color: #212529; /* Darker text for better readability */
-    --text-muted: #6c757d;
-    --border-color: #ced4da;
-    --shadow-color: rgba(0, 0, 0, 0.15);
-    
+    /* Color palette — warm editorial */
+    --primary-color: #C0623A;
+    --primary-hover: #A04E2B;
+    --primary-light: #F4E8E0;
+    --primary-subtle: #FBF5F1;
+    --success-color: #5B8C5A;
+    --success-hover: #4A7349;
+    --danger-color: #C44536;
+    --danger-hover: #A33828;
+    --light-bg: #FAF8F5;
+    --container-bg: #FFFFFF;
+    --text-color: #2D2926;
+    --text-muted: #8C8279;
+    --border-color: #E8E2DA;
+    --shadow-color: rgba(45, 41, 38, 0.08);
+
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
     --spacing-md: 1rem;
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
-    
+    --spacing-2xl: 3rem;
+
     /* Borders and shadows */
-    --border-radius: 5px;
-    --container-radius: 10px;
-    --box-shadow: 0 4px 6px var(--shadow-color);
-    --focus-ring: 0 0 0 3px rgba(0, 102, 204, 0.25);
-    
+    --border-radius: 6px;
+    --container-radius: 12px;
+    --box-shadow: 0 1px 3px rgba(45, 41, 38, 0.06), 0 4px 12px rgba(45, 41, 38, 0.04);
+    --box-shadow-lg: 0 4px 16px rgba(45, 41, 38, 0.08), 0 8px 32px rgba(45, 41, 38, 0.04);
+    --focus-ring: 0 0 0 3px rgba(192, 98, 58, 0.2);
+
     /* Typography */
-    --font-family: 'Arial', sans-serif;
-    --font-size-base: 16px;
-    --line-height: 1.5;
-    
+    --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-size-base: 15px;
+    --line-height: 1.6;
+
     /* Transitions */
-    --transition-speed: 0.3s;
+    --transition-speed: 0.2s;
+    --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Base styles */
 html {
     font-size: var(--font-size-base);
     box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 *, *:before, *:after {
@@ -61,25 +71,31 @@ body {
     text-align: center;
 }
 
-/* Headings */
+/* Headings — editorial serif */
 h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
     color: var(--text-color);
     line-height: 1.2;
     margin-top: 0;
+    font-weight: 600;
+    letter-spacing: -0.01em;
 }
 
 h1 {
-    font-size: 2.25rem;
+    font-size: 2rem;
     margin-bottom: var(--spacing-md);
+    font-weight: 700;
 }
 
 h2 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     margin-bottom: var(--spacing-xl);
+    font-weight: 400;
+    color: var(--text-muted);
 }
 
 h3 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     margin-bottom: var(--spacing-md);
 }
 
@@ -92,12 +108,13 @@ h3 {
     width: 100%;
     box-shadow: var(--box-shadow);
     margin-top: var(--spacing-lg);
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    transition: box-shadow var(--transition-speed) var(--transition-ease);
     box-sizing: border-box;
+    border: 1px solid var(--border-color);
 }
 
 .container:hover {
-    box-shadow: 0 6px 12px var(--shadow-color);
+    box-shadow: var(--box-shadow-lg);
 }
 
 /* Form elements */
@@ -106,9 +123,12 @@ label {
     width: 100%;
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-xs);
-    font-weight: bold;
-    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-muted);
     text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 input[type="text"],
@@ -118,12 +138,16 @@ textarea,
 select {
     display: block;
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.7rem 0.85rem;
     margin-top: var(--spacing-xs);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    font-size: 1rem;
-    transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    color: var(--text-color);
+    background: white;
+    transition: border-color var(--transition-speed) var(--transition-ease),
+                box-shadow var(--transition-speed) var(--transition-ease);
 }
 
 input[type="text"]:focus,
@@ -141,30 +165,33 @@ input[type="submit"] {
     width: 100%;
     padding: 0.75rem;
     margin-top: var(--spacing-lg);
-    border: 2px solid var(--primary-color); /* Visible border */
+    border: none;
     border-radius: var(--border-radius);
     color: white;
-    font-size: 1rem;
+    font-family: var(--font-family);
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color var(--transition-speed), transform var(--transition-speed);
-    -webkit-appearance: none; /* For Safari on iOS */
+    transition: background-color var(--transition-speed) var(--transition-ease),
+                transform var(--transition-speed) var(--transition-ease),
+                box-shadow var(--transition-speed) var(--transition-ease);
+    -webkit-appearance: none;
     appearance: none;
-    background-color: var(--primary-color); /* Explicit background color */
+    background-color: var(--primary-color);
+    letter-spacing: 0.02em;
 }
 
 input[type="submit"].btn-login {
     background-color: var(--success-color);
-    border-color: var(--success-color);
 }
 
 input[type="submit"].btn-logout {
     background-color: var(--danger-color);
-    border-color: var(--danger-color);
 }
 
 input[type="submit"]:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45, 41, 38, 0.15);
 }
 
 input[type="submit"]:active {
@@ -173,54 +200,50 @@ input[type="submit"]:active {
 
 /* Buttons */
 .btn {
-    display: inline-block;
-    padding: 0.75rem 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.1rem;
     margin-top: var(--spacing-md);
-    font-size: 1rem;
+    font-family: var(--font-family);
+    font-size: 0.9rem;
     font-weight: 600;
     color: white;
     text-decoration: none;
     border-radius: var(--border-radius);
-    border: 2px solid var(--primary-color); /* Visible border */
+    border: none;
     cursor: pointer;
-    transition: background-color var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
-    -webkit-appearance: none; /* For Safari on iOS */
+    transition: background-color var(--transition-speed) var(--transition-ease),
+                transform var(--transition-speed) var(--transition-ease),
+                box-shadow var(--transition-speed) var(--transition-ease);
+    -webkit-appearance: none;
     appearance: none;
-    -webkit-tap-highlight-color: transparent; /* Removes blue highlight effect on tap in iOS */
+    -webkit-tap-highlight-color: transparent;
     background-color: var(--primary-color);
+    letter-spacing: 0.02em;
+    gap: 0.4rem;
 }
 
-/* Login button (green) */
 .btn-login {
     background-color: var(--success-color);
-    border-color: var(--success-color);
 }
 
-/* Logout button (red) */
 .btn-logout {
     background-color: var(--danger-color);
-    border-color: var(--danger-color);
 }
 
 .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px var(--shadow-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(45, 41, 38, 0.15);
 }
 
-/* Back button (blue) */
 .btn-back {
     background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn-back:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
 }
 
 .btn:active {
     transform: translateY(0);
-    box-shadow: 0 2px 4px var(--shadow-color);
+    box-shadow: none;
 }
 
 .btn:focus {
@@ -228,70 +251,38 @@ input[type="submit"]:active {
     box-shadow: var(--focus-ring);
 }
 
-.btn--primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn--primary:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.btn--danger {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-}
-
-.btn--danger:hover {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-}
-
-.btn--success {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-}
-
-.btn--success:hover {
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-}
+.btn--primary { background-color: var(--primary-color); }
+.btn--danger { background-color: var(--danger-color); }
+.btn--success { background-color: var(--success-color); }
 
 /* Alerts */
 .alert {
     margin-top: var(--spacing-lg);
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
     color: white;
     border-radius: var(--border-radius);
     text-align: center;
-    box-shadow: 0 2px 4px var(--shadow-color);
-    animation: fadeIn 0.3s ease-in-out;
+    font-size: 0.9rem;
+    font-weight: 500;
+    animation: slideDown 0.3s var(--transition-ease);
 }
 
-.alert-success {
-    background-color: var(--success-color);
-}
+.alert-success { background-color: var(--success-color); }
+.alert-error { background-color: var(--danger-color); }
+.alert-warning { background-color: #D4953A; }
 
-.alert-error {
-    background-color: var(--danger-color);
-}
-
-.alert-warning {
-    background-color: #f0ad4e;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
 /* Footer */
 footer {
     margin-top: auto;
-    padding: var(--spacing-md);
-    font-size: 0.875rem;
+    padding: var(--spacing-lg) var(--spacing-md);
+    font-size: 0.8rem;
     color: var(--text-muted);
+    letter-spacing: 0.02em;
 }
 
 /* Utility classes */
@@ -310,44 +301,28 @@ footer {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    html {
-        font-size: 14px;
-    }
-    
+    html { font-size: 14px; }
     .container {
         padding: var(--spacing-lg);
         max-width: 100%;
         width: 100%;
-        box-sizing: border-box;
     }
 }
 
 @media (max-width: 480px) {
-    body {
-        padding: var(--spacing-md);
-    }
-    
+    body { padding: var(--spacing-md); }
     .container {
         padding: var(--spacing-md);
         margin-top: var(--spacing-sm);
         border-radius: var(--border-radius);
     }
-    
-    h1 {
-        font-size: 1.75rem;
-    }
-    
-    h2 {
-        font-size: 1.5rem;
-        margin-bottom: var(--spacing-lg);
-    }
-    
-    /* Improved button display on small devices */
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.3rem; margin-bottom: var(--spacing-lg); }
     .btn,
     input[type="submit"],
     button {
         width: 100%;
-        padding: 12px 16px; /* Larger buttons for touch devices */
+        padding: 12px 16px;
         margin-top: 8px;
         margin-bottom: 8px;
     }
@@ -355,7 +330,6 @@ footer {
 
 /* Safari-specific adjustments */
 @supports (-webkit-touch-callout: none) {
-    /* Only for Safari on iOS */
     input[type="text"],
     input[type="password"],
     input[type="file"],
@@ -368,63 +342,27 @@ footer {
         appearance: none;
         border-radius: var(--border-radius);
     }
-    
-    /* Explicit styles for buttons in Safari */
     .btn,
     input[type="submit"],
     button {
         color: white;
-        border: 2px solid; /* Visible border */
         display: block;
         width: 100%;
         margin: 10px 0;
-        padding: 15px; /* Larger buttons for better visibility */
+        padding: 15px;
         font-size: 16px;
         text-align: center;
     }
-    
-    /* Button colors by type */
-    .btn--danger,
-    input[type="submit"].btn--danger,
-    .btn-logout,
-    input[type="submit"].btn-logout {
-        background-color: var(--danger-color);
-        border-color: var(--danger-color);
-    }
-    
-    .btn--success,
-    input[type="submit"].btn--success,
-    .btn-login,
-    input[type="submit"].btn-login {
-        background-color: var(--success-color);
-        border-color: var(--success-color);
-    }
-    
-    .btn--primary,
-    input[type="submit"].btn--primary {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-    
-    /* Function-specific buttons */
+    .btn-logout, input[type="submit"].btn-logout { background-color: var(--danger-color); }
+    .btn-login, input[type="submit"].btn-login { background-color: var(--success-color); }
+    .btn--primary, input[type="submit"].btn--primary { background-color: var(--primary-color); }
     input[type="submit"][name="generate_pdf"],
-    input[type="submit"][name="generate_jpeg"] {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-    
+    input[type="submit"][name="generate_jpeg"],
     input[type="submit"][name="fetch_appointments"] {
         background-color: var(--primary-color);
-        border-color: var(--primary-color);
     }
-    
-    /* Prevents zoom on input fields in Safari */
     @media screen and (max-width: 768px) {
-        input[type="text"],
-        input[type="password"],
-        select {
-            font-size: 16px; /* Prevents zoom on input fields in Safari */
-        }
+        input[type="text"], input[type="password"], select { font-size: 16px; }
     }
 }
 
