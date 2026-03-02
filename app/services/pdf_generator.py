@@ -104,7 +104,7 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
 
         width_scale = page_width / image_width
         height_scale = page_height / image_height
-        scale = min(width_scale, height_scale)
+        scale = max(width_scale, height_scale)
 
         scaled_width = image_width * scale
         scaled_height = image_height * scale
