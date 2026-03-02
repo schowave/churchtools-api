@@ -23,7 +23,7 @@ echo "Starting container on http://localhost:${PORT}"
 podman run \
     --name "$CONTAINER_NAME" \
     --env-file .env \
-    -e DB_PATH=/app/data/evkila.db \
+    -e DB_PATH=/app/data/churchtools.db \
     -p "${PORT}:5005" \
     -v "${DATA_DIR}:/app/data" \
     --rm \

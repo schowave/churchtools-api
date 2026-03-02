@@ -2,7 +2,7 @@
 .coverage
 /saved_files/
 app/saved_files
-evkila.db
+*.db
 /venv/
 .DS_Store
 __pycache__/

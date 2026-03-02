@@ -49,8 +49,7 @@ COPY fonts/ ./fonts/
 COPY pyproject.toml run_fastapi.py ./
 
 ENV PYTHONPATH=/app \
-    CHURCHTOOLS_BASE=evkila.church.tools \
-    DB_PATH=/app/data/evkila.db
+    DB_PATH=/app/data/churchtools.db
 
 EXPOSE 5005
 VOLUME /app/data

@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 3.0.2)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: pip install -e ".[dev]"
+
+    - name: Lint
+      run: ruff check . && ruff format --check .
+
+    - name: Run tests
+      run: python -m pytest --cov=app tests/ --cov-report=term
+
+    - name: Update version in pyproject.toml
+      run: |
+        sed -i "s/^version = \".*\"/version = \"${{ inputs.version }}\"/" pyproject.toml
+        echo "Updated pyproject.toml to version ${{ inputs.version }}"
+        grep '^version' pyproject.toml
+
+    - name: Create git tag
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add pyproject.toml
+        git commit -m "Release v${{ inputs.version }}" || echo "No version change needed"
+        git tag "v${{ inputs.version }}"
+        git push origin main "v${{ inputs.version }}"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push multi-arch image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          schowave/churchtools:${{ inputs.version }}
+          schowave/churchtools:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ inputs.version }}
+        generate_release_notes: true

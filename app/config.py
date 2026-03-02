@@ -19,8 +19,8 @@ def get_version():
 class Config:
     COOKIE_LOGIN_TOKEN = "login_token"
     VERSION = get_version()
-    CHURCHTOOLS_BASE = os.getenv("CHURCHTOOLS_BASE", "<SET CHURCHTOOLS_BASE IN .ENV FILE>")
-    DB_PATH = os.getenv("DB_PATH", "<SET DB_PATH IN .ENV FILE>")
+    CHURCHTOOLS_BASE = os.getenv("CHURCHTOOLS_BASE", "<SET CHURCHTOOLS_BASE>")
+    DB_PATH = os.getenv("DB_PATH", "churchtools.db")
     CHURCHTOOLS_BASE_URL = os.getenv("CHURCHTOOLS_BASE_URL", f"https://{CHURCHTOOLS_BASE}")
     FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_files")
 
@@ -29,7 +29,5 @@ class Config:
         missing = []
         if cls.CHURCHTOOLS_BASE.startswith("<SET"):
             missing.append("CHURCHTOOLS_BASE")
-        if cls.DB_PATH.startswith("<SET"):
-            missing.append("DB_PATH")
         if missing:
             raise ValueError(f"Missing required environment variables: {', '.join(missing)}")

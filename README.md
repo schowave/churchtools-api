@@ -1,143 +1,116 @@
 # ChurchTools API
 
-This repository provides a user-friendly interface to access the ChurchTools API.
+[![Test and Build](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml/badge.svg)](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml)
+[![Docker Image](https://img.shields.io/docker/v/schowave/churchtools?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/schowave/churchtools)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/github/license/schowave/churchtools-api)](LICENSE)
 
-It was created to fulfill the need of displaying all appointments from [evkila.de](https://www.evkila.de/) on a single PDF file or as multiple JPEG images.
+A web application for viewing and exporting appointments from any [ChurchTools](https://www.church.tools/) instance as styled PDF documents or JPEG images.
+
+<p align="center">
+  <img src="images/overview.png" alt="Dashboard" width="700">
+</p>
 
 ## Features
 
-### Main Dashboard with Multiple Functions
-![Overview Dashboard](images/overview.png)
+- **Calendar selection** — choose one or more public calendars from your ChurchTools instance
+- **PDF & JPEG export** — generate formatted appointment lists with customizable styling
+- **Responsive dashboard** — manage calendars, formatting, and exports from a single interface
 
-### Calendar Selection
-Select one or more public calendars to view and manage appointments:
-![Calendar Selection](images/calendars.png)
+<details>
+<summary>Screenshots</summary>
 
-### Export Options
-Generate formatted PDF documents or JPEG images with customizable styling:
-![Export Options](images/formatting.png)
+| Calendar Selection | Export Options | Output Example |
+|---|---|---|
+| ![Calendars](images/calendars.png) | ![Formatting](images/formatting.png) | ![Result](images/result.png) |
 
-### Output Example
-Example of a generated appointment list:
-![Result Example](images/result.png)
+</details>
 
-## Setup Instructions
+## Quick Start
 
-### Prerequisites
-
-- Python 3.12+
-- Podman or Docker (for containerized deployment)
-
-### Configuration
-
-Copy the example environment file and fill in your values:
+### Docker (recommended)
 
 ```bash
-cp .env.example .env
+docker run -d \
+  -e CHURCHTOOLS_BASE=your-instance.church.tools \
+  -v ./data:/app/data \
+  -p 5005:5005 \
+  schowave/churchtools:latest
 ```
 
-```env
-CHURCHTOOLS_BASE=your-instance.church.tools
-DB_PATH=your-instance.db
-```
+Open [http://localhost:5005](http://localhost:5005)
 
-### Local Development
+### From Source
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements-dev.txt
+git clone https://github.com/schowave/churchtools-api.git
+cd churchtools-api
+cp .env.example .env           # set CHURCHTOOLS_BASE
+python -m venv venv && source venv/bin/activate
+pip install -e ".[dev]"
 make run
 ```
 
-Access the application at [http://127.0.0.1:5005/](http://127.0.0.1:5005/)
+## Configuration
 
-### Available Make Commands
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `CHURCHTOOLS_BASE` | Yes | — | Your ChurchTools domain (e.g. `my-church.church.tools`) |
+| `DB_PATH` | No | `churchtools.db` | Path to the SQLite database file |
 
-| Command       | Description                                  |
-|---------------|----------------------------------------------|
-| `make run`    | Start dev server with auto-reload            |
-| `make test`   | Run test suite                               |
-| `make lint`   | Check code style with ruff                   |
-| `make format` | Auto-fix code style                          |
-| `make build`  | Build container image locally                |
-| `make push`   | Build and push multi-arch image to Docker Hub|
+## Deployment
 
-## Docker / Podman Deployment
+### Synology NAS
 
-### Run locally
+1. Create a project folder on your NAS (e.g. `/volume1/docker/churchtools/`)
+2. Add the `docker-compose.yml` from this repository
+3. Create a `.env` file with your configuration:
 
-```bash
-./run_local_docker.sh
+   ```env
+   CHURCHTOOLS_BASE=your-instance.church.tools
+   ```
+
+4. In **Container Manager** → **Project** → **Create**, point to the folder and start
+
+The included [Watchtower](https://containrrr.dev/watchtower/) service monitors Docker Hub and automatically updates the container when a new release is published.
+
+### Other Platforms
+
+The Docker image `schowave/churchtools` is built for `linux/amd64` and `linux/arm64`. It works on any platform that supports Docker or Podman.
+
+```yaml
+# docker-compose.yml
+services:
+  churchtools-api:
+    image: schowave/churchtools:latest
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - CHURCHTOOLS_BASE=your-instance.church.tools
+    restart: unless-stopped
 ```
 
-Builds the image, starts a container with your `.env` configuration and a `data/` volume for the SQLite database. Automatically cleans up any previous container.
+## Releases
 
-### Build and push to Docker Hub
+Releases are managed via GitHub Actions:
 
-```bash
-./build-and-push-docker-image.sh
-```
+1. Go to **Actions** → **Release** → **Run workflow**
+2. Enter the version number (e.g. `3.1.0`)
+3. The workflow runs tests, tags the release, builds a multi-arch Docker image, and pushes to Docker Hub
+4. Watchtower picks up the new image automatically on connected hosts
 
-The script auto-detects Podman or Docker, checks your Docker Hub login, and builds a multi-architecture image (amd64 + arm64). The version is defined at the top of the script.
+> Requires GitHub Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
 
-## Synology NAS Deployment
+## Development
 
-### Initial Setup
-
-1. Open **Container Manager** on your Synology NAS
-2. Go to **Registry** → search for `schowave/churchtools` → **Download** → select `latest`
-3. Go to **Image** → select `schowave/churchtools:latest` → **Run**
-4. Configure the container:
-
-**General:**
-
-| Setting | Value |
+| Command | Description |
 |---|---|
-| Container Name | `schowave-churchtools-1` |
-| Auto-Restart | Enable if desired |
+| `make run` | Start dev server with auto-reload |
+| `make test` | Run test suite |
+| `make lint` | Check code style (ruff) |
+| `make format` | Auto-fix code style |
+| `make build` | Build container image locally |
 
-**Port:**
-
-| Container Port | Host Port | Protocol |
-|---|---|---|
-| 5005 | 56276 (or any free port) | TCP |
-
-**Volume:**
-
-| Host Path | Container Path | Mode |
-|---|---|---|
-| `/volume1/docker/churchtools` | `/app/data` | Read/Write |
-
-Create the host directory beforehand if it doesn't exist.
-
-**Environment Variables (already set in image):**
-
-| Variable | Value |
-|---|---|
-| `CHURCHTOOLS_BASE` | `evkila.church.tools` |
-| `DB_PATH` | `/app/data/evkila.db` |
-
-These are baked into the image as defaults. Override them in the container settings if you need different values.
-
-5. Click **Run** to start the container
-6. Access the app at `http://<your-nas-ip>:56276`
-
-### Updating to a New Version
-
-1. **Registry** → search `schowave/churchtools` → **Download** (`latest`)
-2. **Container** → select `schowave-churchtools-1` → **Stop**
-3. **Action** → **Reset** (recreates the container from the new image, keeps your settings)
-4. **Start**
-
-Your data in `/volume1/docker/churchtools` is preserved across updates.
-
-## Contributing
-
-```bash
-pip install -r requirements-dev.txt
-make lint      # check before committing
-make test      # run the full test suite
-```
-
-CI runs lint and tests on every pull request to `main`. Branch protection (require passing CI, require PR review) is a manual GitHub setting on the repository.
+CI runs lint and tests on every push to `main` and on pull requests.
