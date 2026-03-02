@@ -6,18 +6,15 @@ IMAGE=schowave/churchtools
 
 # Read version from pyproject.toml (single source of truth)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('${SCRIPT_DIR}/pyproject.toml','rb'))['project']['version'])")
+CURRENT=$(python3 -c "import tomllib; print(tomllib.load(open('${SCRIPT_DIR}/pyproject.toml','rb'))['project']['version'])")
+NEXT=$(python3 -c "v='${CURRENT}'.split('.'); v[-1]=str(int(v[-1])+1); print('.'.join(v))")
 
-echo "Aktuelle Version in pyproject.toml: ${VERSION}"
-read -r -p "Mit dieser Version deployen? (j=ja / neue Version eingeben): " answer
+echo "Aktuelle Version: ${CURRENT}"
+read -r -p "Welche Version deployen? [${NEXT}]: " answer
 
-if [ "$answer" != "j" ] && [ "$answer" != "ja" ]; then
-    if [ -z "$answer" ]; then
-        echo "Abgebrochen."
-        exit 0
-    fi
-    VERSION="$answer"
-    # Update pyproject.toml with new version
+VERSION="${answer:-$NEXT}"
+
+if [ "$VERSION" != "$CURRENT" ]; then
     sed -i '' "s/^version = \".*\"/version = \"${VERSION}\"/" "${SCRIPT_DIR}/pyproject.toml"
     echo "Version in pyproject.toml auf ${VERSION} aktualisiert."
 fi
