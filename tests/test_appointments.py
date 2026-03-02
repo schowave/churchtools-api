@@ -529,14 +529,14 @@ async def test_process_appointments_generate_pdf(
 async def test_process_appointments_generate_pdf_no_selection(
     mock_fetch_cal, mock_load_color, templates_mock, config_mock
 ):
-    """Generate PDF with no appointments selected should show error."""
+    """Generate PDF with no appointments selected should redirect (PRG)."""
     request = _make_request_mock()
     db = MagicMock()
 
     mock_fetch_cal.return_value = SAMPLE_CALENDARS
     mock_load_color.return_value = ColorSettings(name="default")
 
-    await process_appointments(
+    result = await process_appointments(
         request=request,
         db=db,
         generate_pdf_btn="PDF Generieren",
@@ -551,10 +551,8 @@ async def test_process_appointments_generate_pdf_no_selection(
         alpha=None,
     )
 
-    # Should render template with error message
-    templates_mock.TemplateResponse.assert_called_once()
-    context = templates_mock.TemplateResponse.call_args[0][1]
-    assert "error" in context
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
 
 
 @pytest.mark.asyncio
@@ -610,7 +608,9 @@ async def test_process_appointments_generate_jpeg(
         alpha=None,
     )
 
-    assert isinstance(result, FileResponse)
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
+    assert "2023-01-15_Termine.zip" in result.headers["location"]
     mock_create_pdf.assert_called_once()
     mock_jpeg.assert_called_once_with("2023-01-15_Termine.pdf")
 
@@ -626,14 +626,14 @@ async def test_process_appointments_generate_jpeg(
 async def test_process_appointments_default_form(
     mock_fetch_cal, mock_load_color, mock_load_logo, mock_load_bg, templates_mock, config_mock
 ):
-    """POST with no button pressed should render the default form."""
+    """POST with no button pressed should redirect (PRG)."""
     request = _make_request_mock()
     db = MagicMock()
 
     mock_fetch_cal.return_value = SAMPLE_CALENDARS
     mock_load_color.return_value = ColorSettings(name="default")
 
-    await process_appointments(
+    result = await process_appointments(
         request=request,
         db=db,
         generate_pdf_btn=None,
@@ -648,11 +648,8 @@ async def test_process_appointments_default_form(
         alpha=None,
     )
 
-    templates_mock.TemplateResponse.assert_called_once()
-    context = templates_mock.TemplateResponse.call_args[0][1]
-    assert context["calendars"] == SAMPLE_CALENDARS
-    # No calendars selected, should use all available
-    assert context["selected_calendar_ids"] is None
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
 
 
 @pytest.mark.asyncio
@@ -664,7 +661,7 @@ async def test_process_appointments_default_form(
 async def test_process_appointments_default_dates(
     mock_fetch_cal, mock_get_dates, mock_load_color, mock_load_logo, mock_load_bg, templates_mock, config_mock
 ):
-    """When no dates provided, should fall back to get_date_range_from_form()."""
+    """When no dates provided, should fall back to get_date_range_from_form() and redirect."""
     request = _make_request_mock()
     db = MagicMock()
 
@@ -672,7 +669,7 @@ async def test_process_appointments_default_dates(
     mock_load_color.return_value = ColorSettings(name="default")
     mock_get_dates.return_value = ("2023-02-01", "2023-02-08")
 
-    await process_appointments(
+    result = await process_appointments(
         request=request,
         db=db,
         generate_pdf_btn=None,
@@ -687,7 +684,7 @@ async def test_process_appointments_default_dates(
         alpha=None,
     )
 
-    # Default dates should be used in template context
-    context = templates_mock.TemplateResponse.call_args[0][1]
-    assert context["start_date"] == "2023-02-01"
-    assert context["end_date"] == "2023-02-08"
+    # Should redirect (PRG) and should have used default dates
+    assert isinstance(result, RedirectResponse)
+    assert result.status_code == 303
+    mock_get_dates.assert_called_once()

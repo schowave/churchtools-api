@@ -217,6 +217,27 @@ function checkAppointments() {
 // --- jQuery-dependent initialization ---
 
 $(function () {
+    // Datepicker German locale
+    $.datepicker.regional['de'] = {
+        closeText: 'Schließen',
+        prevText: '&#x3C;Zurück',
+        nextText: 'Vor&#x3E;',
+        currentText: 'Heute',
+        monthNames: ['Januar','Februar','März','April','Mai','Juni',
+            'Juli','August','September','Oktober','November','Dezember'],
+        monthNamesShort: ['Jan','Feb','Mär','Apr','Mai','Jun',
+            'Jul','Aug','Sep','Okt','Nov','Dez'],
+        dayNames: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
+        dayNamesShort: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+        dayNamesMin: ['So','Mo','Di','Mi','Do','Fr','Sa'],
+        weekHeader: 'KW',
+        firstDay: 1,
+        isRTL: false,
+        showMonthAfterYear: false,
+        yearSuffix: ''
+    };
+    $.datepicker.setDefaults($.datepicker.regional['de']);
+
     // Datepicker setup — display dd.mm.yy, store yy-mm-dd in hidden fields
     $("#start_date_display").datepicker({
         dateFormat: "dd.mm.yy",

@@ -224,16 +224,7 @@ async def _handle_generate_pdf(
 ):
     """Handle the 'generate PDF' button."""
     if not appointment_id:
-        context = _build_template_context(
-            request,
-            calendars,
-            calendar_ids,
-            start_date,
-            end_date,
-            color_settings,
-            error="Bitte mindestens einen Termin auswählen.",
-        )
-        return templates.TemplateResponse("appointments.html", context)
+        return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
 
     selected_appointments, bg_stream, logo_stream = await _prepare_selected_appointments(
         request,
@@ -275,16 +266,7 @@ async def _handle_generate_jpeg(
 ):
     """Handle the 'generate JPEG' button: create PDF, convert to JPEG images, return ZIP."""
     if not appointment_id:
-        context = _build_template_context(
-            request,
-            calendars,
-            calendar_ids,
-            start_date,
-            end_date,
-            color_settings,
-            error="Bitte mindestens einen Termin auswählen.",
-        )
-        return templates.TemplateResponse("appointments.html", context)
+        return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
 
     selected_appointments, bg_stream, logo_stream = await _prepare_selected_appointments(
         request,
@@ -309,11 +291,7 @@ async def _handle_generate_jpeg(
 
     zip_filename = handle_jpeg_generation(filename)
 
-    response = FileResponse(
-        os.path.join(Config.FILE_DIRECTORY, zip_filename),
-        media_type="application/zip",
-        filename=zip_filename,
-    )
+    response = RedirectResponse(url=f"/download/{zip_filename}", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="jpegGenerated", value="true", max_age=1, path="/")
     return response
 
@@ -410,20 +388,8 @@ async def process_appointments(
         response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
         return response
 
-    # Default: show form
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
-    context = _build_template_context(
-        request,
-        calendars,
-        calendar_ids,
-        start_date,
-        end_date,
-        color_settings,
-        has_logo=logo_data is not None,
-        has_background_image=bg_data is not None,
-    )
-    return templates.TemplateResponse("appointments.html", context)
+    # Default: redirect to GET (PRG pattern)
+    return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/logo/upload")
