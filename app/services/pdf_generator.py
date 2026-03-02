@@ -275,7 +275,7 @@ def _draw_event(
 
     # Limit info lines to prevent overflow into the logo area (after page break)
     info_step = font_size_medium * LINE_SPACING_FACTOR
-    logo_top = 65 - info_step  # logo area with one extra line of tolerance
+    logo_top = 75  # keep clear of logo (15 margin + 50 height + 10 padding)
     info_start_y = y_position - top_padding - line_height_large - len(wrapped_description_lines) * description_step
     max_info_lines = max(1, int((info_start_y - logo_top) / info_step))
 

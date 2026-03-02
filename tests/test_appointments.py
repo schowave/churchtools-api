@@ -653,6 +653,79 @@ async def test_process_appointments_default_form(
 
 
 @pytest.mark.asyncio
+async def test_download_file_path_traversal(config_mock):
+    """Path traversal attempts should be sanitized to just the filename."""
+    with pytest.raises(Exception) as context:
+        await download_file("../../../etc/passwd")
+    assert context.value.status_code == 404
+
+
+@pytest.mark.asyncio
+@patch("httpx.AsyncClient")
+async def test_fetch_appointments_deduplication(mock_client, config_mock):
+    """Same appointment appearing in multiple calendars should be deduplicated."""
+    client_instance = AsyncMock()
+    mock_client.return_value.__aenter__.return_value = client_instance
+
+    def make_appointment():
+        return {
+            "base": {
+                "id": "101",
+                "title": "Shared Event",
+                "address": {},
+            },
+            "calculated": {"startDate": "2023-01-15T10:00:00Z", "endDate": "2023-01-15T12:00:00Z"},
+        }
+
+    response1 = MagicMock()
+    response1.status_code = 200
+    response1.json.return_value = {"data": [make_appointment()]}
+
+    response2 = MagicMock()
+    response2.status_code = 200
+    response2.json.return_value = {"data": [make_appointment()]}
+
+    client_instance.get.side_effect = [response1, response2]
+
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+
+    # Same base ID in different calendars → different composite IDs, both kept
+    assert len(result) == 2
+    ids = {r["base"]["id"] for r in result}
+    assert "1_101" in ids
+    assert "2_101" in ids
+
+
+@pytest.mark.asyncio
+@patch("httpx.AsyncClient")
+async def test_fetch_appointments_partial_failure(mock_client, config_mock):
+    """If one calendar fails, appointments from other calendars should still be returned."""
+    client_instance = AsyncMock()
+    mock_client.return_value.__aenter__.return_value = client_instance
+
+    success_response = MagicMock()
+    success_response.status_code = 200
+    success_response.json.return_value = {
+        "data": [
+            {
+                "base": {"id": "101", "title": "Event 1", "address": {}},
+                "calculated": {"startDate": "2023-01-15T10:00:00Z", "endDate": "2023-01-15T12:00:00Z"},
+            }
+        ]
+    }
+
+    fail_response = MagicMock()
+    fail_response.status_code = 500
+
+    client_instance.get.side_effect = [success_response, fail_response]
+
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+
+    assert len(result) == 1
+    assert result[0]["base"]["id"] == "1_101"
+
+
+@pytest.mark.asyncio
 @patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.load_color_settings")

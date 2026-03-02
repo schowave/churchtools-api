@@ -520,6 +520,76 @@ class TestDrawEventOverflow(unittest.TestCase):
                         f"exceeds box right {box_right:.1f}",
                     )
 
+    def test_long_info_truncated_with_ellipsis(self):
+        """Events with very long info text should be truncated with '...'."""
+        long_info_event = _make_appointment(
+            id="20",
+            title="Gottesdienst",
+            start_date="2026-03-27T10:00:00Z",
+            end_date="2026-03-27T11:30:00Z",
+            additional_info="\n".join(f"Zeile {i}: Sehr langer Beschreibungstext" for i in range(20)),
+        )
+        _, text_calls = self._draw_and_capture(long_info_event)
+        drawn_texts = [t for _, _, t in text_calls]
+        ellipsis_lines = [t for t in drawn_texts if t.endswith("...")]
+        self.assertTrue(ellipsis_lines, "Expected at least one line ending with '...'")
+
+    def test_box_does_not_overlap_logo_area(self):
+        """The background rectangle should not extend into the logo area (y < 75)."""
+        long_info_event = _make_appointment(
+            id="21",
+            title="Gemeindefest",
+            start_date="2026-03-27T10:00:00Z",
+            end_date="2026-03-27T18:00:00Z",
+            additional_info="\n".join(f"Detail {i}: Umfangreiche Beschreibung" for i in range(25)),
+        )
+        box_calls, _ = self._draw_and_capture(long_info_event)
+        self.assertTrue(box_calls, "No box was drawn")
+        _, box_y_bottom, _, _ = box_calls[0]
+        self.assertGreaterEqual(
+            box_y_bottom,
+            75,
+            f"Box bottom {box_y_bottom:.1f} overlaps logo area (must be >= 75)",
+        )
+
+    def test_short_info_not_truncated(self):
+        """Events with short info should not be truncated."""
+        short_event = _make_appointment(
+            id="22",
+            title="Bibelstunde",
+            start_date="2026-03-27T19:00:00Z",
+            end_date="2026-03-27T20:30:00Z",
+            additional_info="Thema: Römerbrief Kapitel 8",
+        )
+        _, text_calls = self._draw_and_capture(short_event)
+        drawn_texts = [t for _, _, t in text_calls]
+        ellipsis_lines = [t for t in drawn_texts if t.endswith("...")]
+        self.assertFalse(ellipsis_lines, "Short info should not be truncated")
+
+
+class TestFontRegistration(unittest.TestCase):
+    """Test font registration and caching."""
+
+    def test_font_registration_is_cached(self):
+        import app.services.pdf_generator as pg
+
+        pg._cached_fonts = None
+        result1 = pg._register_fonts()
+        result2 = pg._register_fonts()
+        self.assertEqual(result1, result2)
+        self.assertIsNotNone(pg._cached_fonts)
+
+    def test_font_fallback_on_missing_font(self):
+        import app.services.pdf_generator as pg
+
+        pg._cached_fonts = None
+        with patch.object(pdfmetrics, "getRegisteredFontNames", return_value=[]):
+            with patch("app.services.pdf_generator.TTFont", side_effect=Exception("Font not found")):
+                font_name, bold_name = pg._register_fonts()
+                self.assertEqual(font_name, "Helvetica")
+
+        pg._cached_fonts = None
+
 
 if __name__ == "__main__":
     unittest.main()
