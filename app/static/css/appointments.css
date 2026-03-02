@@ -510,6 +510,7 @@ textarea:focus {
     box-shadow: var(--box-shadow);
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
+    text-align: left;
 }
 
 @media (max-width: 900px) {
@@ -573,6 +574,7 @@ textarea:focus {
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    text-align: left;
 }
 
 .format-option-full {
@@ -717,7 +719,7 @@ textarea:focus {
 }
 
 .btn-generate {
-    background-color: var(--text-color);
+    background-color: var(--primary-color);
     color: white;
     border: none;
     display: block;
@@ -736,7 +738,7 @@ textarea:focus {
 }
 
 .btn-generate:hover {
-    background-color: var(--primary-color);
+    background-color: var(--primary-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(192, 98, 58, 0.25);
 }
@@ -775,54 +777,38 @@ textarea:focus {
     font-size: 0.9rem;
 }
 
-/* ─── Spinner overlay ───────────────────────── */
-#spinner-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(250, 248, 245, 0.9);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 1000;
-    display: none;
-    transition: opacity 0.3s var(--transition-ease);
-}
-
-.spinner {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    flex-direction: column;
+/* ─── Inline button spinners ───────────────── */
+.btn-spinner {
+    display: inline-flex;
     align-items: center;
-    gap: var(--spacing-md);
+    gap: 6px;
 }
 
-.spinner-ring {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--primary-color);
+.spinner-ring-inline {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: white;
     border-radius: 50%;
-    animation: spinRotate 0.8s linear infinite;
+    animation: spinRotate 0.7s linear infinite;
+    vertical-align: middle;
 }
 
-.spinner::after {
-    content: "Bitte warten\2026";
-    font-family: var(--font-family);
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    animation: breathe 2s ease-in-out infinite;
+.spinner-ring-inline--dark {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: var(--primary-color);
+}
+
+.btn.is-loading,
+.btn-upload.is-loading {
+    pointer-events: none;
+    opacity: 0.8;
 }
 
 @keyframes spinRotate {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-@keyframes breathe {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 1; }
 }
 
 /* ─── Date change hint ──────────────────────── */

@@ -18,13 +18,6 @@
     <script src="/static/js/appointments.js"></script>
 </head>
 <body>
-<!-- Spinner Overlay -->
-<div id="spinner-overlay">
-    <div class="spinner">
-        <div class="spinner-ring"></div>
-    </div>
-</div>
-
 <div class="container">
     <div class="page-header">
         <a href="/overview" class="back-link">&larr; Zurück</a>
@@ -58,12 +51,14 @@
                     <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
                 </div>
             </div>
-            <input type="submit" name="fetch_appointments"
-                   value="Termine abholen" class="btn btn-fetch">
+            <button type="submit" name="fetch_appointments" value="1" class="btn btn-fetch" id="fetch_btn">
+                <span class="btn-label">Termine abholen</span>
+                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden…</span>
+            </button>
         </div>
 
         <!-- Calendars selection -->
-        <details class="calendar-selection" {% if not appointments %}open{% endif %}>
+        <details class="calendar-selection">
             <summary class="calendar-selection-header">
                 <h3>Kalender auswählen</h3>
                 <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }} ausgewählt</span>
@@ -82,18 +77,12 @@
                 {% endfor %}
             </div>
         </details>
-    </form>
-
-    {% if appointments %}
-        <form method="POST">
-            <input type="hidden" name="start_date" value="{{ start_date }}">
-            <input type="hidden" name="end_date" value="{{ end_date }}">
-
-            <div class="appointments-layout">
-                <!-- Left column: Appointments -->
-                <div class="appointments-main">
+        <div class="appointments-layout">
+            <!-- Left column: Appointments -->
+            <div class="appointments-main">
+                {% if appointments %}
                     <div class="appointments-actions">
-                        <span class="appointment-count">{{ appointments|length }} Termine geladen</span>
+                        <span class="appointment-count">{{ appointments|length }} von {{ appointments|length }} ausgewählt</span>
                         <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
                         <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
                     </div>
@@ -120,111 +109,125 @@
                             </div>
                         {% endfor %}
                     </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>Keine Termine vorhanden.</p>
+                        <p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Right column: Sidebar -->
+            <div class="appointments-sidebar">
+                <!-- Formatting section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Formatierung</div>
+                    <div class="format-options">
+                        <div class="format-option">
+                            <div class="format-option-label">Hintergrundfarbe</div>
+                            <input type="color" id="background_color" name="background_color"
+                                   value="{{ color_settings.background_color }}" class="color-input">
+                        </div>
+                        <div class="format-option">
+                            <div class="format-option-label">Datumsfarbe</div>
+                            <input type="color" id="date_color" name="date_color"
+                                   value="{{ color_settings.date_color }}" class="color-input">
+                        </div>
+                        <div class="format-option">
+                            <div class="format-option-label">Beschreibungsfarbe</div>
+                            <input type="color" id="description_color" name="description_color"
+                                   value="{{ color_settings.description_color }}" class="color-input">
+                        </div>
+                        <div class="format-option">
+                            <div class="format-option-label">Transparenz</div>
+                            <div class="transparency-container">
+                                <input type="range" id="alpha" name="alpha" class="transparency-slider"
+                                       min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
+                                       oninput="document.getElementById('alphaValue').textContent = this.value">
+                                <span id="alphaValue" class="transparency-value">{{ color_settings.background_alpha }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Background image -->
+                        <div class="format-option format-option-full">
+                            <div class="format-option-label">Hintergrundbild</div>
+                            <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
+                                <img id="bg-img" src="/background" alt="Hintergrundbild">
+                            </div>
+                            <div class="image-actions">
+                                <button type="button" id="bg_upload_btn" class="btn-upload">
+                                    <span class="btn-label">Bild hochladen</span>
+                                    <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+                                </button>
+                                <input type="file" id="bg_upload" accept="image/*" style="display: none;">
+                                <button type="button" id="bg_delete" class="btn-delete-img"
+                                        {% if not has_background_image %}style="display:none;"{% endif %}>
+                                    Löschen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Right column: Sidebar -->
-                <div class="appointments-sidebar">
-                    <!-- Formatting section -->
-                    <div class="sidebar-section">
-                        <div class="sidebar-section-title">Formatierung</div>
-                        <div class="format-options">
-                            <div class="format-option">
-                                <div class="format-option-label">Hintergrundfarbe</div>
-                                <input type="color" id="background_color" name="background_color"
-                                       value="{{ color_settings.background_color }}" class="color-input">
+                <!-- Logo section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Logo</div>
+                    <div class="format-options">
+                        <div class="format-option format-option-full">
+                            <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
+                                <img id="logo-img" src="/logo" alt="Logo">
                             </div>
-                            <div class="format-option">
-                                <div class="format-option-label">Datumsfarbe</div>
-                                <input type="color" id="date_color" name="date_color"
-                                       value="{{ color_settings.date_color }}" class="color-input">
-                            </div>
-                            <div class="format-option">
-                                <div class="format-option-label">Beschreibungsfarbe</div>
-                                <input type="color" id="description_color" name="description_color"
-                                       value="{{ color_settings.description_color }}" class="color-input">
-                            </div>
-                            <div class="format-option">
-                                <div class="format-option-label">Transparenz</div>
-                                <div class="transparency-container">
-                                    <input type="range" id="alpha" name="alpha" class="transparency-slider"
-                                           min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
-                                           oninput="document.getElementById('alphaValue').textContent = this.value">
-                                    <span id="alphaValue" class="transparency-value">{{ color_settings.background_alpha }}</span>
-                                </div>
-                            </div>
-
-                            <!-- Background image -->
-                            <div class="format-option format-option-full">
-                                <div class="format-option-label">Hintergrundbild</div>
-                                <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
-                                    <img id="bg-img" src="/background" alt="Hintergrundbild">
-                                </div>
-                                <div class="image-actions">
-                                    <button type="button" id="bg_upload_btn" class="btn-upload">Bild hochladen</button>
-                                    <input type="file" id="bg_upload" accept="image/*" style="display: none;">
-                                    <button type="button" id="bg_delete" class="btn-delete-img"
-                                            {% if not has_background_image %}style="display:none;"{% endif %}>
-                                        Löschen
-                                    </button>
-                                </div>
+                            <div class="image-actions">
+                                <button type="button" id="logo_upload_btn" class="btn-upload">
+                                    <span class="btn-label">Logo hochladen</span>
+                                    <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+                                </button>
+                                <input type="file" id="logo_upload" accept="image/*" style="display: none;">
+                                <button type="button" id="logo_delete" class="btn-delete-img"
+                                        {% if not has_logo %}style="display:none;"{% endif %}>
+                                    Löschen
+                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Logo section -->
-                    <div class="sidebar-section">
-                        <div class="sidebar-section-title">Logo</div>
-                        <div class="format-options">
-                            <div class="format-option format-option-full">
-                                <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
-                                    <img id="logo-img" src="/logo" alt="Logo">
-                                </div>
-                                <div class="image-actions">
-                                    <button type="button" id="logo_upload_btn" class="btn-upload">Logo hochladen</button>
-                                    <input type="file" id="logo_upload" accept="image/*" style="display: none;">
-                                    <button type="button" id="logo_delete" class="btn-delete-img"
-                                            {% if not has_logo %}style="display:none;"{% endif %}>
-                                        Löschen
-                                    </button>
-                                </div>
-                            </div>
+                <!-- Presets (hidden) -->
+                <div class="sidebar-section" style="display: none;">
+                    <div class="sidebar-section-title">Voreinstellungen</div>
+                    <div class="color-picker-container">
+                        <div class="color-picker-row">
+                            <label for="color_presets">Preset:</label>
+                            <select id="color_presets" name="color_presets">
+                                <option value="preset1">Herbst '23</option>
+                            </select>
+                            <button type="button" id="applyPreset">OK</button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Presets (hidden) -->
-                    <div class="sidebar-section" style="display: none;">
-                        <div class="sidebar-section-title">Voreinstellungen</div>
-                        <div class="color-picker-container">
-                            <div class="color-picker-row">
-                                <label for="color_presets">Preset:</label>
-                                <select id="color_presets" name="color_presets">
-                                    <option value="preset1">Herbst '23</option>
-                                </select>
-                                <button type="button" id="applyPreset">OK</button>
-                            </div>
-                        </div>
+                <!-- Generate buttons -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Ausgabe generieren</div>
+                    <div class="generate-buttons">
+                        <button type="submit" name="generate_pdf" value="1" class="btn btn-generate" id="generate_pdf_btn"
+                                {% if not appointments %}disabled{% endif %}>
+                            <span class="btn-label">PDF generieren</span>
+                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
+                        </button>
+                        <button type="submit" name="generate_jpeg" value="1" class="btn btn-generate" id="generate_jpeg_btn"
+                                {% if not appointments %}disabled{% endif %}>
+                            <span class="btn-label">JPEG generieren</span>
+                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
+                        </button>
                     </div>
-
-                    <!-- Generate buttons -->
-                    <div class="sidebar-section">
-                        <div class="sidebar-section-title">Ausgabe generieren</div>
-                        <div class="generate-buttons">
-                            <input type="submit" name="generate_pdf" value="PDF generieren" class="btn btn-generate" id="generate_pdf_btn">
-                            <input type="submit" name="generate_jpeg" value="JPEG generieren" class="btn btn-generate" id="generate_jpeg_btn">
-                        </div>
-                        <div id="generate_error" class="alert alert-error" style="display: none; margin-top: 10px;">
-                            Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.
-                        </div>
+                    <div id="generate_error" class="alert alert-error" style="display: none; margin-top: 10px;">
+                        Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.
                     </div>
                 </div>
             </div>
-        </form>
-    {% else %}
-        <div class="empty-state">
-            <p>Keine Termine vorhanden.</p>
-            <p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>
         </div>
-    {% endif %}
+    </form>
 </div>
 <footer>
     <p>Version: {{ version }}</p>

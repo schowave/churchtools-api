@@ -2,8 +2,9 @@ import logging
 import os
 from io import BytesIO
 from typing import List, Optional
+from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
@@ -126,12 +127,22 @@ async def _prepare_selected_appointments(
 
 
 @router.get("/appointments")
-async def appointments_page(request: Request, db: Session = Depends(get_db)):
+async def appointments_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    start_date: Optional[str] = Query(None),
+    end_date: Optional[str] = Query(None),
+    calendar_ids: Optional[List[str]] = Query(None),
+):
     login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
-    start_date, end_date = get_date_range_from_form()
+    if not start_date or not end_date:
+        start_date_default, end_date_default = get_date_range_from_form()
+        start_date = start_date or start_date_default
+        end_date = end_date or end_date_default
+
     try:
         calendars = await fetch_calendars(login_token)
     except AuthenticationError:
@@ -139,14 +150,30 @@ async def appointments_page(request: Request, db: Session = Depends(get_db)):
         response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
         return response
 
-    # Preselection of all calendars
-    selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
+    # Use provided calendar_ids or preselect all
+    if calendar_ids:
+        selected_calendar_ids = calendar_ids
+    else:
+        selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
 
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
     logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
     has_logo = logo_data is not None
     bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
     has_background_image = bg_data is not None
+
+    # Always fetch appointments (auto-fetch on page load)
+    calendar_ids_int = [int(cid) for cid in selected_calendar_ids if cid.isdigit()]
+    try:
+        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+        appointments = [parse_appointment(raw) for raw in raw_appointments]
+        additional_infos = get_additional_infos(db, [app.id for app in appointments])
+        for appointment in appointments:
+            appointment.additional_info = additional_infos.get(appointment.id, "")
+    except AuthenticationError:
+        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        return response
 
     return templates.TemplateResponse(
         "appointments.html",
@@ -159,41 +186,19 @@ async def appointments_page(request: Request, db: Session = Depends(get_db)):
             color_settings,
             has_logo=has_logo,
             has_background_image=has_background_image,
+            appointments=appointments,
         ),
     )
 
 
-async def _handle_fetch_appointments(
-    request, db, login_token, calendars, calendar_ids, calendar_ids_int, start_date, end_date
-):
-    """Handle the 'fetch appointments' button: load appointments and render the template."""
-    raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-    appointments = [parse_appointment(raw) for raw in raw_appointments]
-
-    # Load additional information from DB
-    additional_infos = get_additional_infos(db, [app.id for app in appointments])
-    for appointment in appointments:
-        appointment.additional_info = additional_infos.get(appointment.id, "")
-
-    # Reload color settings from DB (ignore form overrides for fetch)
-    color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
-
-    context = _build_template_context(
-        request,
-        calendars,
-        calendar_ids,
-        start_date,
-        end_date,
-        color_settings,
-        has_logo=logo_data is not None,
-        has_background_image=bg_data is not None,
-        appointments=appointments,
-    )
-    response = templates.TemplateResponse("appointments.html", context)
-    response.set_cookie(key="fetchAppointments", value="true", max_age=1, path="/")
-    return response
+async def _handle_fetch_appointments(calendar_ids, start_date, end_date):
+    """Handle the 'fetch appointments' button: redirect to GET with query params (PRG pattern)."""
+    params = [("start_date", start_date), ("end_date", end_date)]
+    if calendar_ids:
+        for cid in calendar_ids:
+            params.append(("calendar_ids", cid))
+    url = f"/appointments?{urlencode(params)}"
+    return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
 
 
 async def _handle_generate_pdf(
@@ -367,12 +372,7 @@ async def process_appointments(
     try:
         if fetch_appointments_btn:
             return await _handle_fetch_appointments(
-                request,
-                db,
-                login_token,
-                calendars,
                 calendar_ids,
-                calendar_ids_int,
                 start_date,
                 end_date,
             )

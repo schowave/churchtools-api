@@ -2,20 +2,30 @@
 
 // --- Utility functions (no DOM dependency) ---
 
-function monitorDownload(cookieName) {
+function monitorDownload(cookieName, $btn) {
     var checkCookie = setInterval(function () {
         if (document.cookie.split(';').some(function (item) {
             return item.trim().startsWith(cookieName + '=');
         })) {
             clearInterval(checkCookie);
             document.cookie = cookieName + '=; Max-Age=-99999999;';
-            $('#spinner-overlay').hide();
+            if ($btn) {
+                $btn.removeClass('is-loading');
+                $btn.find('.btn-label').show();
+                $btn.find('.btn-spinner').hide();
+            }
 
             document.dispatchEvent(new CustomEvent('cookieChanged', {
                 detail: { name: cookieName }
             }));
         }
     }, 100);
+}
+
+function showButtonSpinner($btn) {
+    $btn.addClass('is-loading');
+    $btn.find('.btn-label').hide();
+    $btn.find('.btn-spinner').show();
 }
 
 function autoResizeTextarea(textarea) {
@@ -104,42 +114,45 @@ $(function () {
         $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
     }
 
-    // Date preset buttons
+    // Date preset buttons — auto-fetch after setting dates
     $("#today").click(function () {
         var today = new Date();
         var formattedDate = $.datepicker.formatDate("yy-mm-dd", today);
         $("#start_date").val(formattedDate);
         $("#end_date").val(formattedDate);
+        $('#fetch_btn').click();
     });
 
     $("#this-week").click(function () {
         var thisWeek = calculateThisWeekDates();
         $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
         $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
-        showDateChangeMessage();
+        $('#fetch_btn').click();
     });
 
     $("#next-week").click(function () {
         var nextWeek = calculateNextWeekDates();
         $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
         $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
-        showDateChangeMessage();
+        $('#fetch_btn').click();
     });
 
-    // Spinner monitoring for button clicks
-    $('input[name="generate_jpeg"]').click(function () {
-        $('#spinner-overlay').show();
-        monitorDownload('jpegGenerated');
+    // Inline spinner for button clicks
+    $('#generate_jpeg_btn').click(function () {
+        var $btn = $(this);
+        showButtonSpinner($btn);
+        monitorDownload('jpegGenerated', $btn);
     });
 
-    $('input[name="generate_pdf"]').click(function () {
-        $('#spinner-overlay').show();
-        monitorDownload('pdfGenerated');
+    $('#generate_pdf_btn').click(function () {
+        var $btn = $(this);
+        showButtonSpinner($btn);
+        monitorDownload('pdfGenerated', $btn);
     });
 
-    $('input[name="fetch_appointments"]').click(function () {
-        $('#spinner-overlay').show();
-        monitorDownload('fetchAppointments');
+    $('#fetch_btn').click(function () {
+        var $btn = $(this);
+        showButtonSpinner($btn);
         localStorage.setItem('scrollToAppointments', 'true');
     });
 
@@ -163,6 +176,15 @@ $(function () {
         observer.observe(container, { childList: true, subtree: true });
     }
 
+    // Live selection counter
+    function updateSelectionCount() {
+        var total = $('.appointment-checkbox').length;
+        var checked = $('.appointment-checkbox:checked').length;
+        $('.appointment-count').text(checked + ' von ' + total + ' ausgewählt');
+    }
+
+    $(document).on('change', '.appointment-checkbox', updateSelectionCount);
+
     // Select all / deselect all buttons
     var selectAllButton = document.getElementById('selectAllAppointments');
     var deselectAllButton = document.getElementById('deselectAllAppointments');
@@ -171,12 +193,14 @@ $(function () {
     if (selectAllButton) {
         selectAllButton.addEventListener('click', function () {
             checkboxes.forEach(function (checkbox) { checkbox.checked = true; });
+            updateSelectionCount();
         });
     }
 
     if (deselectAllButton) {
         deselectAllButton.addEventListener('click', function () {
             checkboxes.forEach(function (checkbox) { checkbox.checked = false; });
+            updateSelectionCount();
         });
     }
 
@@ -191,8 +215,7 @@ $(function () {
         var formData = new FormData();
         formData.append('file', file);
         var $btn = $('#logo_upload_btn');
-        var origText = $btn.text();
-        $btn.text('Wird hochgeladen...');
+        showButtonSpinner($btn);
         fetch('/logo/upload', { method: 'POST', body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
@@ -202,14 +225,17 @@ $(function () {
                 $('#logo-img').attr('src', '/logo?' + Date.now());
                 $('#logo-preview').show();
                 $('#logo_delete').show();
-                $btn.text('Logo gespeichert!');
-                setTimeout(function () { $btn.text(origText); }, 2000);
+                $btn.removeClass('is-loading');
+                $btn.find('.btn-spinner').hide();
+                $btn.find('.btn-label').text('Logo gespeichert!').show();
+                setTimeout(function () { $btn.find('.btn-label').text('Logo hochladen'); }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
-                $btn.text(origText);
+                $btn.removeClass('is-loading');
+                $btn.find('.btn-spinner').hide();
+                $btn.find('.btn-label').show();
             });
-        // Reset so the same file can be re-uploaded
         this.value = '';
     });
 
@@ -235,8 +261,7 @@ $(function () {
         var formData = new FormData();
         formData.append('file', file);
         var $btn = $('#bg_upload_btn');
-        var origText = $btn.text();
-        $btn.text('Wird hochgeladen...');
+        showButtonSpinner($btn);
         fetch('/background/upload', { method: 'POST', body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
@@ -246,12 +271,16 @@ $(function () {
                 $('#bg-img').attr('src', '/background?' + Date.now());
                 $('#bg-preview').show();
                 $('#bg_delete').show();
-                $btn.text('Bild gespeichert!');
-                setTimeout(function () { $btn.text(origText); }, 2000);
+                $btn.removeClass('is-loading');
+                $btn.find('.btn-spinner').hide();
+                $btn.find('.btn-label').text('Bild gespeichert!').show();
+                setTimeout(function () { $btn.find('.btn-label').text('Bild hochladen'); }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
-                $btn.text(origText);
+                $btn.removeClass('is-loading');
+                $btn.find('.btn-spinner').hide();
+                $btn.find('.btn-label').show();
             });
         this.value = '';
     });

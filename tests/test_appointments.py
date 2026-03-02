@@ -264,11 +264,21 @@ def test_handle_jpeg_generation(mock_convert, config_mock):
 @pytest.mark.asyncio
 @patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
+@patch("app.api.appointments.get_additional_infos", return_value={})
+@patch("app.api.appointments.fetch_appointments")
 @patch("app.api.appointments.fetch_calendars")
 @patch("app.api.appointments.get_date_range_from_form")
 @patch("app.api.appointments.load_color_settings")
 async def test_appointments_page_with_token(
-    mock_load_color, mock_get_date, mock_fetch, mock_load_logo, mock_load_bg, templates_mock, config_mock
+    mock_load_color,
+    mock_get_date,
+    mock_fetch_cal,
+    mock_fetch_app,
+    mock_get_info,
+    mock_load_logo,
+    mock_load_bg,
+    templates_mock,
+    config_mock,
 ):
     # Mock request with login_token
     request_mock = MagicMock(spec=Request)
@@ -279,14 +289,18 @@ async def test_appointments_page_with_token(
 
     # Mock return values
     mock_get_date.return_value = ("2023-01-15", "2023-01-22")
-    mock_fetch.return_value = [{"id": 1, "name": "Calendar 1"}, {"id": 2, "name": "Calendar 2"}]
+    mock_fetch_cal.return_value = [{"id": 1, "name": "Calendar 1"}, {"id": 2, "name": "Calendar 2"}]
+    mock_fetch_app.return_value = []
     mock_load_color.return_value = ColorSettings(name="default")
 
-    # Call the function
-    await appointments_page(request_mock, db_mock)
+    # Call the function (no query params = initial page load, auto-fetches appointments)
+    await appointments_page(request_mock, db_mock, start_date=None, end_date=None, calendar_ids=None)
 
     # Check that fetch_calendars was called with the token
-    mock_fetch.assert_called_once_with("test_token")
+    mock_fetch_cal.assert_called_once_with("test_token")
+
+    # Check that appointments were auto-fetched
+    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2])
 
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
@@ -294,14 +308,14 @@ async def test_appointments_page_with_token(
     context = call_args[1]
 
     assert call_args[0] == "appointments.html"
-    # Check that all expected keys are present in the template context
     assert "calendars" in context
     assert "selected_calendar_ids" in context
     assert "start_date" in context
     assert "end_date" in context
     assert "base_url" in context
     assert "color_settings" in context
-    assert context["calendars"] == mock_fetch.return_value
+    assert "appointments" in context
+    assert context["calendars"] == mock_fetch_cal.return_value
     assert context["selected_calendar_ids"] == ["1", "2"]
     assert context["start_date"] == "2023-01-15"
     assert context["end_date"] == "2023-01-22"
@@ -430,32 +444,22 @@ async def test_process_appointments_no_token(mock_fetch, templates_mock):
 
 
 @pytest.mark.asyncio
-@patch("app.api.appointments.load_background_image", return_value=(None, None))
-@patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.load_color_settings")
-@patch("app.api.appointments.get_additional_infos")
-@patch("app.api.appointments.fetch_appointments")
 @patch("app.api.appointments.fetch_calendars")
 async def test_process_appointments_fetch(
     mock_fetch_cal,
-    mock_fetch_app,
-    mock_get_info,
     mock_load_color,
-    mock_load_logo,
-    mock_load_bg,
     templates_mock,
     config_mock,
 ):
-    """Clicking 'fetch appointments' should load appointments and render template."""
+    """Clicking 'fetch appointments' should redirect to GET with query params (PRG pattern)."""
     request = _make_request_mock()
     db = MagicMock()
 
     mock_fetch_cal.return_value = SAMPLE_CALENDARS
-    mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_get_info.return_value = {"1_101": "Saved info"}
     mock_load_color.return_value = ColorSettings(name="default")
 
-    await process_appointments(
+    response = await process_appointments(
         request=request,
         db=db,
         fetch_appointments_btn="Termine abholen",
@@ -471,22 +475,12 @@ async def test_process_appointments_fetch(
         alpha=None,
     )
 
-    # Should call fetch_appointments with integer calendar IDs
-    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2])
-
-    # Should render template with AppointmentData objects in context
-    templates_mock.TemplateResponse.assert_called_once()
-    call_args = templates_mock.TemplateResponse.call_args
-    context = call_args[0][1]
-    assert "appointments" in context
-    assert len(context["appointments"]) == 1
-    appointment = context["appointments"][0]
-    assert isinstance(appointment, AppointmentData)
-    assert appointment.additional_info == "Saved info"
-
-    # Response should set fetchAppointments cookie
-    response = templates_mock.TemplateResponse.return_value
-    response.set_cookie.assert_called_once_with(key="fetchAppointments", value="true", max_age=1, path="/")
+    # Should redirect (PRG pattern) instead of rendering directly
+    assert response.status_code == 303
+    assert "start_date=2023-01-15" in response.headers["location"]
+    assert "end_date=2023-01-22" in response.headers["location"]
+    assert "calendar_ids=1" in response.headers["location"]
+    assert "calendar_ids=2" in response.headers["location"]
 
 
 @pytest.mark.asyncio
