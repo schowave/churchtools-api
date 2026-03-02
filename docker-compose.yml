@@ -1,0 +1,20 @@
+services:
+  churchtools-api:
+    image: schowave/churchtools:latest
+    container_name: churchtools-api
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - CHURCHTOOLS_BASE=${CHURCHTOOLS_BASE:?Bitte CHURCHTOOLS_BASE setzen (z.B. meine-gemeinde.church.tools)}
+      - DB_PATH=/app/data/churchtools.db
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --cleanup churchtools-api
+    restart: unless-stopped
