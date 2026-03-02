@@ -68,12 +68,138 @@ function calculateNextWeekDates() {
     return { start: nextWeekStart, end: nextWeekEnd };
 }
 
-function showDateChangeMessage() {
-    if ($('.appointments-container').length > 0) {
-        $('.appointments-container').html(
-            '<p class="date-change-hint">Bitte "Termine abholen" klicken, um Termine für den neuen Zeitraum anzuzeigen.</p>'
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// --- Appointment rendering ---
+
+function renderAppointments(appointments) {
+    var $main = $('.appointments-main');
+
+    if (!appointments || appointments.length === 0) {
+        $main.html(
+            '<div class="empty-state">' +
+                '<p>Keine Termine vorhanden.</p>' +
+                '<p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>' +
+            '</div>'
         );
+        checkAppointments();
+        return;
     }
+
+    var html = '<div class="appointments-actions">' +
+        '<span class="appointment-count">' + appointments.length + ' von ' + appointments.length + ' ausgewählt</span>' +
+        '<button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>' +
+        '<button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>' +
+        '</div>' +
+        '<div class="appointments-container">';
+
+    appointments.forEach(function (app) {
+        var hasInfo = app.additional_info && app.additional_info.trim().length > 0;
+        html += '<div class="appointment-item">' +
+            '<input type="checkbox" id="appointment-' + escapeHtml(app.id) + '" name="appointment_id"' +
+            ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
+            '<label for="appointment-' + escapeHtml(app.id) + '" class="appointment-label">' +
+                '<span class="appointment-date">' +
+                    escapeHtml(app.start_date_view) +
+                    ' (' + escapeHtml(app.start_time_view) + '-' + escapeHtml(app.end_time_view) + ')' +
+                '</span>' +
+                '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
+            '</label>' +
+            '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
+                ' onclick="this.classList.add(\'hidden\'); this.nextElementSibling.classList.remove(\'hidden\'); this.nextElementSibling.focus();">' +
+                '+ Info hinzufügen' +
+            '</button>' +
+            '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
+                ' class="' + (hasInfo ? '' : 'hidden') + '"' +
+                ' placeholder="Zusätzliche Informationen">' + escapeHtml(app.additional_info || '') + '</textarea>' +
+            '</div>';
+    });
+
+    html += '</div>';
+    $main.html(html);
+
+    // Rebind select/deselect buttons
+    $('#selectAllAppointments').on('click', function () {
+        $('.appointment-checkbox').prop('checked', true);
+        updateSelectionCount();
+    });
+    $('#deselectAllAppointments').on('click', function () {
+        $('.appointment-checkbox').prop('checked', false);
+        updateSelectionCount();
+    });
+
+    // Auto-resize textareas
+    $main.find('textarea').each(function () {
+        var textarea = this;
+        setTimeout(function () { autoResizeTextarea(textarea); }, 50);
+        $(textarea).on('input focus blur', function () { autoResizeTextarea(this); });
+    });
+
+    checkAppointments();
+}
+
+function fetchAppointmentsAjax() {
+    var startDate = $('#start_date').val();
+    var endDate = $('#end_date').val();
+    var calendarIds = [];
+    $('.calendar-checkbox:checked').each(function () {
+        calendarIds.push($(this).val());
+    });
+
+    // Show loading state
+    var $fetchBtn = $('#fetch_btn');
+    showButtonSpinner($fetchBtn);
+    $('.appointments-main').html(
+        '<div class="appointments-loading">' +
+            '<span class="spinner-ring-inline spinner-ring-inline--dark"></span>' +
+            '<span>Termine werden geladen…</span>' +
+        '</div>'
+    );
+
+    var params = new URLSearchParams();
+    params.append('start_date', startDate);
+    params.append('end_date', endDate);
+    calendarIds.forEach(function (id) {
+        params.append('calendar_ids', id);
+    });
+
+    fetch('/api/appointments?' + params.toString())
+        .then(function (res) {
+            if (res.status === 401) {
+                window.location.href = '/';
+                return;
+            }
+            if (!res.ok) throw new Error('Fehler beim Laden der Termine');
+            return res.json();
+        })
+        .then(function (data) {
+            if (!data) return;
+            renderAppointments(data.appointments);
+            // Reset fetch button
+            $fetchBtn.removeClass('is-loading');
+            $fetchBtn.find('.btn-label').show();
+            $fetchBtn.find('.btn-spinner').hide();
+        })
+        .catch(function (err) {
+            $('.appointments-main').html(
+                '<div class="empty-state">' +
+                    '<p>' + escapeHtml(err.message) + '</p>' +
+                '</div>'
+            );
+            $fetchBtn.removeClass('is-loading');
+            $fetchBtn.find('.btn-label').show();
+            $fetchBtn.find('.btn-spinner').hide();
+        });
+}
+
+function updateSelectionCount() {
+    var total = $('.appointment-checkbox').length;
+    var checked = $('.appointment-checkbox:checked').length;
+    $('.appointment-count').text(checked + ' von ' + total + ' ausgewählt');
 }
 
 function checkAppointments() {
@@ -83,12 +209,6 @@ function checkAppointments() {
 
     if (!hasAppointments) {
         $('#generate_error').show();
-        $('#generate_pdf_btn, #generate_jpeg_btn').on('click', function (e) {
-            if (!hasAppointments) {
-                e.preventDefault();
-                alert('Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.');
-            }
-        });
     } else {
         $('#generate_error').hide();
     }
@@ -97,47 +217,65 @@ function checkAppointments() {
 // --- jQuery-dependent initialization ---
 
 $(function () {
-    // Datepicker setup
-    $("#start_date").datepicker({
-        dateFormat: "yy-mm-dd",
-        onSelect: function () { showDateChangeMessage(); }
+    // Datepicker setup — display dd.mm.yy, store yy-mm-dd in hidden fields
+    $("#start_date_display").datepicker({
+        dateFormat: "dd.mm.yy",
+        altField: "#start_date",
+        altFormat: "yy-mm-dd"
     });
-    $("#end_date").datepicker({
-        dateFormat: "yy-mm-dd",
-        onSelect: function () { showDateChangeMessage(); }
+    $("#end_date_display").datepicker({
+        dateFormat: "dd.mm.yy",
+        altField: "#end_date",
+        altFormat: "yy-mm-dd"
     });
 
-    // Set initial values if not already set
-    if (!$("#start_date").val() || !$("#end_date").val()) {
-        var thisWeek = calculateThisWeekDates();
-        $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
-        $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
+    // Initialize display fields from hidden ISO values
+    var startIso = $("#start_date").val();
+    var endIso = $("#end_date").val();
+    if (startIso) {
+        var startParts = startIso.split("-");
+        $("#start_date_display").val(startParts[2] + "." + startParts[1] + "." + startParts[0]);
+    }
+    if (endIso) {
+        var endParts = endIso.split("-");
+        $("#end_date_display").val(endParts[2] + "." + endParts[1] + "." + endParts[0]);
     }
 
-    // Date preset buttons — auto-fetch after setting dates
+    // Set defaults if no values provided
+    if (!startIso || !endIso) {
+        var thisWeek = calculateThisWeekDates();
+        $("#start_date_display").datepicker("setDate", thisWeek.start);
+        $("#end_date_display").datepicker("setDate", thisWeek.end);
+    }
+
+    // Date preset buttons — set datepicker (auto-syncs to hidden field) then fetch
     $("#today").click(function () {
         var today = new Date();
-        var formattedDate = $.datepicker.formatDate("yy-mm-dd", today);
-        $("#start_date").val(formattedDate);
-        $("#end_date").val(formattedDate);
-        $('#fetch_btn').click();
+        $("#start_date_display").datepicker("setDate", today);
+        $("#end_date_display").datepicker("setDate", today);
+        fetchAppointmentsAjax();
     });
 
     $("#this-week").click(function () {
         var thisWeek = calculateThisWeekDates();
-        $("#start_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.start));
-        $("#end_date").val($.datepicker.formatDate("yy-mm-dd", thisWeek.end));
-        $('#fetch_btn').click();
+        $("#start_date_display").datepicker("setDate", thisWeek.start);
+        $("#end_date_display").datepicker("setDate", thisWeek.end);
+        fetchAppointmentsAjax();
     });
 
     $("#next-week").click(function () {
         var nextWeek = calculateNextWeekDates();
-        $("#start_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.start));
-        $("#end_date").val($.datepicker.formatDate("yy-mm-dd", nextWeek.end));
-        $('#fetch_btn').click();
+        $("#start_date_display").datepicker("setDate", nextWeek.start);
+        $("#end_date_display").datepicker("setDate", nextWeek.end);
+        fetchAppointmentsAjax();
     });
 
-    // Inline spinner for button clicks
+    // Fetch button — AJAX, no form submit
+    $('#fetch_btn').click(function () {
+        fetchAppointmentsAjax();
+    });
+
+    // Inline spinner for generate button clicks
     $('#generate_jpeg_btn').click(function () {
         var $btn = $(this);
         showButtonSpinner($btn);
@@ -150,59 +288,8 @@ $(function () {
         monitorDownload('pdfGenerated', $btn);
     });
 
-    $('#fetch_btn').click(function () {
-        var $btn = $(this);
-        showButtonSpinner($btn);
-        localStorage.setItem('scrollToAppointments', 'true');
-    });
-
-    // Scroll to appointments after fetch (if flag is set)
-    if ($('.appointments-container').length > 0 && localStorage.getItem('scrollToAppointments') === 'true') {
-        localStorage.removeItem('scrollToAppointments');
-        setTimeout(function () {
-            $('html, body').animate({
-                scrollTop: $('.appointments-actions').offset().top - 20
-            }, 1000);
-        }, 500);
-    }
-
-    // Check appointment availability for generate buttons
-    checkAppointments();
-
-    // Observe DOM changes in appointments container
-    var container = document.querySelector('.appointments-container');
-    if (container) {
-        var observer = new MutationObserver(checkAppointments);
-        observer.observe(container, { childList: true, subtree: true });
-    }
-
-    // Live selection counter
-    function updateSelectionCount() {
-        var total = $('.appointment-checkbox').length;
-        var checked = $('.appointment-checkbox:checked').length;
-        $('.appointment-count').text(checked + ' von ' + total + ' ausgewählt');
-    }
-
+    // Live selection counter (delegated for dynamically added checkboxes)
     $(document).on('change', '.appointment-checkbox', updateSelectionCount);
-
-    // Select all / deselect all buttons
-    var selectAllButton = document.getElementById('selectAllAppointments');
-    var deselectAllButton = document.getElementById('deselectAllAppointments');
-    var checkboxes = document.querySelectorAll('.appointment-checkbox');
-
-    if (selectAllButton) {
-        selectAllButton.addEventListener('click', function () {
-            checkboxes.forEach(function (checkbox) { checkbox.checked = true; });
-            updateSelectionCount();
-        });
-    }
-
-    if (deselectAllButton) {
-        deselectAllButton.addEventListener('click', function () {
-            checkboxes.forEach(function (checkbox) { checkbox.checked = false; });
-            updateSelectionCount();
-        });
-    }
 
     // Logo upload - button triggers hidden file input
     $('#logo_upload_btn').on('click', function () {
@@ -321,18 +408,10 @@ $(function () {
             }
         });
     }
-});
 
-// --- Textarea auto-resize (runs on window load for correct layout calculations) ---
+    // Initial button state
+    checkAppointments();
 
-window.addEventListener('load', function () {
-    var textareas = document.querySelectorAll('textarea[name^="additional_info_"]');
-
-    textareas.forEach(function (textarea) {
-        setTimeout(function () { autoResizeTextarea(textarea); }, 100);
-
-        textarea.addEventListener('input', function () { autoResizeTextarea(this); });
-        textarea.addEventListener('focus', function () { autoResizeTextarea(this); });
-        textarea.addEventListener('blur', function () { autoResizeTextarea(this); });
-    });
+    // Auto-fetch appointments on page load
+    fetchAppointmentsAjax();
 });

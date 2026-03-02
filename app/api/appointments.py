@@ -2,7 +2,6 @@ import logging
 import os
 from io import BytesIO
 from typing import List, Optional
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
@@ -162,19 +161,6 @@ async def appointments_page(
     bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
     has_background_image = bg_data is not None
 
-    # Always fetch appointments (auto-fetch on page load)
-    calendar_ids_int = [int(cid) for cid in selected_calendar_ids if cid.isdigit()]
-    try:
-        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
-        appointments = [parse_appointment(raw) for raw in raw_appointments]
-        additional_infos = get_additional_infos(db, [app.id for app in appointments])
-        for appointment in appointments:
-            appointment.additional_info = additional_infos.get(appointment.id, "")
-    except AuthenticationError:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
-        return response
-
     return templates.TemplateResponse(
         "appointments.html",
         _build_template_context(
@@ -186,19 +172,42 @@ async def appointments_page(
             color_settings,
             has_logo=has_logo,
             has_background_image=has_background_image,
-            appointments=appointments,
         ),
     )
 
 
-async def _handle_fetch_appointments(calendar_ids, start_date, end_date):
-    """Handle the 'fetch appointments' button: redirect to GET with query params (PRG pattern)."""
-    params = [("start_date", start_date), ("end_date", end_date)]
-    if calendar_ids:
-        for cid in calendar_ids:
-            params.append(("calendar_ids", cid))
-    url = f"/appointments?{urlencode(params)}"
-    return RedirectResponse(url=url, status_code=status.HTTP_303_SEE_OTHER)
+@router.get("/api/appointments")
+async def api_appointments(
+    request: Request,
+    db: Session = Depends(get_db),
+    start_date: str = Query(...),
+    end_date: str = Query(...),
+    calendar_ids: List[str] = Query(...),
+):
+    """JSON endpoint for async appointment loading."""
+    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    if not login_token:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    calendar_ids_int = [int(cid) for cid in calendar_ids if cid.isdigit()]
+    if not calendar_ids_int:
+        return JSONResponse({"appointments": []})
+
+    try:
+        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+    except AuthenticationError:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    appointments = [parse_appointment(raw) for raw in raw_appointments]
+    additional_infos = get_additional_infos(db, [app.id for app in appointments])
+    for appointment in appointments:
+        appointment.additional_info = additional_infos.get(appointment.id, "")
+
+    return JSONResponse(
+        {
+            "appointments": [app.model_dump() for app in appointments],
+        }
+    )
 
 
 async def _handle_generate_pdf(
@@ -313,7 +322,6 @@ async def _handle_generate_jpeg(
 async def process_appointments(
     request: Request,
     db: Session = Depends(get_db),
-    fetch_appointments_btn: Optional[str] = Form(None, alias="fetch_appointments"),
     generate_pdf_btn: Optional[str] = Form(None, alias="generate_pdf"),
     generate_jpeg_btn: Optional[str] = Form(None, alias="generate_jpeg"),
     start_date: Optional[str] = Form(None),
@@ -370,13 +378,6 @@ async def process_appointments(
     # All handlers call fetch_appointments which may raise AuthenticationError
     # if the token expires mid-session.
     try:
-        if fetch_appointments_btn:
-            return await _handle_fetch_appointments(
-                calendar_ids,
-                start_date,
-                end_date,
-            )
-
         if generate_pdf_btn:
             return await _handle_generate_pdf(
                 request,

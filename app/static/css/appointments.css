@@ -541,6 +541,14 @@ textarea:focus {
     padding-bottom: 0;
 }
 
+.sidebar-section--cta {
+    background: var(--primary-subtle);
+    margin: 0 calc(-1 * var(--spacing-md));
+    padding: var(--spacing-md);
+    border-radius: 0 0 var(--container-radius) var(--container-radius);
+    border-bottom: none;
+}
+
 .sidebar-section-title {
     font-family: var(--font-display);
     font-weight: 600;
@@ -748,6 +756,25 @@ textarea:focus {
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+}
+
+/* ─── Appointments loading state ────────────── */
+.appointments-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--container-radius);
+    background-color: white;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.appointments-loading .spinner-ring-inline {
+    width: 18px;
+    height: 18px;
 }
 
 /* ─── Empty state ───────────────────────────── */

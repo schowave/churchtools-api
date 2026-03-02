@@ -35,14 +35,14 @@
             <div class="date-controls">
                 <div class="date-fields-container">
                     <div class="date-field">
-                        <label for="start_date">Startdatum</label>
-                        <input type="text" id="start_date" name="start_date"
-                               value="{{ start_date }}" required>
+                        <label for="start_date_display">Startdatum</label>
+                        <input type="text" id="start_date_display" required>
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
                     </div>
                     <div class="date-field">
-                        <label for="end_date">Enddatum</label>
-                        <input type="text" id="end_date" name="end_date"
-                               value="{{ end_date }}" required>
+                        <label for="end_date_display">Enddatum</label>
+                        <input type="text" id="end_date_display" required>
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
                     </div>
                 </div>
                 <div class="date-quick-select">
@@ -51,7 +51,7 @@
                     <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
                 </div>
             </div>
-            <button type="submit" name="fetch_appointments" value="1" class="btn btn-fetch" id="fetch_btn">
+            <button type="button" class="btn btn-fetch" id="fetch_btn">
                 <span class="btn-label">Termine abholen</span>
                 <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden…</span>
             </button>
@@ -78,43 +78,12 @@
             </div>
         </details>
         <div class="appointments-layout">
-            <!-- Left column: Appointments -->
+            <!-- Left column: Appointments (loaded via AJAX) -->
             <div class="appointments-main">
-                {% if appointments %}
-                    <div class="appointments-actions">
-                        <span class="appointment-count">{{ appointments|length }} von {{ appointments|length }} ausgewählt</span>
-                        <button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>
-                        <button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>
-                    </div>
-                    <div class="appointments-container">
-                        {% for appointment in appointments %}
-                            <div class="appointment-item">
-                                <input type="checkbox" id="appointment-{{ appointment.id }}" name="appointment_id"
-                                       value="{{ appointment.id }}" class="appointment-checkbox" checked>
-                                <label for="appointment-{{ appointment.id }}" class="appointment-label">
-                                    <span class="appointment-date">
-                                        {{ appointment.start_date_view }}
-                                        ({{ appointment.start_time_view }}-{{ appointment.end_time_view }})
-                                    </span>
-                                    <span class="appointment-description">{{ appointment.title }}</span>
-                                </label>
-                                {% set has_info = appointment.additional_info | default('') | trim %}
-                                <button type="button" class="add-info-toggle{% if has_info %} hidden{% endif %}"
-                                        onclick="this.classList.add('hidden'); this.nextElementSibling.classList.remove('hidden'); this.nextElementSibling.focus();">
-                                    + Info hinzufügen
-                                </button>
-                                <textarea name="additional_info_{{ appointment.id }}"
-                                          class="{% if not has_info %}hidden{% endif %}"
-                                          placeholder="Zusätzliche Informationen">{{ appointment.additional_info | default('') }}</textarea>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="empty-state">
-                        <p>Keine Termine vorhanden.</p>
-                        <p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>
-                    </div>
-                {% endif %}
+                <div class="appointments-loading">
+                    <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
+                    <span>Termine werden geladen…</span>
+                </div>
             </div>
 
             <!-- Right column: Sidebar -->
@@ -148,24 +117,25 @@
                             </div>
                         </div>
 
-                        <!-- Background image -->
-                        <div class="format-option format-option-full">
-                            <div class="format-option-label">Hintergrundbild</div>
-                            <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
-                                <img id="bg-img" src="/background" alt="Hintergrundbild">
-                            </div>
-                            <div class="image-actions">
-                                <button type="button" id="bg_upload_btn" class="btn-upload">
-                                    <span class="btn-label">Bild hochladen</span>
-                                    <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
-                                </button>
-                                <input type="file" id="bg_upload" accept="image/*" style="display: none;">
-                                <button type="button" id="bg_delete" class="btn-delete-img"
-                                        {% if not has_background_image %}style="display:none;"{% endif %}>
-                                    Löschen
-                                </button>
-                            </div>
-                        </div>
+                    </div>
+                </div>
+
+                <!-- Background image section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">Hintergrundbild</div>
+                    <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
+                        <img id="bg-img" src="/background" alt="Hintergrundbild">
+                    </div>
+                    <div class="image-actions">
+                        <button type="button" id="bg_upload_btn" class="btn-upload">
+                            <span class="btn-label">Bild hochladen</span>
+                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+                        </button>
+                        <input type="file" id="bg_upload" accept="image/*" style="display: none;">
+                        <button type="button" id="bg_delete" class="btn-delete-img"
+                                {% if not has_background_image %}style="display:none;"{% endif %}>
+                            Löschen
+                        </button>
                     </div>
                 </div>
 
@@ -207,16 +177,14 @@
                 </div>
 
                 <!-- Generate buttons -->
-                <div class="sidebar-section">
+                <div class="sidebar-section sidebar-section--cta">
                     <div class="sidebar-section-title">Ausgabe generieren</div>
                     <div class="generate-buttons">
-                        <button type="submit" name="generate_pdf" value="1" class="btn btn-generate" id="generate_pdf_btn"
-                                {% if not appointments %}disabled{% endif %}>
+                        <button type="submit" name="generate_pdf" value="1" class="btn btn-generate" id="generate_pdf_btn" disabled>
                             <span class="btn-label">PDF generieren</span>
                             <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
                         </button>
-                        <button type="submit" name="generate_jpeg" value="1" class="btn btn-generate" id="generate_jpeg_btn"
-                                {% if not appointments %}disabled{% endif %}>
+                        <button type="submit" name="generate_jpeg" value="1" class="btn btn-generate" id="generate_jpeg_btn" disabled>
                             <span class="btn-label">JPEG generieren</span>
                             <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
                         </button>
