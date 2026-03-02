@@ -37,11 +37,13 @@ async def login(request: Request, username: str = Form(...), password: str = For
             if token_response.status_code == 200:
                 login_token = token_response.json()["data"]
                 redirect = RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
+                is_https = request.url.scheme == "https"
                 redirect.set_cookie(
                     key=Config.COOKIE_LOGIN_TOKEN,
                     value=login_token,
                     httponly=True,
-                    samesite="lax",
+                    secure=is_https,
+                    samesite="strict" if is_https else "lax",
                 )
                 return redirect
             else:

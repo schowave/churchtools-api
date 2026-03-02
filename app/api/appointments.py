@@ -28,6 +28,15 @@ from app.services.pdf_generator import create_pdf
 from app.shared import templates
 from app.utils import get_date_range_from_form, normalize_newlines
 
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+def _require_auth(request: Request):
+    """Raise 401 if no login token is present."""
+    if not request.cookies.get(Config.COOKIE_LOGIN_TOKEN):
+        raise HTTPException(status_code=401, detail="Nicht angemeldet")
+
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -393,9 +402,12 @@ async def process_appointments(
 
 
 @router.post("/logo/upload")
-async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload a logo image and store it in the database."""
-    content = await file.read()
+    _require_auth(request)
+    content = await file.read(MAX_UPLOAD_SIZE + 1)
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="Datei zu groß (max. 10 MB)")
     if not content:
         raise HTTPException(status_code=400, detail="Leere Datei")
     save_logo(db, DEFAULT_SETTING_NAME, content, file.filename)
@@ -417,16 +429,20 @@ async def get_logo(db: Session = Depends(get_db)):
 
 
 @router.delete("/logo")
-async def remove_logo(db: Session = Depends(get_db)):
+async def remove_logo(request: Request, db: Session = Depends(get_db)):
     """Delete the stored logo."""
+    _require_auth(request)
     delete_logo(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
 
 
 @router.post("/background/upload")
-async def upload_background(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_background(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Upload a background image and store it in the database."""
-    content = await file.read()
+    _require_auth(request)
+    content = await file.read(MAX_UPLOAD_SIZE + 1)
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="Datei zu groß (max. 10 MB)")
     if not content:
         raise HTTPException(status_code=400, detail="Leere Datei")
     save_background_image(db, DEFAULT_SETTING_NAME, content, file.filename)
@@ -448,8 +464,9 @@ async def get_background(db: Session = Depends(get_db)):
 
 
 @router.delete("/background")
-async def remove_background(db: Session = Depends(get_db)):
+async def remove_background(request: Request, db: Session = Depends(get_db)):
     """Delete the stored background image."""
+    _require_auth(request)
     delete_background_image(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
 
