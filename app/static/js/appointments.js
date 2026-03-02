@@ -180,6 +180,50 @@ $(function () {
         });
     }
 
+    // Logo upload - button triggers hidden file input
+    $('#logo_upload_btn').on('click', function () {
+        document.getElementById('logo_upload').click();
+    });
+
+    $('#logo_upload').on('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var formData = new FormData();
+        formData.append('file', file);
+        var $btn = $('#logo_upload_btn');
+        var origText = $btn.text();
+        $btn.text('Wird hochgeladen...');
+        fetch('/logo/upload', { method: 'POST', body: formData })
+            .then(function (res) {
+                if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
+                return res.json();
+            })
+            .then(function () {
+                $('#logo-img').attr('src', '/logo?' + Date.now());
+                $('#logo-preview').show();
+                $('#logo_delete').show();
+                $btn.text('Logo gespeichert!');
+                setTimeout(function () { $btn.text(origText); }, 2000);
+            })
+            .catch(function (err) {
+                alert(err.message);
+                $btn.text(origText);
+            });
+        // Reset so the same file can be re-uploaded
+        this.value = '';
+    });
+
+    // Logo delete
+    $('#logo_delete').on('click', function () {
+        fetch('/logo', { method: 'DELETE' })
+            .then(function (res) {
+                if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
+                $('#logo-preview').hide();
+                $('#logo_delete').hide();
+            })
+            .catch(function (err) { alert(err.message); });
+    });
+
     // Color presets
     var applyButton = document.getElementById('applyPreset');
     var colorPresetsSelect = document.getElementById('color_presets');

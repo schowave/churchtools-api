@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models import Appointment, ColorSetting
+from app.models import Appointment, ColorSetting, LogoSetting
 from app.schemas import ColorSettings
 
 logger = logging.getLogger(__name__)
@@ -71,3 +71,39 @@ def load_color_settings(db, setting_name) -> ColorSettings:
     except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         return ColorSettings(name=setting_name)
+
+
+def save_logo(db, setting_name: str, logo_data: bytes, filename: str):
+    try:
+        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
+        if logo:
+            logo.logo_data = logo_data
+            logo.logo_filename = filename
+        else:
+            db.add(LogoSetting(setting_name=setting_name, logo_data=logo_data, logo_filename=filename))
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+
+def load_logo(db, setting_name: str):
+    try:
+        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
+        if logo:
+            return logo.logo_data, logo.logo_filename
+        return None, None
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+        return None, None
+
+
+def delete_logo(db, setting_name: str):
+    try:
+        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
+        if logo:
+            db.delete(logo)
+            db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise

@@ -4,11 +4,19 @@ from io import BytesIO
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
 from app.config import Config
-from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
+from app.crud import (
+    delete_logo,
+    get_additional_infos,
+    load_color_settings,
+    load_logo,
+    save_additional_infos,
+    save_color_settings,
+    save_logo,
+)
 from app.database import DEFAULT_SETTING_NAME, get_db
 from app.schemas import ColorSettings
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
@@ -29,6 +37,7 @@ def _build_template_context(
     start_date: str,
     end_date: str,
     color_settings: ColorSettings,
+    has_logo: bool = False,
     **extra,
 ) -> dict:
     """Build the common template context dict for appointments.html."""
@@ -40,6 +49,7 @@ def _build_template_context(
         "end_date": end_date,
         "base_url": Config.CHURCHTOOLS_BASE,
         "color_settings": color_settings,
+        "has_logo": has_logo,
         "version": Config.VERSION,
     }
     context.update(extra)
@@ -59,7 +69,7 @@ async def _prepare_selected_appointments(
 ):
     """Shared preparation logic for PDF and JPEG generation.
 
-    Returns (selected_appointments: List[AppointmentData], background_image_stream).
+    Returns (selected_appointments: List[AppointmentData], background_image_stream, logo_stream).
     """
     # Save additional information from form
     form_data = await request.form()
@@ -81,6 +91,12 @@ async def _prepare_selected_appointments(
                 background_image_stream = BytesIO(content)
         except Exception as e:
             logger.error(f"Error reading background image: {e}")
+
+    # Load logo from DB
+    logo_stream = None
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    if logo_data:
+        logo_stream = BytesIO(logo_data)
 
     # Fetch and convert appointments
     logger.info(f"Selected appointment IDs: {appointment_id}")
@@ -106,7 +122,7 @@ async def _prepare_selected_appointments(
     for idx, app in enumerate(selected_appointments, 1):
         logger.info(f"  {idx}. {app.title} am {app.start_date_view} ({app.start_time_view}-{app.end_time_view})")
 
-    return selected_appointments, background_image_stream
+    return selected_appointments, background_image_stream, logo_stream
 
 
 @router.get("/appointments")
@@ -127,10 +143,14 @@ async def appointments_page(request: Request, db: Session = Depends(get_db)):
     selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
 
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    has_logo = logo_data is not None
 
     return templates.TemplateResponse(
         "appointments.html",
-        _build_template_context(request, calendars, selected_calendar_ids, start_date, end_date, color_settings),
+        _build_template_context(
+            request, calendars, selected_calendar_ids, start_date, end_date, color_settings, has_logo=has_logo
+        ),
     )
 
 
@@ -148,6 +168,7 @@ async def _handle_fetch_appointments(
 
     # Reload color settings from DB (ignore form overrides for fetch)
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
 
     context = _build_template_context(
         request,
@@ -156,6 +177,7 @@ async def _handle_fetch_appointments(
         start_date,
         end_date,
         color_settings,
+        has_logo=logo_data is not None,
         appointments=appointments,
     )
     response = templates.TemplateResponse("appointments.html", context)
@@ -189,7 +211,7 @@ async def _handle_generate_pdf(
         )
         return templates.TemplateResponse("appointments.html", context)
 
-    selected_appointments, bg_stream = await _prepare_selected_appointments(
+    selected_appointments, bg_stream, logo_stream = await _prepare_selected_appointments(
         request,
         db,
         login_token,
@@ -208,6 +230,7 @@ async def _handle_generate_pdf(
         color_settings.description_color,
         color_settings.background_alpha,
         bg_stream,
+        logo_stream,
     )
 
     response = RedirectResponse(url=f"/download/{filename}", status_code=status.HTTP_303_SEE_OTHER)
@@ -241,7 +264,7 @@ async def _handle_generate_jpeg(
         )
         return templates.TemplateResponse("appointments.html", context)
 
-    selected_appointments, bg_stream = await _prepare_selected_appointments(
+    selected_appointments, bg_stream, logo_stream = await _prepare_selected_appointments(
         request,
         db,
         login_token,
@@ -260,6 +283,7 @@ async def _handle_generate_jpeg(
         color_settings.description_color,
         color_settings.background_alpha,
         bg_stream,
+        logo_stream,
     )
 
     zip_filename = handle_jpeg_generation(filename)
@@ -382,6 +406,7 @@ async def process_appointments(
         return response
 
     # Default: show form
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
     context = _build_template_context(
         request,
         calendars,
@@ -389,8 +414,40 @@ async def process_appointments(
         start_date,
         end_date,
         color_settings,
+        has_logo=logo_data is not None,
     )
     return templates.TemplateResponse("appointments.html", context)
+
+
+@router.post("/logo/upload")
+async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Upload a logo image and store it in the database."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Leere Datei")
+    save_logo(db, DEFAULT_SETTING_NAME, content, file.filename)
+    return JSONResponse({"status": "ok", "filename": file.filename})
+
+
+@router.get("/logo")
+async def get_logo(db: Session = Depends(get_db)):
+    """Serve the stored logo image for preview."""
+    logo_data, logo_filename = load_logo(db, DEFAULT_SETTING_NAME)
+    if not logo_data:
+        raise HTTPException(status_code=404, detail="Kein Logo gespeichert")
+
+    ext = (logo_filename.rsplit(".", 1)[-1] if "." in logo_filename else "png").lower()
+    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml"}
+    media_type = media_types.get(ext, "image/png")
+
+    return Response(content=logo_data, media_type=media_type)
+
+
+@router.delete("/logo")
+async def remove_logo(db: Session = Depends(get_db)):
+    """Delete the stored logo."""
+    delete_logo(db, DEFAULT_SETTING_NAME)
+    return JSONResponse({"status": "ok"})
 
 
 @router.get("/download/{filename}")

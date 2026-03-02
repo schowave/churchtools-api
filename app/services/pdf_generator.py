@@ -117,6 +117,33 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
         logger.error(f"Error drawing background image: {e}")
 
 
+def draw_logo(canvas, logo_stream, page_width, page_height):
+    """Draw the logo in the bottom-right corner, right-aligned with the description boxes."""
+    if logo_stream is None:
+        return
+
+    try:
+        logo_stream.seek(0)
+        logo = ImageReader(logo_stream)
+        logo_width, logo_height = logo.getSize()
+
+        max_logo_height = 50
+        bottom_margin = 15
+
+        scale = min(max_logo_height / logo_height, 1.0)
+        scaled_width = logo_width * scale
+        scaled_height = logo_height * scale
+
+        # Align right edge with the description box right edge
+        box_right_edge = LEFT_COLUMN_X + PAGE_WIDTH * SCALE_FACTOR
+        x = box_right_edge - scaled_width
+        y = bottom_margin
+
+        canvas.drawImage(logo, x, y, width=scaled_width, height=scaled_height, mask="auto")
+    except Exception as e:
+        logger.error(f"Error drawing logo: {e}")
+
+
 def create_transparent_image(width, height, background_color, alpha):
     width = int(width)
     height = int(height)
@@ -137,13 +164,14 @@ def draw_transparent_rectangle(canvas, x, y, width, height, background_color, al
     canvas.drawImage(ImageReader(img_byte_arr), x, y, width, height, mask="auto")
 
 
-def setup_new_page(canvas_obj, image_stream):
+def setup_new_page(canvas_obj, image_stream, logo_stream=None):
     canvas_obj.showPage()
     canvas_obj.setPageSize(landscape(PAGE_SIZE))
     new_y_position = PAGE_HEIGHT - BOTTOM_MARGIN
     try:
         if image_stream:
             draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
+        draw_logo(canvas_obj, logo_stream, *landscape(PAGE_SIZE))
     except Exception as e:
         logger.error(f"Error setting up a new page: {e}")
     return new_y_position
@@ -197,6 +225,7 @@ def _draw_event(
     image_stream,
     *,
     is_first_on_page: bool = False,
+    logo_stream=None,
 ):
     """Draw a single event on the PDF canvas. Returns (updated y_position, is_first_on_page)."""
     # Derived typography sizes
@@ -241,7 +270,7 @@ def _draw_event(
     # Skip this check for the first event on a page — it must be drawn on the
     # current page even if it's too tall, otherwise the page stays empty.
     if not is_first_on_page and y_position < (rect_height + BOTTOM_MARGIN):
-        y_position = setup_new_page(c, image_stream)
+        y_position = setup_new_page(c, image_stream, logo_stream)
         is_first_on_page = True
 
     draw_transparent_rectangle(
@@ -294,7 +323,9 @@ def _draw_event(
     return min(information_y_position, y_position - rect_height - line_spacing), False
 
 
-def create_pdf(appointments, date_color, background_color, description_color, alpha, image_stream=None):
+def create_pdf(
+    appointments, date_color, background_color, description_color, alpha, image_stream=None, logo_stream=None
+):
     font_name, font_name_bold = _register_fonts()
 
     current_day = datetime.now().strftime("%Y-%m-%d")
@@ -306,6 +337,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
     try:
         if image_stream:
             draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
+        draw_logo(c, logo_stream, *landscape(PAGE_SIZE))
     except Exception as e:
         logger.error(f"Error drawing background image: {e}")
 
@@ -325,6 +357,7 @@ def create_pdf(appointments, date_color, background_color, description_color, al
             alpha,
             image_stream,
             is_first_on_page=is_first_on_page,
+            logo_stream=logo_stream,
         )
 
     c.save()
