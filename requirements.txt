@@ -1,6 +1,6 @@
 # Pinned runtime dependencies for Docker builds.
 # Source of truth: pyproject.toml [project] dependencies
-fastapi==0.133.1
+fastapi==0.135.1
 uvicorn==0.41.0
 sqlalchemy==2.0.47
 pydantic==2.12.5
