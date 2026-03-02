@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models import Appointment, ColorSetting, LogoSetting
+from app.models import Appointment, BackgroundImageSetting, ColorSetting, LogoSetting
 from app.schemas import ColorSettings
 
 logger = logging.getLogger(__name__)
@@ -103,6 +103,42 @@ def delete_logo(db, setting_name: str):
         logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
         if logo:
             db.delete(logo)
+            db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+
+def save_background_image(db, setting_name: str, image_data: bytes, filename: str):
+    try:
+        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
+        if bg:
+            bg.image_data = image_data
+            bg.image_filename = filename
+        else:
+            db.add(BackgroundImageSetting(setting_name=setting_name, image_data=image_data, image_filename=filename))
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+
+def load_background_image(db, setting_name: str):
+    try:
+        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
+        if bg:
+            return bg.image_data, bg.image_filename
+        return None, None
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+        return None, None
+
+
+def delete_background_image(db, setting_name: str):
+    try:
+        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
+        if bg:
+            db.delete(bg)
             db.commit()
     except SQLAlchemyError:
         db.rollback()

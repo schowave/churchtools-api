@@ -262,12 +262,13 @@ def test_handle_jpeg_generation(mock_convert, config_mock):
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.fetch_calendars")
 @patch("app.api.appointments.get_date_range_from_form")
 @patch("app.api.appointments.load_color_settings")
 async def test_appointments_page_with_token(
-    mock_load_color, mock_get_date, mock_fetch, mock_load_logo, templates_mock, config_mock
+    mock_load_color, mock_get_date, mock_fetch, mock_load_logo, mock_load_bg, templates_mock, config_mock
 ):
     # Mock request with login_token
     request_mock = MagicMock(spec=Request)
@@ -417,7 +418,6 @@ async def test_process_appointments_no_token(mock_fetch, templates_mock):
         end_date="2023-01-22",
         calendar_ids=None,
         appointment_id=None,
-        background_image=None,
         date_color=None,
         description_color=None,
         background_color=None,
@@ -430,13 +430,21 @@ async def test_process_appointments_no_token(mock_fetch, templates_mock):
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.load_color_settings")
 @patch("app.api.appointments.get_additional_infos")
 @patch("app.api.appointments.fetch_appointments")
 @patch("app.api.appointments.fetch_calendars")
 async def test_process_appointments_fetch(
-    mock_fetch_cal, mock_fetch_app, mock_get_info, mock_load_color, mock_load_logo, templates_mock, config_mock
+    mock_fetch_cal,
+    mock_fetch_app,
+    mock_get_info,
+    mock_load_color,
+    mock_load_logo,
+    mock_load_bg,
+    templates_mock,
+    config_mock,
 ):
     """Clicking 'fetch appointments' should load appointments and render template."""
     request = _make_request_mock()
@@ -457,7 +465,6 @@ async def test_process_appointments_fetch(
         end_date="2023-01-22",
         calendar_ids=["1", "2"],
         appointment_id=None,
-        background_image=None,
         date_color=None,
         description_color=None,
         background_color=None,
@@ -483,6 +490,7 @@ async def test_process_appointments_fetch(
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.create_pdf")
 @patch("app.api.appointments.save_color_settings")
@@ -498,6 +506,7 @@ async def test_process_appointments_generate_pdf(
     mock_save_color,
     mock_create_pdf,
     mock_load_logo,
+    mock_load_bg,
     templates_mock,
     config_mock,
 ):
@@ -520,7 +529,6 @@ async def test_process_appointments_generate_pdf(
         end_date="2023-01-22",
         calendar_ids=["1"],
         appointment_id=["1_101"],
-        background_image=MagicMock(filename=""),
         date_color="#ff0000",
         description_color="#00ff00",
         background_color="#0000ff",
@@ -564,7 +572,6 @@ async def test_process_appointments_generate_pdf_no_selection(
         end_date="2023-01-22",
         calendar_ids=["1"],
         appointment_id=None,
-        background_image=None,
         date_color=None,
         description_color=None,
         background_color=None,
@@ -578,6 +585,7 @@ async def test_process_appointments_generate_pdf_no_selection(
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.handle_jpeg_generation")
 @patch("app.api.appointments.create_pdf")
@@ -595,6 +603,7 @@ async def test_process_appointments_generate_jpeg(
     mock_create_pdf,
     mock_jpeg,
     mock_load_logo,
+    mock_load_bg,
     templates_mock,
     config_mock,
 ):
@@ -623,7 +632,6 @@ async def test_process_appointments_generate_jpeg(
         end_date="2023-01-22",
         calendar_ids=["1"],
         appointment_id=["1_101"],
-        background_image=MagicMock(filename=""),
         date_color=None,
         description_color=None,
         background_color=None,
@@ -639,11 +647,12 @@ async def test_process_appointments_generate_jpeg(
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.load_color_settings")
 @patch("app.api.appointments.fetch_calendars")
 async def test_process_appointments_default_form(
-    mock_fetch_cal, mock_load_color, mock_load_logo, templates_mock, config_mock
+    mock_fetch_cal, mock_load_color, mock_load_logo, mock_load_bg, templates_mock, config_mock
 ):
     """POST with no button pressed should render the default form."""
     request = _make_request_mock()
@@ -662,7 +671,6 @@ async def test_process_appointments_default_form(
         end_date="2023-01-22",
         calendar_ids=None,
         appointment_id=None,
-        background_image=None,
         date_color=None,
         description_color=None,
         background_color=None,
@@ -677,12 +685,13 @@ async def test_process_appointments_default_form(
 
 
 @pytest.mark.asyncio
+@patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
 @patch("app.api.appointments.load_color_settings")
 @patch("app.api.appointments.get_date_range_from_form")
 @patch("app.api.appointments.fetch_calendars")
 async def test_process_appointments_default_dates(
-    mock_fetch_cal, mock_get_dates, mock_load_color, mock_load_logo, templates_mock, config_mock
+    mock_fetch_cal, mock_get_dates, mock_load_color, mock_load_logo, mock_load_bg, templates_mock, config_mock
 ):
     """When no dates provided, should fall back to get_date_range_from_form()."""
     request = _make_request_mock()
@@ -702,7 +711,6 @@ async def test_process_appointments_default_dates(
         end_date=None,
         calendar_ids=None,
         appointment_id=None,
-        background_image=None,
         date_color=None,
         description_color=None,
         background_color=None,

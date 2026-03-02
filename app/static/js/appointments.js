@@ -224,6 +224,49 @@ $(function () {
             .catch(function (err) { alert(err.message); });
     });
 
+    // Background image upload - button triggers hidden file input
+    $('#bg_upload_btn').on('click', function () {
+        document.getElementById('bg_upload').click();
+    });
+
+    $('#bg_upload').on('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var formData = new FormData();
+        formData.append('file', file);
+        var $btn = $('#bg_upload_btn');
+        var origText = $btn.text();
+        $btn.text('Wird hochgeladen...');
+        fetch('/background/upload', { method: 'POST', body: formData })
+            .then(function (res) {
+                if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
+                return res.json();
+            })
+            .then(function () {
+                $('#bg-img').attr('src', '/background?' + Date.now());
+                $('#bg-preview').show();
+                $('#bg_delete').show();
+                $btn.text('Bild gespeichert!');
+                setTimeout(function () { $btn.text(origText); }, 2000);
+            })
+            .catch(function (err) {
+                alert(err.message);
+                $btn.text(origText);
+            });
+        this.value = '';
+    });
+
+    // Background image delete
+    $('#bg_delete').on('click', function () {
+        fetch('/background', { method: 'DELETE' })
+            .then(function (res) {
+                if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
+                $('#bg-preview').hide();
+                $('#bg_delete').hide();
+            })
+            .catch(function (err) { alert(err.message); });
+    });
+
     // Color presets
     var applyButton = document.getElementById('applyPreset');
     var colorPresetsSelect = document.getElementById('color_presets');

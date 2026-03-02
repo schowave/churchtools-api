@@ -9,11 +9,14 @@ from sqlalchemy.orm import Session
 
 from app.config import Config
 from app.crud import (
+    delete_background_image,
     delete_logo,
     get_additional_infos,
+    load_background_image,
     load_color_settings,
     load_logo,
     save_additional_infos,
+    save_background_image,
     save_color_settings,
     save_logo,
 )
@@ -38,6 +41,7 @@ def _build_template_context(
     end_date: str,
     color_settings: ColorSettings,
     has_logo: bool = False,
+    has_background_image: bool = False,
     **extra,
 ) -> dict:
     """Build the common template context dict for appointments.html."""
@@ -50,6 +54,7 @@ def _build_template_context(
         "base_url": Config.CHURCHTOOLS_BASE,
         "color_settings": color_settings,
         "has_logo": has_logo,
+        "has_background_image": has_background_image,
         "version": Config.VERSION,
     }
     context.update(extra)
@@ -65,7 +70,6 @@ async def _prepare_selected_appointments(
     end_date: str,
     calendar_ids_int: List[int],
     color_settings: ColorSettings,
-    background_image: Optional[UploadFile],
 ):
     """Shared preparation logic for PDF and JPEG generation.
 
@@ -82,15 +86,11 @@ async def _prepare_selected_appointments(
     save_additional_infos(db, appointment_info_list)
     save_color_settings(db, color_settings)
 
-    # Process background image
+    # Load background image from DB
     background_image_stream = None
-    if background_image and background_image.filename:
-        try:
-            content = await background_image.read()
-            if content:
-                background_image_stream = BytesIO(content)
-        except Exception as e:
-            logger.error(f"Error reading background image: {e}")
+    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+    if bg_data:
+        background_image_stream = BytesIO(bg_data)
 
     # Load logo from DB
     logo_stream = None
@@ -145,11 +145,20 @@ async def appointments_page(request: Request, db: Session = Depends(get_db)):
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
     logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
     has_logo = logo_data is not None
+    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+    has_background_image = bg_data is not None
 
     return templates.TemplateResponse(
         "appointments.html",
         _build_template_context(
-            request, calendars, selected_calendar_ids, start_date, end_date, color_settings, has_logo=has_logo
+            request,
+            calendars,
+            selected_calendar_ids,
+            start_date,
+            end_date,
+            color_settings,
+            has_logo=has_logo,
+            has_background_image=has_background_image,
         ),
     )
 
@@ -169,6 +178,7 @@ async def _handle_fetch_appointments(
     # Reload color settings from DB (ignore form overrides for fetch)
     color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
     logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
 
     context = _build_template_context(
         request,
@@ -178,6 +188,7 @@ async def _handle_fetch_appointments(
         end_date,
         color_settings,
         has_logo=logo_data is not None,
+        has_background_image=bg_data is not None,
         appointments=appointments,
     )
     response = templates.TemplateResponse("appointments.html", context)
@@ -196,7 +207,6 @@ async def _handle_generate_pdf(
     end_date,
     appointment_id,
     color_settings,
-    background_image,
 ):
     """Handle the 'generate PDF' button."""
     if not appointment_id:
@@ -220,7 +230,6 @@ async def _handle_generate_pdf(
         end_date,
         calendar_ids_int,
         color_settings,
-        background_image,
     )
 
     filename = create_pdf(
@@ -249,7 +258,6 @@ async def _handle_generate_jpeg(
     end_date,
     appointment_id,
     color_settings,
-    background_image,
 ):
     """Handle the 'generate JPEG' button: create PDF, convert to JPEG images, return ZIP."""
     if not appointment_id:
@@ -273,7 +281,6 @@ async def _handle_generate_jpeg(
         end_date,
         calendar_ids_int,
         color_settings,
-        background_image,
     )
 
     filename = create_pdf(
@@ -308,7 +315,6 @@ async def process_appointments(
     end_date: Optional[str] = Form(None),
     calendar_ids: Optional[List[str]] = Form(None),
     appointment_id: Optional[List[str]] = Form(None),
-    background_image: Optional[UploadFile] = File(None),
     date_color: Optional[str] = Form(None),
     description_color: Optional[str] = Form(None),
     background_color: Optional[str] = Form(None),
@@ -383,7 +389,6 @@ async def process_appointments(
                 end_date,
                 appointment_id,
                 color_settings,
-                background_image,
             )
 
         if generate_jpeg_btn:
@@ -398,7 +403,6 @@ async def process_appointments(
                 end_date,
                 appointment_id,
                 color_settings,
-                background_image,
             )
     except AuthenticationError:
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -407,6 +411,7 @@ async def process_appointments(
 
     # Default: show form
     logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
     context = _build_template_context(
         request,
         calendars,
@@ -415,6 +420,7 @@ async def process_appointments(
         end_date,
         color_settings,
         has_logo=logo_data is not None,
+        has_background_image=bg_data is not None,
     )
     return templates.TemplateResponse("appointments.html", context)
 
@@ -447,6 +453,37 @@ async def get_logo(db: Session = Depends(get_db)):
 async def remove_logo(db: Session = Depends(get_db)):
     """Delete the stored logo."""
     delete_logo(db, DEFAULT_SETTING_NAME)
+    return JSONResponse({"status": "ok"})
+
+
+@router.post("/background/upload")
+async def upload_background(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Upload a background image and store it in the database."""
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Leere Datei")
+    save_background_image(db, DEFAULT_SETTING_NAME, content, file.filename)
+    return JSONResponse({"status": "ok", "filename": file.filename})
+
+
+@router.get("/background")
+async def get_background(db: Session = Depends(get_db)):
+    """Serve the stored background image for preview."""
+    image_data, image_filename = load_background_image(db, DEFAULT_SETTING_NAME)
+    if not image_data:
+        raise HTTPException(status_code=404, detail="Kein Hintergrundbild gespeichert")
+
+    ext = (image_filename.rsplit(".", 1)[-1] if "." in image_filename else "png").lower()
+    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml"}
+    media_type = media_types.get(ext, "image/png")
+
+    return Response(content=image_data, media_type=media_type)
+
+
+@router.delete("/background")
+async def remove_background(db: Session = Depends(get_db)):
+    """Delete the stored background image."""
+    delete_background_image(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
 
 

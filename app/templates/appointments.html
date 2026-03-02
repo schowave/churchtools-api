@@ -94,7 +94,7 @@
         </details>
     </form>
     {% if appointments %}
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST">
             <!-- Hidden fields for date parameters -->
             <input type="hidden" name="start_date" value="{{ start_date }}">
             <input type="hidden" name="end_date" value="{{ end_date }}">
@@ -173,8 +173,21 @@
                             <!-- Background image -->
                             <div class="format-option format-option-full">
                                 <div class="format-option-label">Hintergrundbild</div>
-                                <input type="file" id="background_image" name="background_image"
-                                       accept="image/*" class="file-input">
+                                <div id="bg-preview" style="margin-bottom: 8px; {% if not has_background_image %}display:none;{% endif %}">
+                                    <img id="bg-img" src="/background" alt="Hintergrundbild"
+                                         style="max-height: 80px; max-width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 4px;">
+                                </div>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button type="button" id="bg_upload_btn" class="btn btn-fetch"
+                                            style="cursor: pointer; margin: 0; font-size: 0.85rem; padding: 4px 10px;">
+                                        Bild hochladen
+                                    </button>
+                                    <input type="file" id="bg_upload" accept="image/*" style="display: none;">
+                                    <button type="button" id="bg_delete" class="btn"
+                                            style="font-size: 0.85rem; padding: 4px 10px; background: #c0392b; color: white; border: none; border-radius: 4px; cursor: pointer; {% if not has_background_image %}display:none;{% endif %}">
+                                        Löschen
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
