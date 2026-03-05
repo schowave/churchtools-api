@@ -2,7 +2,7 @@
 # Source of truth: pyproject.toml [project] dependencies
 fastapi==0.135.1
 uvicorn==0.41.0
-sqlalchemy==2.0.47
+sqlalchemy==2.0.48
 pydantic==2.12.5
 python-multipart==0.0.22
 httpx==0.28.1
