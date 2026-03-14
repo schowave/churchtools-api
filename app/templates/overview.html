@@ -13,16 +13,25 @@
     <link rel="stylesheet" href="/static/css/overview.css?v={{ version }}">
 </head>
 <body>
-<div class="container">
-    <h1>Startseite</h1>
-    <h2>{{ base_url }}</h2>
+<div class="container page-enter">
+    <div class="overview-header">
+        <h1>Startseite</h1>
+        <form action="/logout" method="post" style="margin:0;">
+            <button type="submit" class="header-logout">Abmelden</button>
+        </form>
+    </div>
+    <span class="base-url-badge">{{ base_url }}</span>
     <div class="tiles-container">
-        <a href="/appointments" class="tile">Terminübersicht</a>
+        <a href="/appointments" class="tile">
+            <span class="tile-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+            </span>
+            Terminübersicht
+        </a>
         <!-- Additional tiles can be added here -->
     </div>
-    <form action="/logout" method="post" class="btn-logout-container">
-        <input type="submit" value="Logout" class="btn btn-logout">
-    </form>
 </div>
 <footer>
     <p>Version: {{ version }}</p>

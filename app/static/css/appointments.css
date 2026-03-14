@@ -11,11 +11,6 @@
     background: transparent;
 }
 
-@keyframes pageEnter {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 /* ─── Page header ───────────────────────────── */
 .page-header {
     margin-bottom: var(--spacing-xl);
@@ -283,6 +278,38 @@
     background-color: var(--text-muted);
 }
 
+/* ─── Date group headers ───────────────────── */
+.date-group-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: linear-gradient(to bottom, white 60%, rgba(255,255,255,0.8));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 10px 12px 6px;
+    margin-top: 4px;
+    border-bottom: 1px solid var(--border-color);
+    letter-spacing: 0.01em;
+}
+
+.date-group-header:first-child {
+    margin-top: 0;
+}
+
+/* ─── Staggered fade-in for appointment items ─── */
+@keyframes itemFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.appointment-item {
+    animation: itemFadeIn 0.3s var(--transition-ease) both;
+}
+
 /* ─── Appointment items ─────────────────────── */
 .appointment-item,
 .calendar-item {
@@ -547,6 +574,7 @@ textarea:focus {
     padding: var(--spacing-md);
     border-radius: 0 0 var(--container-radius) var(--container-radius);
     border-bottom: none;
+    border-top: 2px solid var(--primary-color);
 }
 
 .sidebar-section-title {
@@ -556,6 +584,16 @@ textarea:focus {
     margin-bottom: var(--spacing-sm);
     font-size: 1rem;
     letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidebar-section-title .section-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+    flex-shrink: 0;
 }
 
 /* ─── Format options grid ───────────────────── */
@@ -745,8 +783,22 @@ textarea:focus {
     appearance: none;
 }
 
+.btn-generate .btn-icon {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+.btn-generate--jpeg {
+    background-color: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
 .btn-generate:hover {
     background-color: var(--primary-hover);
+    color: white;
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(192, 98, 58, 0.25);
 }

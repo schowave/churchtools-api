@@ -78,15 +78,23 @@ function renderAppointments(appointments) {
         '</div>' +
         '<div class="appointments-container">';
 
+    var lastDate = null;
+    var itemIndex = 0;
     appointments.forEach(function (app) {
+        // Insert date group header when date changes
+        var dateKey = app.start_date_view;
+        if (dateKey !== lastDate) {
+            html += '<div class="date-group-header">' + escapeHtml(dateKey) + '</div>';
+            lastDate = dateKey;
+        }
         var hasInfo = app.additional_info && app.additional_info.trim().length > 0;
-        html += '<div class="appointment-item">' +
+        var delay = Math.min(itemIndex * 0.03, 0.6);
+        html += '<div class="appointment-item" style="animation-delay:' + delay + 's">' +
             '<input type="checkbox" id="appointment-' + escapeHtml(app.id) + '" name="appointment_id"' +
             ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
             '<label for="appointment-' + escapeHtml(app.id) + '" class="appointment-label">' +
                 '<span class="appointment-date">' +
-                    escapeHtml(app.start_date_view) +
-                    ' (' + escapeHtml(app.start_time_view) + '-' + escapeHtml(app.end_time_view) + ')' +
+                    escapeHtml(app.start_time_view) + ' – ' + escapeHtml(app.end_time_view) +
                 '</span>' +
                 '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
             '</label>' +
@@ -98,6 +106,7 @@ function renderAppointments(appointments) {
                 ' class="' + (hasInfo ? '' : 'hidden') + '"' +
                 ' placeholder="Zusätzliche Informationen">' + escapeHtml(app.additional_info || '') + '</textarea>' +
             '</div>';
+        itemIndex++;
     });
 
     html += '</div>';
@@ -478,7 +487,7 @@ $(function () {
                 document.getElementById('description_color').value = presets[selectedPreset].description_color;
                 document.getElementById('background_color').value = presets[selectedPreset].background_color;
                 document.getElementById('alpha').value = presets[selectedPreset].background_alpha;
-                document.getElementById('alphaValue').textContent = presets[selectedPreset].background_alpha;
+                document.getElementById('alphaValue').textContent = Math.round(presets[selectedPreset].background_alpha / 255 * 100) + '%';
             }
         });
     }

@@ -1,9 +1,54 @@
 /* overview.css - Specific styles for the overview page */
 
 .container {
-    max-width: 600px; /* Medium container for the overview page */
+    max-width: 600px;
     width: 100%;
     box-sizing: border-box;
+}
+
+/* Header bar */
+.overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.overview-header h1 {
+    margin-bottom: 0;
+}
+
+.header-logout {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
+    transition: color var(--transition-speed) var(--transition-ease),
+                background-color var(--transition-speed) var(--transition-ease);
+}
+
+.header-logout:hover {
+    color: var(--danger-color);
+    background-color: rgba(196, 69, 54, 0.08);
+}
+
+.base-url-badge {
+    display: inline-block;
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--primary-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 100px;
+    padding: 4px 14px;
+    margin-bottom: var(--spacing-lg);
+    letter-spacing: 0.02em;
 }
 
 /* Tile container */
@@ -24,29 +69,38 @@
     border-radius: 8px;
     box-shadow: 0 2px 4px var(--shadow-color);
     text-decoration: none;
-    transition: background-color 0.3s ease, transform 0.3s ease;
+    transition: background-color var(--transition-speed) var(--transition-ease),
+                transform var(--transition-speed) var(--transition-ease),
+                box-shadow var(--transition-speed) var(--transition-ease);
     width: 200px;
     height: 100px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 8px;
     cursor: pointer;
     font-weight: bold;
-    -webkit-tap-highlight-color: transparent; /* Removes blue highlight effect on tap in iOS */
+    -webkit-tap-highlight-color: transparent;
     -webkit-appearance: none;
     appearance: none;
     border: 2px solid var(--primary-color);
 }
 
-.tile:hover {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-    transform: translateY(-5px);
+.tile-icon {
+    opacity: 0.85;
 }
 
-/* Logout button container */
-.logout-container {
-    margin-top: 30px;
+.tile-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.tile:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 24px rgba(192, 98, 58, 0.25);
 }
 
 /* Responsive adjustments */
@@ -55,7 +109,7 @@
         width: 100%;
         max-width: 250px;
     }
-    
+
     .container {
         padding: var(--spacing-md);
     }
@@ -84,10 +138,10 @@
 /* Improved touch targets for mobile devices */
 @media (max-width: 480px) {
     .tile {
-        height: 120px; /* Larger height for better touch targets */
+        height: 120px;
         margin-bottom: 10px;
     }
-    
+
     .tiles-container {
         gap: 15px;
     }
