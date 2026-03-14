@@ -170,8 +170,7 @@ async def api_generate(
 
     # Save additional infos to DB
     appointment_info_list = [
-        (app_id, normalize_newlines(body.additional_infos.get(app_id, "")))
-        for app_id in body.appointment_ids
+        (app_id, normalize_newlines(body.additional_infos.get(app_id, ""))) for app_id in body.appointment_ids
     ]
     save_additional_infos(db, appointment_info_list)
     save_color_settings(db, color_settings)
@@ -190,9 +189,7 @@ async def api_generate(
     # Fetch appointments from ChurchTools API
     calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]
     try:
-        raw_appointments = await fetch_appointments(
-            login_token, body.start_date, body.end_date, calendar_ids_int
-        )
+        raw_appointments = await fetch_appointments(login_token, body.start_date, body.end_date, calendar_ids_int)
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 

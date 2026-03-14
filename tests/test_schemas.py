@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from app.schemas import AppointmentData, ColorSettings
+from app.schemas import AppointmentData, ColorSettings, GenerateRequest
 
 
 class TestColorSettings:
@@ -67,9 +67,6 @@ class TestAppointmentData:
         assert apt.additional_info == ""
 
 
-from app.schemas import GenerateRequest
-
-
 def test_generate_request_valid():
     req = GenerateRequest(
         type="pdf",
@@ -93,6 +90,7 @@ def test_generate_request_valid():
 
 def test_generate_request_invalid_type():
     import pytest
+
     with pytest.raises(ValueError):
         GenerateRequest(
             type="png",
@@ -112,6 +110,7 @@ def test_generate_request_invalid_type():
 
 def test_generate_request_empty_appointments():
     import pytest
+
     with pytest.raises(ValueError):
         GenerateRequest(
             type="pdf",

@@ -532,17 +532,17 @@ async def test_api_generate_pdf(
 
     assert response.status_code == 200
     import json
+
     data = json.loads(response.body)
     assert data["download_url"] == "/download/2023-01-15_Termine.pdf"
 
     # Verify PDF was created with correct color settings
-    # create_pdf signature: (appointments, date_color, background_color, description_color, alpha, image_stream, logo_stream)
     mock_create_pdf.assert_called_once()
     call_args = mock_create_pdf.call_args
-    assert call_args[0][1] == "#ff0000"   # date_color
-    assert call_args[0][2] == "#0000ff"   # background_color
-    assert call_args[0][3] == "#00ff00"   # description_color
-    assert call_args[0][4] == 100         # alpha
+    assert call_args[0][1] == "#ff0000"  # date_color
+    assert call_args[0][2] == "#0000ff"  # background_color
+    assert call_args[0][3] == "#00ff00"  # description_color
+    assert call_args[0][4] == 100  # alpha
 
     # Verify additional infos were saved
     mock_save_info.assert_called_once()
@@ -601,6 +601,7 @@ async def test_api_generate_jpeg(
 
     assert response.status_code == 200
     import json
+
     data = json.loads(response.body)
     assert data["download_url"] == "/download/2023-01-15_Termine.zip"
     mock_jpeg.assert_called_once_with("2023-01-15_Termine.pdf")
