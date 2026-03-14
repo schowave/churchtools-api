@@ -65,3 +65,82 @@ class TestAppointmentData:
         assert apt.meeting_at == ""
         assert apt.information == ""
         assert apt.additional_info == ""
+
+
+from app.schemas import GenerateRequest
+
+
+def test_generate_request_valid():
+    req = GenerateRequest(
+        type="pdf",
+        start_date="2026-03-14",
+        end_date="2026-03-21",
+        calendar_ids=["1", "2"],
+        appointment_ids=["1_101", "2_102"],
+        color_settings={
+            "background_color": "#ffffff",
+            "background_alpha": 128,
+            "date_color": "#c1540c",
+            "description_color": "#4e4e4e",
+        },
+        additional_infos={"1_101": "Some info", "2_102": ""},
+    )
+    assert req.type == "pdf"
+    assert req.appointment_ids == ["1_101", "2_102"]
+    assert req.additional_infos["1_101"] == "Some info"
+    assert req.color_settings.name == "default"
+
+
+def test_generate_request_invalid_type():
+    import pytest
+    with pytest.raises(ValueError):
+        GenerateRequest(
+            type="png",
+            start_date="2026-03-14",
+            end_date="2026-03-21",
+            calendar_ids=["1"],
+            appointment_ids=["1_101"],
+            color_settings={
+                "background_color": "#ffffff",
+                "background_alpha": 128,
+                "date_color": "#c1540c",
+                "description_color": "#4e4e4e",
+            },
+            additional_infos={},
+        )
+
+
+def test_generate_request_empty_appointments():
+    import pytest
+    with pytest.raises(ValueError):
+        GenerateRequest(
+            type="pdf",
+            start_date="2026-03-14",
+            end_date="2026-03-21",
+            calendar_ids=["1"],
+            appointment_ids=[],
+            color_settings={
+                "background_color": "#ffffff",
+                "background_alpha": 128,
+                "date_color": "#c1540c",
+                "description_color": "#4e4e4e",
+            },
+            additional_infos={},
+        )
+
+
+def test_generate_request_defaults_additional_infos():
+    req = GenerateRequest(
+        type="jpeg",
+        start_date="2026-03-14",
+        end_date="2026-03-21",
+        calendar_ids=["1"],
+        appointment_ids=["1_101"],
+        color_settings={
+            "background_color": "#ffffff",
+            "background_alpha": 128,
+            "date_color": "#c1540c",
+            "description_color": "#4e4e4e",
+        },
+    )
+    assert req.additional_infos == {}

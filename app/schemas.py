@@ -1,4 +1,5 @@
 import re
+from typing import Dict, List, Literal
 
 from pydantic import BaseModel, computed_field, field_validator
 
@@ -35,7 +36,7 @@ class AppointmentData(BaseModel):
 
 
 class ColorSettings(BaseModel):
-    name: str
+    name: str = "default"
     background_color: str = "#d3d3d3"
     background_alpha: int = 128
     date_color: str = "#c1540c"
@@ -53,4 +54,23 @@ class ColorSettings(BaseModel):
     def validate_alpha(cls, v: int) -> int:
         if not (0 <= v <= 255):
             raise ValueError(f"Alpha must be 0–255, got {v}")
+        return v
+
+
+class GenerateRequest(BaseModel):
+    """JSON request body for PDF/JPEG generation."""
+
+    type: Literal["pdf", "jpeg"]
+    start_date: str
+    end_date: str
+    calendar_ids: List[str]
+    appointment_ids: List[str]
+    color_settings: ColorSettings
+    additional_infos: Dict[str, str] = {}
+
+    @field_validator("appointment_ids")
+    @classmethod
+    def validate_appointment_ids(cls, v: List[str]) -> List[str]:
+        if not v:
+            raise ValueError("At least one appointment must be selected")
         return v

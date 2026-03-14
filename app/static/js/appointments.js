@@ -2,25 +2,6 @@
 
 // --- Utility functions (no DOM dependency) ---
 
-function monitorDownload(cookieName, $btn) {
-    var checkCookie = setInterval(function () {
-        if (document.cookie.split(';').some(function (item) {
-            return item.trim().startsWith(cookieName + '=');
-        })) {
-            clearInterval(checkCookie);
-            document.cookie = cookieName + '=; Max-Age=-99999999;';
-            if ($btn) {
-                $btn.removeClass('is-loading');
-                $btn.find('.btn-label').show();
-                $btn.find('.btn-spinner').hide();
-            }
-
-            document.dispatchEvent(new CustomEvent('cookieChanged', {
-                detail: { name: cookieName }
-            }));
-        }
-    }, 100);
-}
 
 function showButtonSpinner($btn) {
     $btn.addClass('is-loading');
@@ -214,6 +195,79 @@ function checkAppointments() {
     }
 }
 
+function generateOutput(type) {
+    var appointmentIds = [];
+    $('.appointment-checkbox:checked').each(function () {
+        appointmentIds.push($(this).val());
+    });
+
+    if (appointmentIds.length === 0) {
+        $('#generate_error').text('Bitte mindestens einen Termin auswählen.').show();
+        return;
+    }
+    $('#generate_error').hide();
+
+    var additionalInfos = {};
+    appointmentIds.forEach(function (id) {
+        var textarea = $('textarea[name="additional_info_' + id + '"]');
+        if (textarea.length && textarea.val().trim()) {
+            additionalInfos[id] = textarea.val();
+        }
+    });
+
+    var calendarIds = [];
+    $('.calendar-checkbox:checked').each(function () {
+        calendarIds.push($(this).val());
+    });
+
+    var payload = {
+        type: type,
+        start_date: $('#start_date').val(),
+        end_date: $('#end_date').val(),
+        calendar_ids: calendarIds,
+        appointment_ids: appointmentIds,
+        color_settings: {
+            background_color: $('#background_color').val(),
+            background_alpha: parseInt($('#alpha').val(), 10),
+            date_color: $('#date_color').val(),
+            description_color: $('#description_color').val()
+        },
+        additional_infos: additionalInfos
+    };
+
+    var $btn = type === 'pdf' ? $('#generate_pdf_btn') : $('#generate_jpeg_btn');
+    showButtonSpinner($btn);
+
+    fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(function (res) {
+        if (res.status === 401) {
+            window.location.href = '/';
+            return;
+        }
+        if (!res.ok) throw new Error('Fehler beim Generieren');
+        return res.json();
+    })
+    .then(function (data) {
+        if (!data) return;
+        // Trigger file download (browser stays on page for file responses)
+        window.location.href = data.download_url;
+        // Reset button after short delay to allow download to start
+        $btn.removeClass('is-loading');
+        $btn.find('.btn-label').show();
+        $btn.find('.btn-spinner').hide();
+    })
+    .catch(function (err) {
+        $('#generate_error').text(err.message).show();
+        $btn.removeClass('is-loading');
+        $btn.find('.btn-label').show();
+        $btn.find('.btn-spinner').hide();
+    });
+}
+
 // --- jQuery-dependent initialization ---
 
 $(function () {
@@ -296,17 +350,13 @@ $(function () {
         fetchAppointmentsAjax();
     });
 
-    // Inline spinner for generate button clicks
-    $('#generate_jpeg_btn').click(function () {
-        var $btn = $(this);
-        showButtonSpinner($btn);
-        monitorDownload('jpegGenerated', $btn);
+    // Generate buttons — AJAX, no form submit
+    $('#generate_pdf_btn').click(function () {
+        generateOutput('pdf');
     });
 
-    $('#generate_pdf_btn').click(function () {
-        var $btn = $(this);
-        showButtonSpinner($btn);
-        monitorDownload('pdfGenerated', $btn);
+    $('#generate_jpeg_btn').click(function () {
+        generateOutput('jpeg');
     });
 
     // Live selection counter (delegated for dynamically added checkboxes)

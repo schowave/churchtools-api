@@ -30,7 +30,7 @@
     {% endif %}
 
     <!-- Form to fetch appointments -->
-    <form method="POST">
+    <div class="appointments-form">
         <div class="controls-header">
             <div class="date-controls">
                 <div class="date-fields-container">
@@ -180,11 +180,11 @@
                 <div class="sidebar-section sidebar-section--cta">
                     <div class="sidebar-section-title">Ausgabe generieren</div>
                     <div class="generate-buttons">
-                        <button type="submit" name="generate_pdf" value="1" class="btn btn-generate" id="generate_pdf_btn" disabled>
+                        <button type="button" class="btn btn-generate" id="generate_pdf_btn" disabled>
                             <span class="btn-label">PDF generieren</span>
                             <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
                         </button>
-                        <button type="submit" name="generate_jpeg" value="1" class="btn btn-generate" id="generate_jpeg_btn" disabled>
+                        <button type="button" class="btn btn-generate" id="generate_jpeg_btn" disabled>
                             <span class="btn-label">JPEG generieren</span>
                             <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
                         </button>
@@ -195,7 +195,7 @@
                 </div>
             </div>
         </div>
-    </form>
+    </div>
 </div>
 <footer>
     <p>Version: {{ version }}</p>
