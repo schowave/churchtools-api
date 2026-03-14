@@ -26,8 +26,8 @@ jobs:
     - name: Determine version
       id: version
       run: |
-        if [ -n "${{ steps.version.outputs.VERSION }}" ]; then
-          echo "VERSION=${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+        if [ -n "${{ inputs.version }}" ]; then
+          echo "VERSION=${{ inputs.version }}" >> $GITHUB_OUTPUT
         else
           CURRENT=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           NEXT=$(python3 -c "v='$CURRENT'.split('.'); v[-1]=str(int(v[-1])+1); print('.'.join(v))")
