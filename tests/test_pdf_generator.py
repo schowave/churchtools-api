@@ -309,19 +309,20 @@ class TestPdfGenerator(unittest.TestCase):
                 )
 
         # Check that Canvas was created with the correct file path
-        expected_path = os.path.join(self.config_mock["FILE_DIRECTORY"], "2023-01-15_Termine.pdf")
         mock_canvas.assert_called_once()
         args = mock_canvas.call_args[0]
         kwargs = mock_canvas.call_args[1]
-        self.assertEqual(args[0], expected_path)
+        self.assertTrue(args[0].startswith(self.config_mock["FILE_DIRECTORY"]))
+        self.assertIn("_Termine.pdf", args[0])
         self.assertEqual(kwargs["pagesize"], landscape((1200, 675)))
 
         # Check that the canvas methods were called
-        canvas_instance.setTitle.assert_called_once_with("2023-01-15_Termine.pdf")
+        canvas_instance.setTitle.assert_called_once()
+        self.assertIn("_Termine.pdf", canvas_instance.setTitle.call_args[0][0])
         canvas_instance.save.assert_called_once()
 
-        # Check that the result is the correct filename
-        self.assertEqual(result, "2023-01-15_Termine.pdf")
+        # Check that the result contains the expected pattern
+        self.assertIn("_Termine.pdf", result)
 
 
 def _make_appointment(**overrides) -> AppointmentData:

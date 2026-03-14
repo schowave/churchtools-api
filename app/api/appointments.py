@@ -304,4 +304,8 @@ async def download_file(filename: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
 
-    return FileResponse(file_path, filename=safe_filename)
+    return FileResponse(
+        file_path,
+        filename=safe_filename,
+        headers={"Cache-Control": "no-store"},
+    )

@@ -352,7 +352,7 @@ def create_pdf(
 ):
     font_name, font_name_bold = _register_fonts()
 
-    current_day = datetime.now().strftime("%Y-%m-%d")
+    current_day = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     filename = f"{current_day}_Termine.pdf"
     file_path = os.path.join(Config.FILE_DIRECTORY, filename)
     c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
