@@ -13,7 +13,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "pdf2image>=1.17",
     "python-dateutil>=2.9",
-    "pytz>=2025.2",
+    "pytz>=2026.1",
     "babel>=2.18",
     "reportlab>=4.4",
 ]
