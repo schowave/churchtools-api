@@ -248,20 +248,23 @@ function generateOutput(type) {
             window.location.href = '/';
             return;
         }
-        if (!res.ok) throw new Error('Fehler beim Generieren');
-        return res.json();
+        return res.json().then(function (data) {
+            if (!res.ok) {
+                throw new Error(data.error || data.detail || 'Fehler beim Generieren');
+            }
+            return data;
+        });
     })
     .then(function (data) {
         if (!data) return;
-        // Trigger file download (browser stays on page for file responses)
         window.location.href = data.download_url;
-        // Reset button after short delay to allow download to start
         $btn.removeClass('is-loading');
         $btn.find('.btn-label').show();
         $btn.find('.btn-spinner').hide();
     })
     .catch(function (err) {
-        $('#generate_error').text(err.message).show();
+        console.error('Generate error:', err);
+        $('#generate_error').text(err.message || 'Unbekannter Fehler').show();
         $btn.removeClass('is-loading');
         $btn.find('.btn-label').show();
         $btn.find('.btn-spinner').hide();
