@@ -115,11 +115,11 @@ function renderAppointments(appointments) {
                 '</button>' +
             '</label>' +
             (hasDescription
-                ? '<span class="appointment-info-text" onclick="this.classList.toggle(\'expanded\')">' + escapeHtml(app.information) + '</span>'
+                ? '<span class="appointment-info-text' + (hasInfo ? ' overridden' : '') + '" onclick="this.classList.toggle(\'expanded\')">' + escapeHtml(app.information) + '</span>'
                 : '') +
             '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
                 ' class="' + (hasInfo ? '' : 'hidden') + '"' +
-                ' placeholder="Überschreibt die Beschreibung im PDF">' + escapeHtml(app.additional_info || '') + '</textarea>' +
+                ' placeholder="Überschreibt die Beschreibung in der Ausgabe">' + escapeHtml(app.additional_info || '') + '</textarea>' +
             '</div>';
         itemIndex++;
     });
@@ -141,7 +141,13 @@ function renderAppointments(appointments) {
     $main.find('textarea').each(function () {
         var textarea = this;
         setTimeout(function () { autoResizeTextarea(textarea); }, 50);
-        $(textarea).on('input focus blur', function () { autoResizeTextarea(this); });
+        $(textarea).on('input focus blur', function () {
+            autoResizeTextarea(this);
+            var infoText = $(this).closest('.appointment-item').find('.appointment-info-text');
+            if (infoText.length) {
+                infoText.toggleClass('overridden', this.value.trim().length > 0);
+            }
+        });
     });
 
     checkAppointments();

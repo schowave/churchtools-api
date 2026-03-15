@@ -494,6 +494,11 @@
     -webkit-line-clamp: unset;
 }
 
+.appointment-info-text.overridden {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
 /* ─── Additional info toggle ────────────────── */
 .add-info-toggle {
     background: var(--primary-subtle);
