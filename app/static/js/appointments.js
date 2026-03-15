@@ -73,7 +73,7 @@ function renderAppointments(appointments) {
         $main.html(
             '<div class="empty-state">' +
                 '<p>Keine Termine vorhanden.</p>' +
-                '<p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine abholen" klicken.</p>' +
+                '<p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine laden" klicken.</p>' +
             '</div>'
         );
         checkAppointments();
@@ -426,8 +426,8 @@ $(function () {
                 $('#logo_delete').show();
                 $btn.removeClass('is-loading');
                 $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').text('Logo gespeichert!').show();
-                setTimeout(function () { $btn.find('.btn-label').text('Logo hochladen'); }, 2000);
+                $btn.find('.btn-label').text('Gespeichert!').show();
+                setTimeout(function () { $btn.find('.btn-label').text('Hochladen'); }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
@@ -472,8 +472,8 @@ $(function () {
                 $('#bg_delete').show();
                 $btn.removeClass('is-loading');
                 $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').text('Bild gespeichert!').show();
-                setTimeout(function () { $btn.find('.btn-label').text('Bild hochladen'); }, 2000);
+                $btn.find('.btn-label').text('Gespeichert!').show();
+                setTimeout(function () { $btn.find('.btn-label').text('Hochladen'); }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
