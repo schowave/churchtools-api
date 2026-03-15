@@ -103,14 +103,16 @@ function renderAppointments(appointments) {
             ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
             '<label for="appointment-' + escapeHtml(app.id) + '" class="appointment-label">' +
                 '<span class="appointment-date">' +
-                    escapeHtml(app.start_time_view) + ' – ' + escapeHtml(app.end_time_view) +
+                    (app.start_time_view === app.end_time_view
+                        ? 'Ganztägig'
+                        : escapeHtml(app.start_time_view) + ' – ' + escapeHtml(app.end_time_view)) +
                 '</span>' +
                 '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
+                '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
+                    ' onclick="event.preventDefault(); this.classList.add(\'hidden\'); this.parentElement.nextElementSibling.classList.remove(\'hidden\'); this.parentElement.nextElementSibling.focus();">' +
+                    '+ Info' +
+                '</button>' +
             '</label>' +
-            '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
-                ' onclick="this.classList.add(\'hidden\'); this.nextElementSibling.classList.remove(\'hidden\'); this.nextElementSibling.focus();">' +
-                '+ Info hinzufügen' +
-            '</button>' +
             '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
                 ' class="' + (hasInfo ? '' : 'hidden') + '"' +
                 ' placeholder="Zusätzliche Informationen">' + escapeHtml(app.additional_info || '') + '</textarea>' +

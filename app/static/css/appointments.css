@@ -405,7 +405,7 @@
 .appointment-item {
     display: flex;
     align-items: center;
-    padding: 12px 16px;
+    padding: 8px 12px;
     margin-bottom: 0;
     flex-wrap: wrap;
     background: transparent;
@@ -444,11 +444,11 @@
     text-align: left;
     transition: color var(--transition-speed) var(--transition-ease);
     flex: 1;
-    padding: 2px 0;
-    vertical-align: middle;
+    padding: 0;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
     margin: 0;
     font-weight: normal;
     text-transform: none;
@@ -465,8 +465,8 @@
 
 .appointment-description {
     color: var(--text-color);
-    font-size: 0.95rem;
-    margin-top: 1px;
+    font-size: 0.9rem;
+    margin-top: 0;
 }
 
 /* ─── Additional info toggle ────────────────── */
@@ -475,14 +475,15 @@
     border: none;
     color: var(--primary-color);
     font-family: var(--font-family);
-    font-size: 0.76rem;
+    font-size: 0.72rem;
     font-weight: 500;
     cursor: pointer;
-    padding: 2px 0;
-    margin-left: 28px;
-    margin-top: 2px;
+    padding: 0 0 0 4px;
+    margin: 0;
+    margin-left: auto;
     transition: color var(--transition-speed) var(--transition-ease);
     opacity: 0.7;
+    white-space: nowrap;
 }
 
 .add-info-toggle:hover {
@@ -936,17 +937,18 @@ footer {
     }
 
     .date-row {
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        align-items: stretch;
+        flex-direction: row;
+        gap: 6px;
+        align-items: flex-end;
     }
 
     .date-separator {
-        display: none;
+        padding-bottom: 10px;
     }
 
     .date-field {
-        width: 100%;
+        flex: 1;
+        min-width: 0;
     }
 
     .date-field label {
@@ -955,27 +957,22 @@ footer {
 
     .date-field input[type="text"] {
         width: 100%;
-        padding: 12px 14px;
+        padding: 10px 10px;
         font-size: 16px; /* prevents iOS zoom */
     }
 
-    /* Horizontal scrolling presets on small screens */
+    /* Fit all presets in one line on small screens */
     .date-presets {
         flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        padding-bottom: 2px;
-    }
-
-    .date-presets::-webkit-scrollbar {
-        display: none;
     }
 
     .preset-chip {
-        flex-shrink: 0;
-        padding: 8px 16px;
+        flex: 1 1 0;
+        padding: 8px 8px;
         min-height: 36px;
+        font-size: 13px;
+        text-align: center;
+        white-space: nowrap;
     }
 
     /* Calendar toggle bigger tap target */
@@ -998,7 +995,7 @@ footer {
 
     /* Appointment items */
     .appointment-item {
-        padding: 14px 12px;
+        padding: 6px 10px;
     }
 
     .appointments-container {
@@ -1009,12 +1006,15 @@ footer {
     /* Actions row */
     .appointments-actions {
         gap: 6px;
+        flex-wrap: nowrap;
     }
 
     .select-all-btn,
     .deselect-all-btn {
-        padding: 8px 16px;
-        min-height: 38px;
+        padding: 6px 10px;
+        min-height: 36px;
+        font-size: 0.72rem;
+        white-space: nowrap;
     }
 
     /* Color grid stays 3-col on mobile, just tighter */
