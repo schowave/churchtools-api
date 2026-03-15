@@ -55,6 +55,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function formatDateWithWeekday(dateStr) {
+    // dateStr is "dd.mm.yyyy"
+    var parts = dateStr.split('.');
+    if (parts.length !== 3) return dateStr;
+    var date = new Date(parts[2], parts[1] - 1, parts[0]);
+    var days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    return days[date.getDay()] + ', ' + dateStr;
+}
+
 // --- Appointment rendering ---
 
 function renderAppointments(appointments) {
@@ -84,7 +93,7 @@ function renderAppointments(appointments) {
         // Insert date group header when date changes
         var dateKey = app.start_date_view;
         if (dateKey !== lastDate) {
-            html += '<div class="date-group-header">' + escapeHtml(dateKey) + '</div>';
+            html += '<div class="date-group-header">' + escapeHtml(formatDateWithWeekday(dateKey)) + '</div>';
             lastDate = dateKey;
         }
         var hasInfo = app.additional_info && app.additional_info.trim().length > 0;
@@ -373,6 +382,26 @@ $(function () {
 
     // Live selection counter (delegated for dynamically added checkboxes)
     $(document).on('change', '.appointment-checkbox', updateSelectionCount);
+
+    // Calendar chips toggle (collapsed by default)
+    $('#calendars_toggle').on('click', function () {
+        var $wrap = $('#calendars_wrap');
+        var isExpanded = $(this).attr('aria-expanded') === 'true';
+        if (isExpanded) {
+            $wrap.slideUp(200);
+            $(this).attr('aria-expanded', 'false');
+        } else {
+            $wrap.slideDown(200);
+            $(this).attr('aria-expanded', 'true');
+        }
+    });
+
+    // Calendar chip counter
+    $(document).on('change', '.calendar-checkbox', function () {
+        var total = $('.calendar-checkbox').length;
+        var checked = $('.calendar-checkbox:checked').length;
+        $('.calendar-selection-info').text(checked + ' von ' + total);
+    });
 
     // Logo upload - button triggers hidden file input
     $('#logo_upload_btn').on('click', function () {

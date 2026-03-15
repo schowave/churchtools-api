@@ -34,7 +34,7 @@
 
 .header-logout:hover {
     color: var(--danger-color);
-    background-color: rgba(196, 69, 54, 0.08);
+    background-color: rgba(181, 74, 58, 0.08);
 }
 
 .base-url-badge {
@@ -100,7 +100,7 @@
     background-color: var(--primary-hover);
     border-color: var(--primary-hover);
     transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(192, 98, 58, 0.25);
+    box-shadow: 0 8px 24px rgba(94, 139, 90, 0.25);
 }
 
 /* Responsive adjustments */

@@ -2,21 +2,23 @@
 /* Fonts loaded via <link> in HTML for non-blocking rendering */
 
 :root {
-    /* Color palette — warm editorial */
-    --primary-color: #C0623A;
-    --primary-hover: #A04E2B;
-    --primary-light: #F4E8E0;
-    --primary-subtle: #FBF5F1;
-    --success-color: #5B8C5A;
-    --success-hover: #4A7349;
-    --danger-color: #C44536;
-    --danger-hover: #A33828;
-    --light-bg: #FAF8F5;
+    /* Color palette — soft sage */
+    --primary-color: #5E8B5A;
+    --primary-hover: #4A7347;
+    --primary-light: #E8EDE5;
+    --primary-subtle: #F0F3ED;
+    --secondary-color: #C67B4A;
+    --secondary-hover: #A8653A;
+    --success-color: #5E8B5A;
+    --success-hover: #4A7347;
+    --danger-color: #B54A3A;
+    --danger-hover: #963D2F;
+    --light-bg: #F4F5F0;
     --container-bg: #FFFFFF;
-    --text-color: #2D2926;
-    --text-muted: #8C8279;
-    --border-color: #E8E2DA;
-    --shadow-color: rgba(45, 41, 38, 0.08);
+    --text-color: #2C3325;
+    --text-muted: #7A8272;
+    --border-color: #D8DDD0;
+    --shadow-color: rgba(44, 51, 37, 0.08);
 
     /* Spacing */
     --spacing-xs: 0.25rem;
@@ -27,15 +29,15 @@
     --spacing-2xl: 3rem;
 
     /* Borders and shadows */
-    --border-radius: 6px;
-    --container-radius: 12px;
-    --box-shadow: 0 1px 3px rgba(45, 41, 38, 0.06), 0 4px 12px rgba(45, 41, 38, 0.04);
-    --box-shadow-lg: 0 4px 16px rgba(45, 41, 38, 0.08), 0 8px 32px rgba(45, 41, 38, 0.04);
-    --focus-ring: 0 0 0 3px rgba(192, 98, 58, 0.2);
+    --border-radius: 10px;
+    --container-radius: 16px;
+    --box-shadow: 0 1px 3px rgba(44, 51, 37, 0.05), 0 4px 14px rgba(44, 51, 37, 0.04);
+    --box-shadow-lg: 0 4px 20px rgba(44, 51, 37, 0.08), 0 10px 40px rgba(44, 51, 37, 0.04);
+    --focus-ring: 0 0 0 3px rgba(94, 139, 90, 0.25);
 
     /* Typography */
     --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-display: 'Source Serif 4', Georgia, serif;
+    --font-display: 'Fraunces', Georgia, serif;
     --font-size-base: 15px;
     --line-height: 1.6;
 
@@ -59,7 +61,7 @@ html {
 body {
     font-family: var(--font-family);
     background-color: var(--light-bg);
-    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
     color: var(--text-color);
     line-height: var(--line-height);
     margin: 0;
@@ -275,6 +277,7 @@ input[type="submit"]:active {
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
+}
 
 @keyframes pageEnter {
     from { opacity: 0; transform: translateY(12px); }

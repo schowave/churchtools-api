@@ -1,36 +1,36 @@
-/* appointments.css — Warm editorial design */
+/* appointments.css — Soft sage redesign */
 
 /* ─── Container ─────────────────────────────── */
 .container {
-    max-width: 1200px;
+    max-width: 720px;
     width: 100%;
     padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-lg);
     animation: pageEnter 0.5s var(--transition-ease) both;
     border: none;
     box-shadow: none;
     background: transparent;
+    text-align: left;
 }
 
 /* ─── Page header ───────────────────────────── */
 .page-header {
     margin-bottom: var(--spacing-xl);
-    position: relative;
     text-align: left;
-    padding-top: var(--spacing-sm);
 }
 
 .page-header h1 {
     font-family: var(--font-display);
-    font-size: 2.2rem;
-    font-weight: 700;
+    font-size: 2.4rem;
+    font-weight: 600;
     margin-bottom: 4px;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     color: var(--text-color);
+    font-optical-sizing: auto;
 }
 
 .page-header .subtitle {
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin: 0;
     font-weight: 400;
 }
@@ -41,10 +41,9 @@
     gap: 4px;
     color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 500;
     transition: color var(--transition-speed) var(--transition-ease);
-    position: static;
     margin-bottom: var(--spacing-sm);
 }
 
@@ -52,42 +51,49 @@
     color: var(--primary-color);
 }
 
-/* ─── Controls header (sticky) ──────────────── */
-.controls-header {
-    position: sticky;
-    top: 0;
-    background-color: rgba(250, 248, 245, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    padding: var(--spacing-md) var(--spacing-lg);
-    z-index: 100;
-    margin: 0 calc(-1 * var(--spacing-xl));
-    margin-bottom: var(--spacing-lg);
-    border-bottom: 1px solid var(--border-color);
+.back-link svg {
+    transition: transform var(--transition-speed) var(--transition-ease);
+}
+
+.back-link:hover svg {
+    transform: translateX(-2px);
+}
+
+/* ─── Search card ───────────────────────────── */
+.search-card {
+    background: white;
+    border-radius: var(--container-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--box-shadow);
+    margin-bottom: var(--spacing-xl);
+    overflow: hidden;
+}
+
+.search-card-inner {
+    padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
+    text-align: left;
 }
 
-/* ─── Date controls ─────────────────────────── */
-.date-controls {
+/* ─── Date row ──────────────────────────────── */
+.date-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
     align-items: flex-end;
-    margin-bottom: 0;
+    gap: var(--spacing-sm);
 }
 
-.date-fields-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    flex: 2;
+.date-separator {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    padding-bottom: 8px;
+    flex-shrink: 0;
 }
 
 .date-field {
     flex: 1;
-    min-width: 140px;
+    min-width: 0;
 }
 
 .date-field label {
@@ -95,7 +101,7 @@
     margin-bottom: 4px;
     margin-top: 0;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -103,7 +109,7 @@
 
 .date-field input[type="text"] {
     width: 100%;
-    padding: 8px 12px;
+    padding: 10px 14px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 0.95rem;
@@ -119,22 +125,18 @@
     outline: none;
 }
 
-/* ─── Quick date presets ────────────────────── */
-.date-quick-select {
+/* ─── Date presets ──────────────────────────── */
+.date-presets {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    align-items: flex-end;
-    padding-bottom: 0;
-    position: static;
-    top: auto;
 }
 
-.date-preset {
-    background-color: white;
+.preset-chip {
+    background-color: var(--primary-subtle);
     border: 1px solid var(--border-color);
     border-radius: 100px;
-    padding: 6px 14px;
+    padding: 6px 16px;
     font-family: var(--font-family);
     font-size: 0.8rem;
     font-weight: 500;
@@ -143,37 +145,139 @@
     color: var(--text-color);
 }
 
-.date-preset:hover {
+.preset-chip:hover {
     background-color: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
 }
 
-.date-preset:active {
+.preset-chip:active {
     transform: scale(0.97);
 }
 
-@media (max-width: 768px) {
-    .date-controls { flex-direction: column; align-items: stretch; }
-    .date-fields-container { flex-direction: column; }
-    .date-field { margin-bottom: var(--spacing-xs); }
-    .date-quick-select { justify-content: flex-start; }
-    .controls-header {
-        margin: 0 calc(-1 * var(--spacing-md));
-        padding: var(--spacing-md);
-    }
+/* ─── Calendar chips (collapsible) ──────────── */
+.calendar-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.chips-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 14px;
+    margin: 0;
+    background: var(--primary-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: all var(--transition-speed) var(--transition-ease);
+    text-align: left;
+}
+
+.chips-toggle:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-light);
+    transform: none;
+    box-shadow: none;
+}
+
+.chips-toggle-label {
+    flex-shrink: 0;
+}
+
+.calendar-selection-info {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-left: auto;
+}
+
+.chips-toggle-arrow {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform var(--transition-speed) var(--transition-ease);
+}
+
+.chips-toggle[aria-expanded="true"] .chips-toggle-arrow {
+    transform: rotate(180deg);
+}
+
+.chips-toggle[aria-expanded="true"] {
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    border-bottom-color: transparent;
+}
+
+.chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    background: white;
+}
+
+.calendar-chip {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: normal;
+    width: auto;
+}
+
+.calendar-chip input[type="checkbox"] {
+    display: none;
+}
+
+.chip-text {
+    display: inline-block;
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    border: 1px solid var(--border-color);
+    background: white;
+    color: var(--text-color);
+    transition: all var(--transition-speed) var(--transition-ease);
+    user-select: none;
+    min-height: 36px;
+    line-height: 1.3;
+}
+
+.calendar-chip input:checked + .chip-text {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.chip-text:hover {
+    border-color: var(--primary-color);
 }
 
 /* ─── Fetch button ──────────────────────────── */
 .btn-fetch {
     background-color: var(--primary-color);
     margin-bottom: 0;
+    margin-top: 0;
     display: block;
     width: 100%;
-    padding: 12px 20px;
+    padding: 14px 20px;
     font-size: 0.95rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.02em;
     border: none;
     border-radius: var(--border-radius);
     transition: all var(--transition-speed) var(--transition-ease);
@@ -181,275 +285,14 @@
 
 .btn-fetch:hover {
     background-color: var(--primary-hover);
-    box-shadow: 0 4px 16px rgba(192, 98, 58, 0.25);
+    box-shadow: 0 4px 18px rgba(94, 139, 90, 0.25);
     transform: translateY(-1px);
 }
 
-/* ─── Calendar selection ────────────────────── */
-.calendar-selection {
-    margin-top: var(--spacing-sm);
-    margin-bottom: var(--spacing-lg);
-}
-
-.calendar-selection-header {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm) 0;
-    list-style: none;
-    text-align: left;
-}
-
-.calendar-selection-header::-webkit-details-marker {
-    display: none;
-}
-
-.calendar-selection-header::before {
-    content: "";
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-right: 2px solid var(--text-muted);
-    border-bottom: 2px solid var(--text-muted);
-    transform: rotate(-45deg);
-    transition: transform var(--transition-speed) var(--transition-ease);
-    flex-shrink: 0;
-}
-
-.calendar-selection[open] > .calendar-selection-header::before {
-    transform: rotate(45deg);
-}
-
-.calendar-selection-header h3 {
-    color: var(--text-color);
-    margin-bottom: 0;
-    font-family: var(--font-family);
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-.calendar-selection-info {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-}
-
-/* ─── Containers ────────────────────────────── */
-.appointments-container,
-.calendars-container {
-    margin: var(--spacing-sm) 0 var(--spacing-md) 0;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border-color);
-    border-radius: var(--container-radius);
-    background-color: white;
-    transition: box-shadow var(--transition-speed) var(--transition-ease);
-}
-
-.calendars-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2px;
-}
-
-@media (max-width: 600px) {
-    .calendars-container { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 400px) {
-    .calendars-container { grid-template-columns: 1fr; }
-}
-
-.appointments-container {
-    width: 100%;
-    max-width: 100%;
-    max-height: 800px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
-}
-
-.appointments-container::-webkit-scrollbar { width: 6px; }
-.appointments-container::-webkit-scrollbar-track { background: transparent; }
-.appointments-container::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 3px;
-}
-.appointments-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-muted);
-}
-
-/* ─── Date group headers ───────────────────── */
-.date-group-header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    font-family: var(--font-display);
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: linear-gradient(to bottom, white 60%, rgba(255,255,255,0.8));
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    padding: 10px 12px 6px;
-    margin-top: 4px;
-    border-bottom: 1px solid var(--border-color);
-    letter-spacing: 0.01em;
-}
-
-.date-group-header:first-child {
-    margin-top: 0;
-}
-
-/* ─── Staggered fade-in for appointment items ─── */
-@keyframes itemFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.appointment-item {
-    animation: itemFadeIn 0.3s var(--transition-ease) both;
-}
-
-/* ─── Appointment items ─────────────────────── */
-.appointment-item,
-.calendar-item {
-    display: flex;
-    align-items: center;
-    border-radius: 8px;
-    transition: background-color var(--transition-speed) var(--transition-ease);
-    border-left: 3px solid transparent;
-}
-
-.appointment-item {
-    padding: 10px 12px;
-    margin-bottom: 2px;
-    flex-wrap: wrap;
-    background: transparent;
-}
-
-.appointment-item:nth-child(even) {
-    background-color: var(--primary-subtle);
-}
-
-.calendar-item {
-    margin-bottom: 0;
-    padding: 6px 8px;
-}
-
-/* Custom checkboxes */
-.appointment-checkbox,
-.calendar-checkbox {
-    margin-right: var(--spacing-sm);
-    cursor: pointer;
-    min-width: 18px;
-    min-height: 18px;
-    accent-color: var(--primary-color);
-    vertical-align: middle;
-}
-
-/* Labels */
-.appointment-label,
-.calendar-label {
-    cursor: pointer;
-    text-align: left;
-    transition: color var(--transition-speed) var(--transition-ease);
-    flex: 1;
-    padding: 2px 0;
-    vertical-align: middle;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.calendar-label,
-.appointment-label {
-    margin-top: 0;
-}
-
-.appointment-date {
-    font-weight: 600;
-    color: var(--primary-color);
-    font-size: 0.85rem;
-    font-family: var(--font-family);
-}
-
-.appointment-description {
-    color: var(--text-color);
-    font-size: 0.95rem;
-    margin-top: 1px;
-}
-
-/* Hover */
-.appointment-item:hover {
-    background-color: var(--primary-light);
-    border-left-color: var(--primary-color);
-}
-
-.calendar-item:hover {
-    background-color: var(--primary-light);
-}
-
-/* Focus styles */
-.appointment-item:focus-within,
-.calendar-item:focus-within {
-    background-color: var(--primary-light);
-    outline: none;
-    box-shadow: var(--focus-ring);
-}
-
-/* ─── Additional info toggle ────────────────── */
-.add-info-toggle {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    font-family: var(--font-family);
-    font-size: 0.78rem;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 2px 0;
-    margin-left: 28px;
-    margin-top: 2px;
-    transition: color var(--transition-speed) var(--transition-ease);
-    opacity: 0.7;
-}
-
-.add-info-toggle:hover {
-    opacity: 1;
-}
-
-.add-info-toggle.hidden,
-textarea.hidden {
-    display: none;
-}
-
-/* Textarea */
-textarea {
-    width: 100%;
-    padding: 6px 10px;
-    margin-top: 4px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    resize: none;
-    min-height: 24px;
-    height: 24px;
-    overflow-y: hidden;
-    font-family: var(--font-family);
-    font-size: 0.85rem;
-    line-height: 1.3;
-    color: var(--text-color);
-    transition: border-color var(--transition-speed) var(--transition-ease),
-                box-shadow var(--transition-speed) var(--transition-ease);
-}
-
-textarea:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: var(--focus-ring);
-}
-
-.appointment-item textarea {
-    margin-left: 28px;
-    width: calc(100% - 28px);
+/* ─── Appointments main ─────────────────────── */
+.appointments-main {
+    margin-bottom: var(--spacing-xl);
+    min-height: 80px;
 }
 
 /* ─── Appointments actions ──────────────────── */
@@ -471,7 +314,7 @@ textarea:focus {
 .select-all-btn,
 .deselect-all-btn {
     font-family: var(--font-family);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     font-weight: 600;
     padding: 6px 14px;
     border-radius: 100px;
@@ -504,137 +347,278 @@ textarea:focus {
     color: var(--primary-color);
 }
 
-@media (max-width: 480px) {
-    .appointments-actions { flex-direction: column; }
-    .select-all-btn, .deselect-all-btn { width: 100%; }
-}
-
-/* ─── Two-column layout ─────────────────────── */
-.appointments-layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: var(--spacing-xl);
-    margin-top: var(--spacing-md);
-    align-items: start;
-}
-
-.appointments-main {
-    grid-column: 1;
-    min-width: 0;
-}
-
-.appointments-sidebar {
-    grid-column: 2;
-    position: sticky;
-    top: 90px;
-    align-self: start;
-    max-height: calc(100vh - 110px);
+/* ─── Appointments container ────────────────── */
+.appointments-container {
+    border: 1px solid var(--border-color);
+    border-radius: var(--container-radius);
+    background-color: white;
+    box-shadow: var(--box-shadow);
+    max-height: 600px;
     overflow-y: auto;
-    padding: var(--spacing-md);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+.appointments-container::-webkit-scrollbar { width: 6px; }
+.appointments-container::-webkit-scrollbar-track { background: transparent; }
+.appointments-container::-webkit-scrollbar-thumb {
+    background-color: var(--border-color);
+    border-radius: 3px;
+}
+.appointments-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-muted);
+}
+
+/* ─── Date group headers ────────────────────── */
+.date-group-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: linear-gradient(to bottom, white 60%, rgba(255,255,255,0.85));
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 10px 16px 6px;
+    margin-top: 4px;
+    border-bottom: 1px solid var(--border-color);
+    letter-spacing: 0.01em;
+}
+
+.date-group-header:first-child {
+    margin-top: 0;
+}
+
+/* ─── Staggered fade-in ─────────────────────── */
+@keyframes itemFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.appointment-item {
+    animation: itemFadeIn 0.3s var(--transition-ease) both;
+}
+
+/* ─── Appointment items ─────────────────────── */
+.appointment-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    background: transparent;
+    border-left: 3px solid transparent;
+    transition: all var(--transition-speed) var(--transition-ease);
+}
+
+.appointment-item:nth-child(even) {
+    background-color: var(--primary-subtle);
+}
+
+.appointment-item:hover {
+    background-color: var(--primary-light);
+    border-left-color: var(--primary-color);
+}
+
+.appointment-item:focus-within {
+    background-color: var(--primary-light);
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Checkboxes */
+.appointment-checkbox {
+    margin-right: var(--spacing-sm);
+    cursor: pointer;
+    min-width: 18px;
+    min-height: 18px;
+    accent-color: var(--primary-color);
+    vertical-align: middle;
+}
+
+/* Labels */
+.appointment-label {
+    cursor: pointer;
+    text-align: left;
+    transition: color var(--transition-speed) var(--transition-ease);
+    flex: 1;
+    padding: 2px 0;
+    vertical-align: middle;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin: 0;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    width: auto;
+}
+
+.appointment-date {
+    font-weight: 600;
+    color: var(--secondary-color);
+    font-size: 0.82rem;
+    font-family: var(--font-family);
+}
+
+.appointment-description {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    margin-top: 1px;
+}
+
+/* ─── Additional info toggle ────────────────── */
+.add-info-toggle {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    font-family: var(--font-family);
+    font-size: 0.76rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 2px 0;
+    margin-left: 28px;
+    margin-top: 2px;
+    transition: color var(--transition-speed) var(--transition-ease);
+    opacity: 0.7;
+}
+
+.add-info-toggle:hover {
+    opacity: 1;
+}
+
+.add-info-toggle.hidden,
+textarea.hidden {
+    display: none;
+}
+
+/* Textarea */
+textarea {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    resize: none;
+    min-height: 24px;
+    height: 24px;
+    overflow-y: hidden;
+    font-family: var(--font-family);
+    font-size: 0.85rem;
+    line-height: 1.3;
+    color: var(--text-color);
+    transition: border-color var(--transition-speed) var(--transition-ease),
+                box-shadow var(--transition-speed) var(--transition-ease);
+}
+
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: var(--focus-ring);
+}
+
+.appointment-item textarea {
+    margin-left: 28px;
+    width: calc(100% - 28px);
+}
+
+/* ─── Settings card ─────────────────────────── */
+.settings-card {
     background: white;
     border-radius: var(--container-radius);
     border: 1px solid var(--border-color);
     box-shadow: var(--box-shadow);
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
-    text-align: left;
+    overflow: hidden;
 }
 
-@media (max-width: 900px) {
-    .appointments-layout {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-md);
-    }
-    .appointments-main,
-    .appointments-sidebar { grid-column: 1; }
-    .appointments-sidebar {
-        position: relative;
-        top: 0;
-        max-height: none;
-        margin-top: var(--spacing-sm);
-    }
+/* ─── Settings sections (flat, no tabs) ─────── */
+.settings-sections {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
 }
 
-/* ─── Sidebar sections ──────────────────────── */
-.sidebar-section {
-    margin-bottom: var(--spacing-md);
+.settings-section {
     padding-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--border-color);
 }
 
-.sidebar-section:last-child {
+.settings-section:last-child {
     border-bottom: none;
     margin-bottom: 0;
     padding-bottom: 0;
 }
 
-.sidebar-section--cta {
-    background: var(--primary-subtle);
-    margin: 0 calc(-1 * var(--spacing-md));
-    padding: var(--spacing-md);
-    border-radius: 0 0 var(--container-radius) var(--container-radius);
-    border-bottom: none;
-    border-top: 2px solid var(--primary-color);
-}
-
-.sidebar-section-title {
+.settings-section-title {
     font-family: var(--font-display);
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-color);
-    margin-bottom: var(--spacing-sm);
-    font-size: 1rem;
-    letter-spacing: -0.01em;
+    margin: 0 0 var(--spacing-sm) 0;
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-.sidebar-section-title .section-icon {
-    width: 16px;
-    height: 16px;
+.settings-section-title svg {
     color: var(--text-muted);
     flex-shrink: 0;
 }
 
-/* ─── Format options grid ───────────────────── */
-.format-options {
+/* ─── Images side-by-side ───────────────────── */
+.images-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.images-grid .image-section {
     margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 
-@media (max-width: 480px) {
-    .format-options { grid-template-columns: 1fr; }
+/* ─── Color grid ────────────────────────────── */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
 }
 
-.format-option {
+.color-option {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
 }
 
-.format-option-label {
-    font-size: 0.75rem;
+.color-option--wide {
+    grid-column: 1 / -1;
+}
+
+.color-label {
+    font-size: 0.72rem;
     font-weight: 600;
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     text-align: left;
-}
-
-.format-option-full {
-    grid-column: 1 / -1;
+    margin: 0;
+    display: block;
+    width: auto;
 }
 
 /* Color inputs */
 .color-input {
     width: 100%;
-    height: 36px;
+    height: 40px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     cursor: pointer;
-    padding: 2px;
+    padding: 3px;
     background: white;
     transition: border-color var(--transition-speed) var(--transition-ease);
 }
@@ -647,7 +631,7 @@ textarea:focus {
 .transparency-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .transparency-slider {
@@ -663,8 +647,8 @@ textarea:focus {
 .transparency-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: white;
     border: 2px solid var(--primary-color);
@@ -678,8 +662,8 @@ textarea:focus {
 }
 
 .transparency-slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: white;
     border: 2px solid var(--primary-color);
@@ -690,24 +674,45 @@ textarea:focus {
 .transparency-value {
     font-size: 0.75rem;
     font-weight: 600;
-    min-width: 32px;
+    min-width: 36px;
     text-align: center;
     background-color: var(--primary-subtle);
     color: var(--primary-color);
-    padding: 3px 6px;
-    border-radius: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
 }
 
-/* ─── Image upload sections ─────────────────── */
+/* ─── Image sections ────────────────────────── */
+.image-section {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.image-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.image-section-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: var(--spacing-sm);
+    margin-top: 0;
+}
+
 .image-preview {
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .image-preview img {
-    max-height: 60px;
+    max-height: 70px;
     max-width: 100%;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     padding: 4px;
     background: var(--primary-subtle);
     object-fit: cover;
@@ -723,7 +728,7 @@ textarea:focus {
     font-family: var(--font-family);
     font-size: 0.8rem;
     font-weight: 600;
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: 100px;
     cursor: pointer;
     background: var(--primary-color);
@@ -742,7 +747,7 @@ textarea:focus {
     font-family: var(--font-family);
     font-size: 0.8rem;
     font-weight: 600;
-    padding: 6px 14px;
+    padding: 8px 16px;
     border-radius: 100px;
     cursor: pointer;
     background: white;
@@ -757,23 +762,44 @@ textarea:focus {
     color: white;
 }
 
-/* ─── Generate buttons ──────────────────────── */
-.generate-buttons {
+/* ─── Sticky bottom bar ─────────────────────── */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    background: white;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 16px rgba(44, 51, 37, 0.08);
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    text-align: center;
+}
+
+.bottom-bar-inner {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.bottom-bar-error {
+    font-size: 0.78rem;
+    color: var(--danger-color);
+    text-align: center;
+    margin-top: 6px;
 }
 
 .btn-generate {
     background-color: var(--primary-color);
     color: white;
     border: none;
-    display: block;
-    width: 100%;
+    flex: 1;
     margin: 0;
-    padding: 14px;
+    padding: 14px 16px;
     font-family: var(--font-family);
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     font-weight: 600;
     letter-spacing: 0.02em;
     border-radius: var(--border-radius);
@@ -784,33 +810,36 @@ textarea:focus {
 }
 
 .btn-generate .btn-icon {
-    width: 16px;
-    height: 16px;
     vertical-align: middle;
     margin-right: 4px;
 }
 
-.btn-generate--jpeg {
+.btn-generate--secondary {
     background-color: white;
     color: var(--primary-color);
     border: 2px solid var(--primary-color);
 }
 
-.btn-generate:hover {
+.btn-generate:hover:not(:disabled) {
     background-color: var(--primary-hover);
     color: white;
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(192, 98, 58, 0.25);
+    box-shadow: 0 4px 18px rgba(94, 139, 90, 0.25);
 }
 
 .btn-generate:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
 }
 
-/* ─── Appointments loading state ────────────── */
+/* Spacer so content doesn't hide behind bottom bar */
+footer {
+    padding-bottom: 70px;
+}
+
+/* ─── Loading state ─────────────────────────── */
 .appointments-loading {
     display: flex;
     align-items: center;
@@ -831,7 +860,7 @@ textarea:focus {
 
 /* ─── Empty state ───────────────────────────── */
 .empty-state {
-    margin: var(--spacing-2xl) 0;
+    margin: var(--spacing-lg) 0;
     padding: var(--spacing-2xl) var(--spacing-xl);
     border: 2px dashed var(--border-color);
     border-radius: var(--container-radius);
@@ -846,7 +875,7 @@ textarea:focus {
 
 .empty-state p:first-child {
     font-family: var(--font-display);
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-color);
     margin-bottom: var(--spacing-xs);
@@ -856,7 +885,7 @@ textarea:focus {
     font-size: 0.9rem;
 }
 
-/* ─── Inline button spinners ───────────────── */
+/* ─── Inline button spinners ────────────────── */
 .btn-spinner {
     display: inline-flex;
     align-items: center;
@@ -875,7 +904,7 @@ textarea:focus {
 }
 
 .spinner-ring-inline--dark {
-    border-color: rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 0, 0, 0.12);
     border-top-color: var(--primary-color);
 }
 
@@ -899,13 +928,216 @@ textarea:focus {
     font-style: italic;
 }
 
-/* ─── Safari container override ─────────────── */
+/* ─── Responsive ────────────────────────────── */
+@media (max-width: 600px) {
+    .container {
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    }
+
+    .page-header {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .search-card-inner {
+        padding: var(--spacing-md);
+        gap: var(--spacing-sm);
+    }
+
+    .date-row {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        align-items: stretch;
+    }
+
+    .date-separator {
+        display: none;
+    }
+
+    .date-field {
+        width: 100%;
+    }
+
+    .date-field label {
+        text-align: left;
+    }
+
+    .date-field input[type="text"] {
+        width: 100%;
+        padding: 12px 14px;
+        font-size: 16px; /* prevents iOS zoom */
+    }
+
+    /* Horizontal scrolling presets on small screens */
+    .date-presets {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
+    }
+
+    .date-presets::-webkit-scrollbar {
+        display: none;
+    }
+
+    .preset-chip {
+        flex-shrink: 0;
+        padding: 8px 16px;
+        min-height: 36px;
+    }
+
+    /* Calendar toggle bigger tap target */
+    .chips-toggle {
+        padding: 12px 14px;
+        min-height: 44px;
+    }
+
+    .chip-text {
+        padding: 8px 14px;
+        min-height: 38px;
+    }
+
+    /* Fetch button bigger on mobile */
+    .btn-fetch {
+        padding: 16px 20px;
+        font-size: 1rem;
+        min-height: 50px;
+    }
+
+    /* Appointment items */
+    .appointment-item {
+        padding: 14px 12px;
+    }
+
+    .appointments-container {
+        max-height: 450px;
+        border-radius: var(--border-radius);
+    }
+
+    /* Actions row */
+    .appointments-actions {
+        gap: 6px;
+    }
+
+    .select-all-btn,
+    .deselect-all-btn {
+        padding: 8px 16px;
+        min-height: 38px;
+    }
+
+    /* Color grid stays 3-col on mobile, just tighter */
+    .color-grid {
+        gap: 10px;
+    }
+
+    .color-input {
+        height: 44px;
+    }
+
+    /* Images stack on narrow screens */
+    .images-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    /* Bottom bar mobile */
+    .bottom-bar {
+        padding: 8px 12px;
+        padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+
+    .btn-generate {
+        padding: 14px 12px;
+        font-size: 0.85rem;
+        min-height: 48px;
+    }
+
+    /* Upload buttons bigger */
+    .btn-upload,
+    .btn-delete-img {
+        padding: 10px 18px;
+        min-height: 40px;
+    }
+
+    /* Transparency slider thumb bigger on touch */
+    .transparency-slider::-webkit-slider-thumb {
+        width: 22px;
+        height: 22px;
+    }
+
+    .transparency-slider::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* More breathing room for appointments main */
+    .appointments-main {
+        margin-bottom: var(--spacing-lg);
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+    .container {
+        padding: var(--spacing-xs) var(--spacing-sm) var(--spacing-sm);
+    }
+
+    .search-card-inner {
+        padding: var(--spacing-sm);
+    }
+
+    .page-header h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* ─── Safari overrides ──────────────────────── */
 @supports (-webkit-touch-callout: none) {
     .container {
         width: 100%;
         max-width: 100%;
         padding-left: 12px;
         padding-right: 12px;
+    }
+
+    .chips-toggle {
+        display: flex;
+        width: 100%;
+        margin: 0;
+    }
+
+    .preset-chip {
+        display: inline-block;
+        width: auto;
+        margin: 0;
+        padding: 8px 16px;
+    }
+
+    .chip-text {
+        display: inline-block;
+        width: auto;
+        margin: 0;
+        padding: 7px 14px;
+    }
+
+    .btn-upload,
+    .btn-delete-img {
+        display: inline-block;
+        width: auto;
+        margin: 0;
+    }
+
+    .bottom-bar .btn-generate {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        flex: 1;
+        margin: 0;
     }
 }
 
@@ -921,7 +1153,7 @@ textarea:focus {
 .ui-datepicker .ui-datepicker-header {
     background: var(--primary-subtle) !important;
     border: none !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     font-family: var(--font-display) !important;
     color: var(--text-color) !important;
 }
@@ -932,7 +1164,7 @@ textarea:focus {
 
 .ui-datepicker td a.ui-state-default {
     border: none !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     text-align: center !important;
     transition: all 0.15s ease !important;
 }

@@ -7,7 +7,7 @@
     <title>Terminübersicht</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=DM+Sans:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/static/css/normalize.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
@@ -19,8 +19,12 @@
 </head>
 <body>
 <div class="container">
+    <!-- Header -->
     <div class="page-header">
-        <a href="/overview" class="back-link">&larr; Zurück</a>
+        <a href="/overview" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Zurück
+        </a>
         <h1>Terminübersicht</h1>
         <p class="subtitle">{{ base_url }}</p>
     </div>
@@ -29,174 +33,180 @@
     <div class="alert alert-error">{{ error }}</div>
     {% endif %}
 
-    <!-- Form to fetch appointments -->
-    <div class="appointments-form">
-        <div class="controls-header">
-            <div class="date-controls">
-                <div class="date-fields-container">
-                    <div class="date-field">
-                        <label for="start_date_display">Startdatum</label>
-                        <input type="text" id="start_date_display" required>
-                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
-                    </div>
-                    <div class="date-field">
-                        <label for="end_date_display">Enddatum</label>
-                        <input type="text" id="end_date_display" required>
-                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
-                    </div>
+    <!-- Step 1: Date & Calendar Selection -->
+    <div class="search-card">
+        <div class="search-card-inner">
+            <!-- Date range -->
+            <div class="date-row">
+                <div class="date-field">
+                    <label for="start_date_display">Von</label>
+                    <input type="text" id="start_date_display" required placeholder="Startdatum">
+                    <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
                 </div>
-                <div class="date-quick-select">
-                    <button type="button" id="today" class="date-preset">Heute</button>
-                    <button type="button" id="this-week" class="date-preset">Diese Woche</button>
-                    <button type="button" id="next-week" class="date-preset">Nächste Woche</button>
+                <span class="date-separator">–</span>
+                <div class="date-field">
+                    <label for="end_date_display">Bis</label>
+                    <input type="text" id="end_date_display" required placeholder="Enddatum">
+                    <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
                 </div>
             </div>
+
+            <!-- Quick presets -->
+            <div class="date-presets">
+                <button type="button" id="today" class="preset-chip">Heute</button>
+                <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
+                <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+            </div>
+
+            <!-- Calendar chips (collapsible) -->
+            <div class="calendar-chips">
+                <button type="button" class="chips-toggle" id="calendars_toggle" aria-expanded="false">
+                    <span class="chips-toggle-label">Kalender</span>
+                    <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }}</span>
+                    <svg class="chips-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="chips-wrap" id="calendars_wrap" style="display: none;">
+                    {% for calendar in calendars %}
+                    <label class="calendar-chip">
+                        <input type="checkbox" name="calendar_ids" value="{{ calendar['id'] }}"
+                               class="calendar-checkbox"
+                               {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
+                        <span class="chip-text">{{ calendar['name'] }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Fetch button -->
             <button type="button" class="btn btn-fetch" id="fetch_btn">
-                <span class="btn-label">Termine abholen</span>
+                <span class="btn-label">Termine laden</span>
                 <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden…</span>
             </button>
         </div>
+    </div>
 
-        <!-- Calendars selection -->
-        <details class="calendar-selection">
-            <summary class="calendar-selection-header">
-                <h3>Kalender auswählen</h3>
-                <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }} ausgewählt</span>
-            </summary>
-            <div class="calendars-container">
-                {% for calendar in calendars %}
-                    <div class="calendar-item">
-                        <input type="checkbox" id="calendar-{{ calendar['id'] }}"
-                               name="calendar_ids" value="{{ calendar['id'] }}"
-                               class="calendar-checkbox"
-                                {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
-                        <label for="calendar-{{ calendar['id'] }}" class="calendar-label">
-                            {{ calendar['name'] }}
-                        </label>
+    <!-- Step 2: Appointments list -->
+    <div class="appointments-main">
+        <div class="appointments-loading">
+            <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
+            <span>Termine werden geladen…</span>
+        </div>
+    </div>
+
+    <!-- Step 3: Output settings (flat — no tabs) -->
+    <div class="settings-card">
+        <div class="settings-sections">
+            <!-- Colors -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+                    Farben
+                </h3>
+                <div class="color-grid">
+                    <div class="color-option">
+                        <label class="color-label" for="background_color">Hintergrund</label>
+                        <input type="color" id="background_color" name="background_color"
+                               value="{{ color_settings.background_color }}" class="color-input">
                     </div>
-                {% endfor %}
+                    <div class="color-option">
+                        <label class="color-label" for="date_color">Datum</label>
+                        <input type="color" id="date_color" name="date_color"
+                               value="{{ color_settings.date_color }}" class="color-input">
+                    </div>
+                    <div class="color-option">
+                        <label class="color-label" for="description_color">Beschreibung</label>
+                        <input type="color" id="description_color" name="description_color"
+                               value="{{ color_settings.description_color }}" class="color-input">
+                    </div>
+                    <div class="color-option color-option--wide">
+                        <label class="color-label">Transparenz</label>
+                        <div class="transparency-container">
+                            <input type="range" id="alpha" name="alpha" class="transparency-slider"
+                                   min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
+                                   oninput="document.getElementById('alphaValue').textContent = Math.round(this.value / 255 * 100) + '%'">
+                            <span id="alphaValue" class="transparency-value">{{ ((color_settings.background_alpha / 255 * 100) | round | int) }}%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </details>
-        <div class="appointments-layout">
-            <!-- Left column: Appointments (loaded via AJAX) -->
-            <div class="appointments-main">
-                <div class="appointments-loading">
-                    <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
-                    <span>Termine werden geladen…</span>
-                </div>
-            </div>
 
-            <!-- Right column: Sidebar -->
-            <div class="appointments-sidebar">
-                <!-- Formatting section -->
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title"><svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>Formatierung</div>
-                    <div class="format-options">
-                        <div class="format-option">
-                            <div class="format-option-label">Hintergrundfarbe</div>
-                            <input type="color" id="background_color" name="background_color"
-                                   value="{{ color_settings.background_color }}" class="color-input">
+            <!-- Images -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Bilder
+                </h3>
+                <div class="images-grid">
+                    <div class="image-section">
+                        <h4 class="image-section-title">Hintergrundbild</h4>
+                        <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
+                            <img id="bg-img" src="/background" alt="Hintergrundbild">
                         </div>
-                        <div class="format-option">
-                            <div class="format-option-label">Datumsfarbe</div>
-                            <input type="color" id="date_color" name="date_color"
-                                   value="{{ color_settings.date_color }}" class="color-input">
-                        </div>
-                        <div class="format-option">
-                            <div class="format-option-label">Beschreibungsfarbe</div>
-                            <input type="color" id="description_color" name="description_color"
-                                   value="{{ color_settings.description_color }}" class="color-input">
-                        </div>
-                        <div class="format-option">
-                            <div class="format-option-label">Transparenz</div>
-                            <div class="transparency-container">
-                                <input type="range" id="alpha" name="alpha" class="transparency-slider"
-                                       min="0" max="255" step="1" value="{{ color_settings.background_alpha }}"
-                                       oninput="document.getElementById('alphaValue').textContent = Math.round(this.value / 255 * 100) + '%'">
-                                <span id="alphaValue" class="transparency-value">{{ ((color_settings.background_alpha / 255 * 100) | round | int) }}%</span>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- Background image section -->
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title"><svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Hintergrundbild</div>
-                    <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
-                        <img id="bg-img" src="/background" alt="Hintergrundbild">
-                    </div>
-                    <div class="image-actions">
-                        <button type="button" id="bg_upload_btn" class="btn-upload">
-                            <span class="btn-label">Bild hochladen</span>
-                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
-                        </button>
-                        <input type="file" id="bg_upload" accept="image/*" style="display: none;">
-                        <button type="button" id="bg_delete" class="btn-delete-img"
-                                {% if not has_background_image %}style="display:none;"{% endif %}>
-                            Löschen
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Logo section -->
-                <div class="sidebar-section">
-                    <div class="sidebar-section-title"><svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Logo</div>
-                    <div class="format-options">
-                        <div class="format-option format-option-full">
-                            <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
-                                <img id="logo-img" src="/logo" alt="Logo">
-                            </div>
-                            <div class="image-actions">
-                                <button type="button" id="logo_upload_btn" class="btn-upload">
-                                    <span class="btn-label">Logo hochladen</span>
-                                    <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
-                                </button>
-                                <input type="file" id="logo_upload" accept="image/*" style="display: none;">
-                                <button type="button" id="logo_delete" class="btn-delete-img"
-                                        {% if not has_logo %}style="display:none;"{% endif %}>
-                                    Löschen
-                                </button>
-                            </div>
+                        <div class="image-actions">
+                            <button type="button" id="bg_upload_btn" class="btn-upload">
+                                <span class="btn-label">Hochladen</span>
+                                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+                            </button>
+                            <input type="file" id="bg_upload" accept="image/*" style="display: none;">
+                            <button type="button" id="bg_delete" class="btn-delete-img"
+                                    {% if not has_background_image %}style="display:none;"{% endif %}>
+                                Löschen
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                <!-- Presets (hidden) -->
-                <div class="sidebar-section" style="display: none;">
-                    <div class="sidebar-section-title">Voreinstellungen</div>
-                    <div class="color-picker-container">
-                        <div class="color-picker-row">
-                            <label for="color_presets">Preset:</label>
-                            <select id="color_presets" name="color_presets">
-                                <option value="preset1">Herbst '23</option>
-                            </select>
-                            <button type="button" id="applyPreset">OK</button>
+                    <div class="image-section">
+                        <h4 class="image-section-title">Logo</h4>
+                        <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
+                            <img id="logo-img" src="/logo" alt="Logo">
                         </div>
-                    </div>
-                </div>
-
-                <!-- Generate buttons -->
-                <div class="sidebar-section sidebar-section--cta">
-                    <div class="sidebar-section-title"><svg class="section-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Ausgabe generieren</div>
-                    <div class="generate-buttons">
-                        <button type="button" class="btn btn-generate" id="generate_pdf_btn" disabled>
-                            <span class="btn-label"><svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> PDF generieren</span>
-                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
-                        </button>
-                        <button type="button" class="btn btn-generate btn-generate--jpeg" id="generate_jpeg_btn" disabled>
-                            <span class="btn-label"><svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> JPEG generieren</span>
-                            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Generieren…</span>
-                        </button>
-                    </div>
-                    <div id="generate_error" class="alert alert-error" style="display: none; margin-top: 10px;">
-                        Bitte holen Sie zuerst Termine ab, bevor Sie eine Ausgabe generieren.
+                        <div class="image-actions">
+                            <button type="button" id="logo_upload_btn" class="btn-upload">
+                                <span class="btn-label">Hochladen</span>
+                                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+                            </button>
+                            <input type="file" id="logo_upload" accept="image/*" style="display: none;">
+                            <button type="button" id="logo_delete" class="btn-delete-img"
+                                    {% if not has_logo %}style="display:none;"{% endif %}>
+                                Löschen
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Hidden presets -->
+    <div style="display: none;">
+        <select id="color_presets" name="color_presets">
+            <option value="preset1">Herbst '23</option>
+        </select>
+        <button type="button" id="applyPreset">OK</button>
+    </div>
 </div>
+<!-- Sticky bottom bar — always visible export -->
+<div class="bottom-bar" id="bottom_bar">
+    <div class="bottom-bar-inner">
+        <button type="button" class="btn btn-generate" id="generate_pdf_btn" disabled>
+            <span class="btn-label">
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                PDF
+            </span>
+            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span></span>
+        </button>
+        <button type="button" class="btn btn-generate btn-generate--secondary" id="generate_jpeg_btn" disabled>
+            <span class="btn-label">
+                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                JPEG
+            </span>
+            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span></span>
+        </button>
+    </div>
+    <div id="generate_error" class="bottom-bar-error" style="display: none;">
+        Bitte zuerst Termine laden.
+    </div>
+</div>
+
 <footer>
     <p>Version: {{ version }}</p>
 </footer>
