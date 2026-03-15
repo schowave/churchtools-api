@@ -97,6 +97,7 @@ function renderAppointments(appointments) {
             lastDate = dateKey;
         }
         var hasInfo = app.additional_info && app.additional_info.trim().length > 0;
+        var hasDescription = app.information && app.information.trim().length > 0;
         var delay = Math.min(itemIndex * 0.03, 0.6);
         html += '<div class="appointment-item" style="animation-delay:' + delay + 's">' +
             '<input type="checkbox" id="appointment-' + escapeHtml(app.id) + '" name="appointment_id"' +
@@ -109,13 +110,16 @@ function renderAppointments(appointments) {
                 '</span>' +
                 '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
                 '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
-                    ' onclick="event.preventDefault(); this.classList.add(\'hidden\'); this.parentElement.nextElementSibling.classList.remove(\'hidden\'); this.parentElement.nextElementSibling.focus();">' +
-                    '+ Info' +
+                    ' onclick="event.preventDefault(); this.classList.add(\'hidden\'); var ta=this.closest(\'.appointment-item\').querySelector(\'textarea\'); ta.classList.remove(\'hidden\'); ta.focus();">' +
+                    '+ Eigener Text' +
                 '</button>' +
             '</label>' +
+            (hasDescription
+                ? '<span class="appointment-info-text" onclick="this.classList.toggle(\'expanded\')">' + escapeHtml(app.information) + '</span>'
+                : '') +
             '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
                 ' class="' + (hasInfo ? '' : 'hidden') + '"' +
-                ' placeholder="Zusätzliche Informationen">' + escapeHtml(app.additional_info || '') + '</textarea>' +
+                ' placeholder="Überschreibt die Beschreibung im PDF">' + escapeHtml(app.additional_info || '') + '</textarea>' +
             '</div>';
         itemIndex++;
     });

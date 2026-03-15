@@ -469,25 +469,52 @@
     margin-top: 0;
 }
 
+/* ─── ChurchTools description ───────────────── */
+.appointment-info-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    width: 100%;
+    margin-left: 28px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    padding: 2px 0;
+    cursor: pointer;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+
+.appointment-info-text:hover {
+    color: var(--text-color);
+}
+
+.appointment-info-text.expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+}
+
 /* ─── Additional info toggle ────────────────── */
 .add-info-toggle {
-    background: none;
-    border: none;
+    background: var(--primary-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: 100px;
     color: var(--primary-color);
     font-family: var(--font-family);
     font-size: 0.72rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    padding: 0 0 0 4px;
+    padding: 3px 10px;
     margin: 0;
     margin-left: auto;
-    transition: color var(--transition-speed) var(--transition-ease);
-    opacity: 0.7;
+    transition: all var(--transition-speed) var(--transition-ease);
     white-space: nowrap;
 }
 
 .add-info-toggle:hover {
-    opacity: 1;
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
 }
 
 .add-info-toggle.hidden,
