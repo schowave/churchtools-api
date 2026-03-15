@@ -26,20 +26,6 @@ body {
     color: var(--primary-color);
 }
 
-.base-url-badge {
-    display: inline-block;
-    font-family: var(--font-family);
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    background: var(--primary-subtle);
-    border: 1px solid var(--border-color);
-    border-radius: 100px;
-    padding: 4px 14px;
-    margin-bottom: var(--spacing-lg);
-    letter-spacing: 0.02em;
-}
-
 /* Responsive adjustments for smaller screens */
 @media (max-width: 480px) {
     .container {
