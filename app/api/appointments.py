@@ -1,11 +1,10 @@
 import logging
-import os
 from io import BytesIO
 from typing import List, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -217,7 +216,7 @@ async def api_generate(
     logger.info(f"Generating {body.type}: {len(selected_appointments)} of {len(appointments)} appointments")
 
     # Generate PDF
-    filename = create_pdf(
+    pdf_bytes = create_pdf(
         selected_appointments,
         color_settings.date_color,
         color_settings.background_color,
@@ -227,11 +226,19 @@ async def api_generate(
         logo_stream,
     )
 
-    # Convert to JPEG if requested
     if body.type == "jpeg":
-        filename = handle_jpeg_generation(filename)
+        zip_bytes = handle_jpeg_generation(pdf_bytes)
+        return StreamingResponse(
+            BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={"Content-Disposition": "attachment; filename=appointments.zip"},
+        )
 
-    return JSONResponse({"download_url": f"/download/{filename}"})
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=appointments.pdf"},
+    )
 
 
 @router.post("/logo/upload")
@@ -302,17 +309,3 @@ async def remove_background(request: Request, db: Session = Depends(get_db)):
     _require_auth(request)
     delete_background_image(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
-
-
-@router.get("/download/{filename}")
-async def download_file(filename: str):
-    safe_filename = os.path.basename(filename)
-    file_path = os.path.join(settings.file_directory, safe_filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-
-    return FileResponse(
-        file_path,
-        filename=safe_filename,
-        headers={"Cache-Control": "no-store"},
-    )

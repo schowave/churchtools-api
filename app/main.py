@@ -34,8 +34,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Include static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# Make sure the directories for saved files and DB exist
-Path(settings.file_directory).mkdir(parents=True, exist_ok=True)
+# Make sure the directory for DB exists
 Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
 
 # Include routes

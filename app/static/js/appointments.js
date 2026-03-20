@@ -278,16 +278,29 @@ function generateOutput(type) {
             window.location.href = '/';
             return;
         }
-        return res.json().then(function (data) {
-            if (!res.ok) {
+        if (!res.ok) {
+            return res.json().then(function (data) {
                 throw new Error(data.error || data.detail || 'Fehler beim Generieren');
-            }
-            return data;
+            });
+        }
+        // Extract filename from Content-Disposition header
+        var disposition = res.headers.get('Content-Disposition') || '';
+        var filenameMatch = disposition.match(/filename=([^;]+)/);
+        var filename = filenameMatch ? filenameMatch[1] : (type === 'pdf' ? 'appointments.pdf' : 'appointments.zip');
+        return res.blob().then(function (blob) {
+            return { blob: blob, filename: filename };
         });
     })
-    .then(function (data) {
-        if (!data) return;
-        window.location.href = data.download_url;
+    .then(function (result) {
+        if (!result) return;
+        var url = URL.createObjectURL(result.blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
         $btn.removeClass('is-loading');
         $btn.find('.btn-label').show();
         $btn.find('.btn-spinner').hide();

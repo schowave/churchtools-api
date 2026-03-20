@@ -1,12 +1,11 @@
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.api.appointments import api_generate, appointments_page, download_file
+from app.api.appointments import api_generate, appointments_page
 from app.config import settings
 from app.schemas import AppointmentData, ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
@@ -25,16 +24,12 @@ def config_mock():
     values = {
         "CHURCHTOOLS_BASE": "test.church.tools",
         "CHURCHTOOLS_BASE_URL": "https://test.church.tools",
-        "FILE_DIRECTORY": "/tmp/test_files",
     }
     with (
         patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
         patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
-        patch.object(settings, "file_directory", values["FILE_DIRECTORY"]),
         patch.object(settings, "version", "0.0.0-test"),
     ):
-        # Ensure test directory exists
-        os.makedirs(values["FILE_DIRECTORY"], exist_ok=True)
         yield values
 
 
@@ -229,8 +224,8 @@ def test_parse_appointment_nested_format():
     assert result.title == "Nested Event"
 
 
-@patch("app.services.jpeg_generator.convert_from_path")
-def test_handle_jpeg_generation(mock_convert, config_mock):
+@patch("app.services.jpeg_generator.convert_from_bytes")
+def test_handle_jpeg_generation(mock_convert):
     # Mock PDF to image conversion
     mock_image1 = MagicMock()
     mock_image2 = MagicMock()
@@ -243,17 +238,15 @@ def test_handle_jpeg_generation(mock_convert, config_mock):
     mock_image1.save.side_effect = mock_save
     mock_image2.save.side_effect = mock_save
 
-    # Call the function
-    result = handle_jpeg_generation("test.pdf")
+    # Call the function with bytes input
+    pdf_bytes = b"%PDF-1.4 fake pdf content"
+    result = handle_jpeg_generation(pdf_bytes)
 
-    # Check that convert_from_path was called with correct path
-    mock_convert.assert_called_once_with(os.path.join(config_mock["FILE_DIRECTORY"], "test.pdf"))
+    # Check that convert_from_bytes was called with the pdf bytes
+    mock_convert.assert_called_once_with(pdf_bytes)
 
-    # Check that the result is a string containing the ZIP file path
-    assert isinstance(result, str)
-    assert result.endswith(".zip")
-
-    # We could further test the ZIP file contents, but that would require more complex setup
+    # Check that the result is bytes (zip content)
+    assert isinstance(result, bytes)
 
 
 @pytest.mark.asyncio
@@ -337,36 +330,6 @@ async def test_appointments_page_without_token(mock_fetch):
     mock_fetch.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_download_file_success(config_mock):
-    # Create a test file
-    test_file_path = os.path.join(config_mock["FILE_DIRECTORY"], "test.txt")
-    with open(test_file_path, "w") as f:
-        f.write("Test content")
-
-    # Call the function
-    result = await download_file("test.txt")
-
-    # Check that the result is a FileResponse
-    assert isinstance(result, FileResponse)
-    assert result.path == test_file_path
-    assert result.filename == "test.txt"
-
-    # Clean up
-    os.remove(test_file_path)
-
-
-@pytest.mark.asyncio
-async def test_download_file_not_found():
-    # Call the function with a non-existent file
-    with pytest.raises(Exception) as context:
-        await download_file("nonexistent.txt")
-
-    # Check that the correct exception was raised
-    assert context.value.status_code == 404
-    assert context.value.detail == "File not found"
-
-
 SAMPLE_APPOINTMENT_DATA = [
     {
         "base": {
@@ -414,14 +377,6 @@ async def test_api_appointments(
 
     assert response.status_code == 200
     mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2], client)
-
-
-@pytest.mark.asyncio
-async def test_download_file_path_traversal(config_mock):
-    """Path traversal attempts should be sanitized to just the filename."""
-    with pytest.raises(Exception) as context:
-        await download_file("../../../etc/passwd")
-    assert context.value.status_code == 404
 
 
 @pytest.mark.asyncio
@@ -504,14 +459,16 @@ async def test_api_generate_pdf(
     mock_load_bg,
     config_mock,
 ):
-    """POST /api/generate with type=pdf should return download URL."""
+    """POST /api/generate with type=pdf should return StreamingResponse with PDF."""
+    from fastapi.responses import StreamingResponse
+
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
     client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
+    mock_create_pdf.return_value = b"%PDF-1.4 fake pdf content"
 
     body = GenerateRequest(
         type="pdf",
@@ -530,11 +487,9 @@ async def test_api_generate_pdf(
 
     response = await api_generate(request=request, body=body, db=db, client=client)
 
-    assert response.status_code == 200
-    import json
-
-    data = json.loads(response.body)
-    assert data["download_url"] == "/download/2023-01-15_Termine.pdf"
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/pdf"
+    assert response.headers["content-disposition"] == "attachment; filename=appointments.pdf"
 
     # Verify PDF was created with correct color settings
     mock_create_pdf.assert_called_once()
@@ -573,15 +528,20 @@ async def test_api_generate_jpeg(
     mock_load_bg,
     config_mock,
 ):
-    """POST /api/generate with type=jpeg should return ZIP download URL."""
+    """POST /api/generate with type=jpeg should return StreamingResponse with ZIP."""
+    from fastapi.responses import StreamingResponse
+
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
     client = AsyncMock()
 
+    pdf_bytes = b"%PDF-1.4 fake pdf content"
+    zip_bytes = b"PK fake zip content"
+
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
-    mock_jpeg.return_value = "2023-01-15_Termine.zip"
+    mock_create_pdf.return_value = pdf_bytes
+    mock_jpeg.return_value = zip_bytes
 
     body = GenerateRequest(
         type="jpeg",
@@ -600,12 +560,10 @@ async def test_api_generate_jpeg(
 
     response = await api_generate(request=request, body=body, db=db, client=client)
 
-    assert response.status_code == 200
-    import json
-
-    data = json.loads(response.body)
-    assert data["download_url"] == "/download/2023-01-15_Termine.zip"
-    mock_jpeg.assert_called_once_with("2023-01-15_Termine.pdf")
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/zip"
+    assert response.headers["content-disposition"] == "attachment; filename=appointments.zip"
+    mock_jpeg.assert_called_once_with(pdf_bytes)
 
 
 @pytest.mark.asyncio

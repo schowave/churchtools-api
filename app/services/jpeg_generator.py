@@ -1,32 +1,21 @@
 import logging
-import os
 import zipfile
 from io import BytesIO
 
-from pdf2image import convert_from_path
-
-from app.config import settings
+from pdf2image import convert_from_bytes
 
 logger = logging.getLogger(__name__)
 
 
-def handle_jpeg_generation(pdf_filename):
-    full_pdf_path = os.path.join(settings.file_directory, pdf_filename)
-    images = convert_from_path(full_pdf_path)
-    jpeg_files = []
+def handle_jpeg_generation(pdf_bytes: bytes) -> bytes:
+    images = convert_from_bytes(pdf_bytes)
+    zip_buffer = BytesIO()
 
-    for i, image in enumerate(images):
-        jpeg_stream = BytesIO()
-        image.save(jpeg_stream, "JPEG")
-        jpeg_stream.seek(0)
-        jpeg_files.append((f"page_{i + 1}.jpg", jpeg_stream))
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for i, image in enumerate(images):
+            jpeg_stream = BytesIO()
+            image.save(jpeg_stream, "JPEG")
+            zip_file.writestr(f"page_{i + 1}.jpg", jpeg_stream.getvalue())
 
-    zip_filename = os.path.splitext(pdf_filename)[0] + ".zip"
-    zip_path = os.path.join(settings.file_directory, zip_filename)
-
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
-        for file_name, file_bytes in jpeg_files:
-            zip_file.writestr(file_name, file_bytes.read())
-
-    logger.info(f"JPEG images successfully created and packed into ZIP file: {zip_filename}")
-    return zip_filename
+    logger.info(f"JPEG images generated: {len(images)} pages")
+    return zip_buffer.getvalue()

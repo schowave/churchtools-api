@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     churchtools_base_url: str = ""
     cookie_login_token: str = "login_token"
     version: str = _read_version()
-    file_directory: str = str(Path(__file__).parent.parent / "saved_files")  # temp, removed in Task 5
     timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
     timezone: Optional[ZoneInfo] = Field(default=None, exclude=True)
 
