@@ -58,4 +58,7 @@ ENV PYTHONPATH=/app \
 EXPOSE 5005
 VOLUME /app/data
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5005/health')" || exit 1
+
 ENTRYPOINT ["./entrypoint.sh"]

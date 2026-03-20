@@ -6,7 +6,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import appointments, auth
+from app.api import appointments, auth, health
 from app.config import settings
 
 
@@ -38,5 +38,6 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
 
 # Include routes
+app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(appointments.router, tags=["appointments"])
