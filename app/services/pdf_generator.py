@@ -1,5 +1,5 @@
 import io
-import os
+from pathlib import Path
 
 import structlog
 from babel.dates import format_date
@@ -41,7 +41,7 @@ FALLBACK_FONT = "Helvetica"
 FALLBACK_FONT_BOLD = "Helvetica-Bold"
 
 # Resolve fonts/ directory relative to project root (two levels up from this file)
-_FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fonts")
+_FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "fonts"
 
 _cached_fonts = None
 
@@ -59,7 +59,7 @@ def _register_fonts():
     try:
         if font_name not in pdfmetrics.getRegisteredFontNames():
             try:
-                pdfmetrics.registerFont(TTFont(font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
+                pdfmetrics.registerFont(TTFont(font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
             except Exception as e:
                 logger.error(f"Error registering font {font_name}: {e}")
                 font_name = FALLBACK_FONT
@@ -69,17 +69,15 @@ def _register_fonts():
             try:
                 if font_name == PREFERRED_FONT:
                     # Bahnschrift uses the same file for bold
-                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
                 else:
-                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}-Bold.ttf")))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}-Bold.ttf")))
             except Exception as e:
                 logger.error(f"Error registering bold font {bold_font_name}: {e}")
                 bold_font_name = FALLBACK_FONT_BOLD
                 if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
                     try:
-                        pdfmetrics.registerFont(
-                            TTFont(FALLBACK_FONT_BOLD, os.path.join(_FONTS_DIR, "helvetica-bold.ttf"))
-                        )
+                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, str(_FONTS_DIR / "helvetica-bold.ttf")))
                     except Exception as e2:
                         logger.error(f"Error registering font {FALLBACK_FONT_BOLD}: {e2}")
                         bold_font_name = FALLBACK_FONT
