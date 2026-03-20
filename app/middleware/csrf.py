@@ -46,8 +46,13 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         content_type = request.headers.get("content-type", "")
         if "application/x-www-form-urlencoded" in content_type or "multipart/form-data" in content_type:
+            # Cache the body so downstream handlers (FastAPI Form()) can read it again
+            body = await request.body()
             form = await request.form()
             form_token = form.get("_csrf_token")
+            await form.close()
+            # Re-inject cached body so FastAPI can parse it again
+            request._body = body
             if form_token and secrets.compare_digest(str(form_token), cookie_token):
                 return await call_next(request)
 
