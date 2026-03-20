@@ -489,8 +489,7 @@ async def test_api_generate_pdf(
 
     assert isinstance(response, StreamingResponse)
     assert response.media_type == "application/pdf"
-    assert response.headers["content-disposition"].startswith("attachment; filename=appointments_")
-    assert response.headers["content-disposition"].endswith(".pdf")
+    assert "_appointments.pdf" in response.headers["content-disposition"]
 
     # Verify PDF was created with correct color settings
     mock_create_pdf.assert_called_once()
@@ -563,8 +562,7 @@ async def test_api_generate_jpeg(
 
     assert isinstance(response, StreamingResponse)
     assert response.media_type == "application/zip"
-    assert response.headers["content-disposition"].startswith("attachment; filename=appointments_")
-    assert response.headers["content-disposition"].endswith(".zip")
+    assert "_appointments.zip" in response.headers["content-disposition"]
     mock_jpeg.assert_called_once_with(pdf_bytes)
 
 

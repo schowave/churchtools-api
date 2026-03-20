@@ -234,13 +234,13 @@ async def api_generate(
         return StreamingResponse(
             BytesIO(zip_bytes),
             media_type="application/zip",
-            headers={"Content-Disposition": f"attachment; filename=appointments_{timestamp}.zip"},
+            headers={"Content-Disposition": f"attachment; filename={timestamp}_appointments.zip"},
         )
 
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=appointments_{timestamp}.pdf"},
+        headers={"Content-Disposition": f"attachment; filename={timestamp}_appointments.pdf"},
     )
 
 
