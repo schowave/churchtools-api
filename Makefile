@@ -1,8 +1,10 @@
-.PHONY: run test lint format build push preview
+.PHONY: run test lint format build push
 
 PYTHON := venv/bin/python
 
 run:
+	CHURCHTOOLS_BASE=$${CHURCHTOOLS_BASE:-$$(grep -s CHURCHTOOLS_BASE .env | cut -d= -f2)} \
+	$(PYTHON) -m alembic upgrade head && \
 	$(PYTHON) -m uvicorn app.main:app --reload --host 0.0.0.0 --port 5005
 
 test:
@@ -20,5 +22,3 @@ build:
 push:
 	./build-and-push-docker-image.sh
 
-preview:
-	$(PYTHON) scripts/preview_pdf.py && open app/saved_files/*_Termine.pdf

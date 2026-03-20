@@ -44,13 +44,20 @@ RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy application source, config, and fonts
+# Copy application source, config, migrations, and fonts
 COPY app/ ./app/
 COPY fonts/ ./fonts/
 COPY alembic/ ./alembic/
-COPY alembic.ini entrypoint.sh ./
+COPY alembic.ini ./
+COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
 COPY pyproject.toml run_fastapi.py ./
+
+# entrypoint.sh handles:
+# 1. DB directory creation
+# 2. Alembic stamp for existing DBs without migration tracking
+# 3. Alembic upgrade head (run migrations)
+# 4. Start uvicorn
 
 ENV PYTHONPATH=/app \
     DB_PATH=/app/data/churchtools.db
