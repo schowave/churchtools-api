@@ -297,20 +297,25 @@ function generateOutput(type) {
         var disposition = res.headers.get('Content-Disposition') || '';
         var filenameMatch = disposition.match(/filename=([^;]+)/);
         var filename = filenameMatch ? filenameMatch[1] : (type === 'pdf' ? 'appointments.pdf' : 'appointments.zip');
-        return res.blob().then(function (blob) {
-            return { blob: blob, filename: filename };
+        var mimeType = type === 'pdf' ? 'application/pdf' : 'application/zip';
+        return res.arrayBuffer().then(function (buf) {
+            return { blob: new Blob([buf], { type: mimeType }), filename: filename };
         });
     })
     .then(function (result) {
         if (!result) return;
+        // Use a link with typed blob so the browser treats it as a safe download
         var url = URL.createObjectURL(result.blob);
         var a = document.createElement('a');
         a.href = url;
         a.download = result.filename;
+        a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(function () {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
         $btn.removeClass('is-loading');
         $btn.find('.btn-label').show();
         $btn.find('.btn-spinner').hide();
