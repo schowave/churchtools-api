@@ -3,6 +3,8 @@ from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -41,6 +43,22 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Make sure the directory for DB exists
 Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
+
+
+@app.exception_handler(401)
+async def unauthorized_handler(request: Request, exc):
+    return JSONResponse({"error": "unauthorized", "detail": str(exc.detail)}, status_code=401)
+
+
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc):
+    return JSONResponse({"error": "not_found", "detail": str(exc.detail)}, status_code=404)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_handler(request: Request, exc):
+    return JSONResponse({"error": "validation_error", "detail": str(exc)}, status_code=422)
+
 
 # Include routes
 app.include_router(health.router, tags=["health"])

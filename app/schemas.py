@@ -8,6 +8,11 @@ from app.utils import parse_iso_datetime
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
+class ErrorResponse(BaseModel):
+    error: str
+    detail: str | None = None
+
+
 class AppointmentData(BaseModel):
     """Structured representation of a ChurchTools appointment for display and export."""
 
