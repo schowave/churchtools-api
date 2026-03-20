@@ -17,6 +17,7 @@
     <div class="overview-header">
         <h1>Startseite</h1>
         <form action="/logout" method="post" style="margin:0;">
+            <input type="hidden" name="_csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
             <button type="submit" class="header-logout">Abmelden</button>
         </form>
     </div>

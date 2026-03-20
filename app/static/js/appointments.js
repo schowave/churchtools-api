@@ -1,5 +1,15 @@
 /* appointments.js - Consolidated JavaScript for the appointments page */
 
+// --- CSRF token helper ---
+
+function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta) return meta.getAttribute('content');
+    // Fallback: read from cookie
+    var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : '';
+}
+
 // --- Utility functions (no DOM dependency) ---
 
 
@@ -270,7 +280,7 @@ function generateOutput(type) {
 
     fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
         body: JSON.stringify(payload)
     })
     .then(function (res) {
@@ -440,7 +450,7 @@ $(function () {
         formData.append('file', file);
         var $btn = $('#logo_upload_btn');
         showButtonSpinner($btn);
-        fetch('/logo/upload', { method: 'POST', body: formData })
+        fetch('/logo/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
                 return res.json();
@@ -465,7 +475,7 @@ $(function () {
 
     // Logo delete
     $('#logo_delete').on('click', function () {
-        fetch('/logo', { method: 'DELETE' })
+        fetch('/logo', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
                 $('#logo-preview').hide();
@@ -486,7 +496,7 @@ $(function () {
         formData.append('file', file);
         var $btn = $('#bg_upload_btn');
         showButtonSpinner($btn);
-        fetch('/background/upload', { method: 'POST', body: formData })
+        fetch('/background/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
                 return res.json();
@@ -511,7 +521,7 @@ $(function () {
 
     // Background image delete
     $('#bg_delete').on('click', function () {
-        fetch('/background', { method: 'DELETE' })
+        fetch('/background', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
                 $('#bg-preview').hide();

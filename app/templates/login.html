@@ -27,6 +27,7 @@
     <span class="base-url-badge">{{ base_url }}</span>
 
     <form method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
         <label for="username">Benutzername:</label>
         <input type="text" id="username" name="username" required>
 

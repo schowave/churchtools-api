@@ -9,6 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api import appointments, auth, health
 from app.config import settings
 from app.logging_config import configure_logging
+from app.middleware.csrf import CSRFMiddleware
 
 configure_logging(settings.log_format)
 
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(title="ChurchTools API", lifespan=lifespan)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CSRFMiddleware, exempt_paths=["/health"])
 
 # Include static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")

@@ -15,6 +15,7 @@
     <style>.ui-datepicker { z-index: 9999 !important; }</style>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
     <script src="/static/js/appointments.js?v={{ version }}"></script>
 </head>
 <body>
