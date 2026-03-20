@@ -28,7 +28,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
                 COOKIE_NAME,
                 token,
                 httponly=False,
-                samesite="strict",
+                samesite="lax",
                 secure=request.url.scheme == "https",
             )
             return response

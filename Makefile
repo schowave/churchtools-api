@@ -1,4 +1,4 @@
-.PHONY: run test lint format build push
+.PHONY: run run-docker test lint format build push
 
 PYTHON := venv/bin/python
 
@@ -15,6 +15,12 @@ lint:
 
 format:
 	$(PYTHON) -m ruff check --fix . && $(PYTHON) -m ruff format .
+
+run-docker:
+	podman run --rm -p 5005:5005 -v ./data:/app/data \
+		-e CHURCHTOOLS_BASE=$${CHURCHTOOLS_BASE:-$$(grep -s CHURCHTOOLS_BASE .env | cut -d= -f2)} \
+		-e DB_PATH=/app/data/churchtools.db \
+		churchtools-local
 
 build:
 	podman build -t churchtools-local .
