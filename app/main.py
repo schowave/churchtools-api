@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import appointments, auth, health
+from app.api import appointments, auth, fragments, health
 from app.config import settings
 from app.logging_config import configure_logging
 from app.middleware.csrf import CSRFMiddleware
@@ -73,3 +73,4 @@ async def validation_handler(request: Request, exc):
 app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(appointments.router, tags=["appointments"])
+app.include_router(fragments.router, tags=["fragments"])

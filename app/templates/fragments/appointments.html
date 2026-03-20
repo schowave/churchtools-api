@@ -1,0 +1,21 @@
+{% for appointment in appointments %}
+<div class="appointment-card" data-id="{{ appointment.id }}">
+    <div class="appointment-date">
+        {{ appointment.start_date_view }}
+    </div>
+    <div class="appointment-time">
+        {{ appointment.start_time_view }} - {{ appointment.end_time_view }} Uhr
+    </div>
+    <div class="appointment-title">{{ appointment.title }}</div>
+    {% if appointment.meeting_at %}
+    <div class="appointment-location">{{ appointment.meeting_at }}</div>
+    {% endif %}
+    <div class="appointment-info">
+        <textarea name="additional_info_{{ appointment.id }}"
+                  class="additional-info-input">{{ appointment.additional_info }}</textarea>
+    </div>
+</div>
+{% endfor %}
+{% if not appointments %}
+<p>Keine Termine gefunden</p>
+{% endif %}

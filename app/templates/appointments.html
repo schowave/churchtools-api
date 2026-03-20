@@ -15,7 +15,15 @@
     <style>.ui-datepicker { z-index: 9999 !important; }</style>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/alpine.min.js" defer></script>
     <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
+    <script>
+    document.addEventListener('htmx:configRequest', function(event) {
+        var token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (token) event.detail.headers['X-CSRF-Token'] = token;
+    });
+    </script>
     <script src="/static/js/appointments.js?v={{ version }}"></script>
 </head>
 <body>
@@ -87,7 +95,12 @@
     </div>
 
     <!-- Step 2: Appointments list -->
-    <div class="appointments-main">
+    <div class="appointments-main"
+         id="appointments-container"
+         hx-get="/fragments/appointments"
+         hx-trigger="load"
+         hx-include="[name='start_date'], [name='end_date'], [name='calendar_ids']:checked"
+         hx-indicator=".appointments-loading">
         <div class="appointments-loading">
             <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
             <span>Termine werden geladen…</span>

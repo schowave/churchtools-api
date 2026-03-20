@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/css/normalize.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/login.css?v={{ version }}">
+    <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
 </head>
 <body>
 {% if error %}
