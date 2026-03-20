@@ -4,6 +4,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+COOKIE_NAME = "csrf_token"
+
 
 class CSRFMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, exempt_paths: list[str] | None = None):
@@ -12,10 +14,18 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next) -> Response:
         if request.method in ("GET", "HEAD", "OPTIONS"):
+            # Reuse existing token so templates can read it from the incoming cookie.
+            # Only generate a new one if no cookie exists yet.
+            if not request.cookies.get(COOKIE_NAME):
+                token = secrets.token_urlsafe(32)
+                # Inject into request scope so templates see it via request.cookies
+                request._cookies[COOKIE_NAME] = token
+            else:
+                token = request.cookies[COOKIE_NAME]
+
             response = await call_next(request)
-            token = secrets.token_urlsafe(32)
             response.set_cookie(
-                "csrf_token",
+                COOKIE_NAME,
                 token,
                 httponly=False,
                 samesite="strict",
@@ -26,7 +36,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.exempt_paths:
             return await call_next(request)
 
-        cookie_token = request.cookies.get("csrf_token")
+        cookie_token = request.cookies.get(COOKIE_NAME)
         if not cookie_token:
             return JSONResponse({"error": "CSRF token missing"}, status_code=403)
 
