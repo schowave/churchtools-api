@@ -6,7 +6,6 @@ babel==2.18.0
 certifi==2026.2.25
 chardet==6.0.0.post1
 charset-normalizer==3.4.4
--e git+ssh://git@github.com/schowave/churchtools-api.git@219655822378faa7a04c6d80d2b5caf326848fec#egg=churchtools_api
 click==8.3.1
 coverage==7.13.4
 fastapi==0.135.1
@@ -38,6 +37,7 @@ ruff==0.15.2
 six==1.17.0
 SQLAlchemy==2.0.48
 starlette==0.46.2
+structlog==25.5.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
-uvicorn==0.41.0
+uvicorn==0.42.0
