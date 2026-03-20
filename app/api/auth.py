@@ -1,6 +1,6 @@
 import httpx
 from fastapi import APIRouter, Depends, Form, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
 from app.dependencies import get_http_client
@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/")
-async def login_page(request: Request):
+async def login_page(request: Request) -> Response:
     login_token = request.cookies.get(settings.cookie_login_token)
     if login_token:
         return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
@@ -25,7 +25,7 @@ async def login(
     username: str = Form(...),
     password: str = Form(...),
     client: httpx.AsyncClient = Depends(get_http_client),
-):
+) -> Response:
     data = {"password": password, "rememberMe": True, "username": username}
 
     response = await client.post(f"{settings.churchtools_base_url}/api/login", json=data)
@@ -74,7 +74,7 @@ async def login(
 
 
 @router.post("/logout")
-async def logout(request: Request, client: httpx.AsyncClient = Depends(get_http_client)):
+async def logout(request: Request, client: httpx.AsyncClient = Depends(get_http_client)) -> RedirectResponse:
     login_token = request.cookies.get(settings.cookie_login_token)
     if login_token:
         try:
@@ -91,7 +91,7 @@ async def logout(request: Request, client: httpx.AsyncClient = Depends(get_http_
 
 
 @router.get("/overview")
-async def overview(request: Request):
+async def overview(request: Request) -> Response:
     login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)

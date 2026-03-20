@@ -32,7 +32,7 @@ from app.utils import get_date_range_from_form, normalize_newlines
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
-def _require_auth(request: Request):
+def _require_auth(request: Request) -> None:
     """Raise 401 if no login token is present."""
     if not request.cookies.get(settings.cookie_login_token):
         raise HTTPException(status_code=401, detail="Nicht angemeldet")
@@ -79,7 +79,7 @@ async def appointments_page(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     calendar_ids: Optional[List[str]] = Query(None),
-):
+) -> Response:
     login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
@@ -131,7 +131,7 @@ async def api_appointments(
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: List[str] = Query(...),
-):
+) -> JSONResponse:
     """JSON endpoint for async appointment loading."""
     login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
@@ -164,7 +164,7 @@ async def api_generate(
     body: GenerateRequest,
     db: Session = Depends(get_db),
     client: httpx.AsyncClient = Depends(get_http_client),
-):
+) -> Response:
     """JSON endpoint for PDF/JPEG generation."""
     login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
@@ -242,7 +242,7 @@ async def api_generate(
 
 
 @router.post("/logo/upload")
-async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)) -> JSONResponse:
     """Upload a logo image and store it in the database."""
     _require_auth(request)
     content = await file.read(MAX_UPLOAD_SIZE + 1)
@@ -255,7 +255,7 @@ async def upload_logo(request: Request, file: UploadFile = File(...), db: Sessio
 
 
 @router.get("/logo")
-async def get_logo(db: Session = Depends(get_db)):
+async def get_logo(db: Session = Depends(get_db)) -> Response:
     """Serve the stored logo image for preview."""
     logo_data, logo_filename = load_logo(db, DEFAULT_SETTING_NAME)
     if not logo_data:
@@ -269,7 +269,7 @@ async def get_logo(db: Session = Depends(get_db)):
 
 
 @router.delete("/logo")
-async def remove_logo(request: Request, db: Session = Depends(get_db)):
+async def remove_logo(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
     """Delete the stored logo."""
     _require_auth(request)
     delete_logo(db, DEFAULT_SETTING_NAME)
@@ -277,7 +277,9 @@ async def remove_logo(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/background/upload")
-async def upload_background(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_background(
+    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)
+) -> JSONResponse:
     """Upload a background image and store it in the database."""
     _require_auth(request)
     content = await file.read(MAX_UPLOAD_SIZE + 1)
@@ -290,7 +292,7 @@ async def upload_background(request: Request, file: UploadFile = File(...), db: 
 
 
 @router.get("/background")
-async def get_background(db: Session = Depends(get_db)):
+async def get_background(db: Session = Depends(get_db)) -> Response:
     """Serve the stored background image for preview."""
     image_data, image_filename = load_background_image(db, DEFAULT_SETTING_NAME)
     if not image_data:
@@ -304,7 +306,7 @@ async def get_background(db: Session = Depends(get_db)):
 
 
 @router.delete("/background")
-async def remove_background(request: Request, db: Session = Depends(get_db)):
+async def remove_background(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
     """Delete the stored background image."""
     _require_auth(request)
     delete_background_image(db, DEFAULT_SETTING_NAME)
