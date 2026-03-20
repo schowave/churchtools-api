@@ -24,7 +24,7 @@ class Settings(BaseSettings):
         arbitrary_types_allowed=True,
     )
 
-    churchtools_base: str
+    churchtools_base: str = ""
     db_path: str = "churchtools.db"
     churchtools_base_url: str = ""
     cookie_login_token: str = "login_token"
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _set_computed_defaults(self) -> "Settings":
-        if not self.churchtools_base_url:
+        if not self.churchtools_base_url and self.churchtools_base:
             self.churchtools_base_url = f"https://{self.churchtools_base}"
         try:
             object.__setattr__(self, "timezone", ZoneInfo(self.timezone_name))

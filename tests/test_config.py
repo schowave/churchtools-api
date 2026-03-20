@@ -25,11 +25,12 @@ class TestSettings(unittest.TestCase):
         assert s.churchtools_base_url == "http://custom.url"
 
     @patch.dict("os.environ", {}, clear=True)
-    def test_missing_churchtools_base_raises(self):
+    def test_empty_churchtools_base_defaults(self):
         from app.config import Settings
 
-        with self.assertRaises(Exception):
-            Settings(_env_file=None)
+        s = Settings(_env_file=None)
+        assert s.churchtools_base == ""
+        assert s.churchtools_base_url == ""
 
     @patch.dict("os.environ", {"CHURCHTOOLS_BASE": "my-church.church.tools"}, clear=False)
     def test_version_reads_from_pyproject(self):
