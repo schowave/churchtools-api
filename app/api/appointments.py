@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
 
@@ -226,18 +227,20 @@ async def api_generate(
         logo_stream,
     )
 
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
     if body.type == "jpeg":
         zip_bytes = handle_jpeg_generation(pdf_bytes)
         return StreamingResponse(
             BytesIO(zip_bytes),
             media_type="application/zip",
-            headers={"Content-Disposition": "attachment; filename=appointments.zip"},
+            headers={"Content-Disposition": f"attachment; filename=appointments_{timestamp}.zip"},
         )
 
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=appointments.pdf"},
+        headers={"Content-Disposition": f"attachment; filename=appointments_{timestamp}.pdf"},
     )
 
 
