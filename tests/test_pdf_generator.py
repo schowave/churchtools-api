@@ -20,11 +20,11 @@ from app.services.pdf_generator import (
 
 class TestPdfGenerator(unittest.TestCase):
     def setUp(self):
-        # Mock Config
+        # Mock settings
         self.config_mock = {"FILE_DIRECTORY": "/tmp/test_files"}
-        self.config_patch = patch(
-            "app.services.pdf_generator.Config", FILE_DIRECTORY=self.config_mock["FILE_DIRECTORY"]
-        )
+        from app.config import settings
+
+        self.config_patch = patch.object(settings, "file_directory", self.config_mock["FILE_DIRECTORY"])
         self.config_patch.start()
 
         # Ensure test directory exists

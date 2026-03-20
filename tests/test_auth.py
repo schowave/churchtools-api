@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.auth import login, login_page, logout, overview
+from app.config import settings
 
 
 @pytest.fixture
@@ -17,13 +18,13 @@ def templates_mock():
 
 @pytest.fixture
 def config_mock():
-    config_mock = {"CHURCHTOOLS_BASE": "test.church.tools", "CHURCHTOOLS_BASE_URL": "https://test.church.tools"}
-    with patch.multiple(
-        "app.api.auth.Config",
-        CHURCHTOOLS_BASE=config_mock["CHURCHTOOLS_BASE"],
-        CHURCHTOOLS_BASE_URL=config_mock["CHURCHTOOLS_BASE_URL"],
+    values = {"CHURCHTOOLS_BASE": "test.church.tools", "CHURCHTOOLS_BASE_URL": "https://test.church.tools"}
+    with (
+        patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
+        patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
+        patch.object(settings, "version", "0.0.0-test"),
     ):
-        yield config_mock
+        yield values
 
 
 @pytest.mark.asyncio
@@ -55,8 +56,7 @@ async def test_login_page_already_logged_in(config_mock):
     request_mock = MagicMock(spec=Request)
     request_mock.cookies.get.return_value = "test_token"
 
-    with patch.multiple("app.api.auth.Config", COOKIE_LOGIN_TOKEN="login_token"):
-        result = await login_page(request_mock)
+    result = await login_page(request_mock)
 
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303

@@ -5,13 +5,13 @@ from io import BytesIO
 
 from pdf2image import convert_from_path
 
-from app.config import Config
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 
 def handle_jpeg_generation(pdf_filename):
-    full_pdf_path = os.path.join(Config.FILE_DIRECTORY, pdf_filename)
+    full_pdf_path = os.path.join(settings.file_directory, pdf_filename)
     images = convert_from_path(full_pdf_path)
     jpeg_files = []
 
@@ -22,7 +22,7 @@ def handle_jpeg_generation(pdf_filename):
         jpeg_files.append((f"page_{i + 1}.jpg", jpeg_stream))
 
     zip_filename = os.path.splitext(pdf_filename)[0] + ".zip"
-    zip_path = os.path.join(Config.FILE_DIRECTORY, zip_filename)
+    zip_path = os.path.join(settings.file_directory, zip_filename)
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zip_file:
         for file_name, file_bytes in jpeg_files:

@@ -1,20 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from app.config import Config
+from app.config import settings
 
 DEFAULT_SETTING_NAME = "default"
 
-# SQLite database URL
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{Config.DB_PATH}"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{settings.db_path}"
 
-# Create engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-
-# Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for models
 Base = declarative_base()
 
 
@@ -27,7 +21,6 @@ def get_db():
 
 
 def create_schema():
-    # Import models so they register with Base.metadata before creating tables
     import app.models  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

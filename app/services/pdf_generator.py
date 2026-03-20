@@ -12,7 +12,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-from app.config import Config
+from app.config import settings
 from app.schemas import AppointmentData
 from app.utils import normalize_newlines, parse_iso_datetime
 
@@ -354,7 +354,7 @@ def create_pdf(
 
     current_day = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     filename = f"{current_day}_Termine.pdf"
-    file_path = os.path.join(Config.FILE_DIRECTORY, filename)
+    file_path = os.path.join(settings.file_directory, filename)
     c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
     c.setTitle(filename)
 

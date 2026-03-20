@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from app.config import Config
+from app.config import settings
 from app.crud import (
     delete_background_image,
     delete_logo,
@@ -33,7 +33,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 def _require_auth(request: Request):
     """Raise 401 if no login token is present."""
-    if not request.cookies.get(Config.COOKIE_LOGIN_TOKEN):
+    if not request.cookies.get(settings.cookie_login_token):
         raise HTTPException(status_code=401, detail="Nicht angemeldet")
 
 
@@ -60,11 +60,11 @@ def _build_template_context(
         "selected_calendar_ids": selected_calendar_ids,
         "start_date": start_date,
         "end_date": end_date,
-        "base_url": Config.CHURCHTOOLS_BASE,
+        "base_url": settings.churchtools_base,
         "color_settings": color_settings,
         "has_logo": has_logo,
         "has_background_image": has_background_image,
-        "version": Config.VERSION,
+        "version": settings.version,
     }
     context.update(extra)
     return context
@@ -78,7 +78,7 @@ async def appointments_page(
     end_date: Optional[str] = Query(None),
     calendar_ids: Optional[List[str]] = Query(None),
 ):
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -91,7 +91,7 @@ async def appointments_page(
         calendars = await fetch_calendars(login_token)
     except AuthenticationError:
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        response.delete_cookie(key=settings.cookie_login_token)
         return response
 
     # Use provided calendar_ids or preselect all
@@ -130,7 +130,7 @@ async def api_appointments(
     calendar_ids: List[str] = Query(...),
 ):
     """JSON endpoint for async appointment loading."""
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -162,7 +162,7 @@ async def api_generate(
     db: Session = Depends(get_db),
 ):
     """JSON endpoint for PDF/JPEG generation."""
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -300,7 +300,7 @@ async def remove_background(request: Request, db: Session = Depends(get_db)):
 @router.get("/download/{filename}")
 async def download_file(filename: str):
     safe_filename = os.path.basename(filename)
-    file_path = os.path.join(Config.FILE_DIRECTORY, safe_filename)
+    file_path = os.path.join(settings.file_directory, safe_filename)
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
 

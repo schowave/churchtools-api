@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.appointments import api_generate, appointments_page, download_file
+from app.config import settings
 from app.schemas import AppointmentData, ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
@@ -21,20 +22,20 @@ def templates_mock():
 
 @pytest.fixture
 def config_mock():
-    config_mock = {
+    values = {
         "CHURCHTOOLS_BASE": "test.church.tools",
         "CHURCHTOOLS_BASE_URL": "https://test.church.tools",
         "FILE_DIRECTORY": "/tmp/test_files",
     }
-    with patch.multiple(
-        "app.config.Config",
-        CHURCHTOOLS_BASE=config_mock["CHURCHTOOLS_BASE"],
-        CHURCHTOOLS_BASE_URL=config_mock["CHURCHTOOLS_BASE_URL"],
-        FILE_DIRECTORY=config_mock["FILE_DIRECTORY"],
+    with (
+        patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
+        patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
+        patch.object(settings, "file_directory", values["FILE_DIRECTORY"]),
+        patch.object(settings, "version", "0.0.0-test"),
     ):
         # Ensure test directory exists
-        os.makedirs(config_mock["FILE_DIRECTORY"], exist_ok=True)
-        yield config_mock
+        os.makedirs(values["FILE_DIRECTORY"], exist_ok=True)
+        yield values
 
 
 @pytest.mark.asyncio
@@ -450,7 +451,7 @@ async def test_fetch_appointments_deduplication(mock_client, config_mock):
 
     result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
 
-    # Same base ID in different calendars → different composite IDs, both kept
+    # Same base ID in different calendars -> different composite IDs, both kept
     assert len(result) == 2
     ids = {r["base"]["id"] for r in result}
     assert "1_101" in ids

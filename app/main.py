@@ -1,18 +1,12 @@
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-# Load environment variables from .env file
-load_dotenv()
-
 from app.api import appointments, auth
-from app.config import Config
+from app.config import settings
 from app.database import create_schema
-
-Config.validate()
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -33,8 +27,8 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Make sure the directories for saved files and DB exist
-Path(Config.FILE_DIRECTORY).mkdir(parents=True, exist_ok=True)
-Path(Config.DB_PATH).parent.mkdir(parents=True, exist_ok=True)
+Path(settings.file_directory).mkdir(parents=True, exist_ok=True)
+Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
 
 # Include routes
 app.include_router(auth.router, tags=["auth"])

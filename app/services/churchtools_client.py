@@ -4,7 +4,7 @@ from typing import List
 
 import httpx
 
-from app.config import Config
+from app.config import settings
 from app.schemas import AppointmentData
 from app.utils import parse_iso_datetime
 
@@ -31,7 +31,7 @@ def _extract_appointment(item: dict) -> dict:
 
 
 async def fetch_calendars(login_token: str):
-    url = f"{Config.CHURCHTOOLS_BASE_URL}/api/calendars"
+    url = f"{settings.churchtools_base_url}/api/calendars"
 
     async with httpx.AsyncClient() as client:
         response = await client.get(url, headers=_auth_headers(login_token))
@@ -53,7 +53,7 @@ async def _fetch_calendar_appointments(
     client: httpx.AsyncClient, calendar_id: int, headers: dict, query_params: dict
 ) -> list[tuple[int, dict]]:
     """Fetch appointments for a single calendar. Returns list of (calendar_id, appointment_dict) tuples."""
-    url = f"{Config.CHURCHTOOLS_BASE_URL}/api/calendars/{calendar_id}/appointments"
+    url = f"{settings.churchtools_base_url}/api/calendars/{calendar_id}/appointments"
     response = await client.get(url, headers=headers, params=query_params)
 
     if response.status_code in (401, 403):
