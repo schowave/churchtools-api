@@ -28,6 +28,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.crud import cleanup_orphaned_settings
+    from app.database import SessionLocal
+
+    db = SessionLocal()
+    try:
+        cleanup_orphaned_settings(db)
+    finally:
+        db.close()
+
     app.state.http_client = httpx.AsyncClient(timeout=30.0)
     yield
     await app.state.http_client.aclose()

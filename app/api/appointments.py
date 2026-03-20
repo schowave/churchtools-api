@@ -181,12 +181,12 @@ async def api_generate(
 
     # Load background image and logo from DB
     background_image_stream = None
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+    bg_data, _ = load_background_image(db, body.profile)
     if bg_data:
         background_image_stream = BytesIO(bg_data)
 
     logo_stream = None
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    logo_data, _ = load_logo(db, body.profile)
     if logo_data:
         logo_stream = BytesIO(logo_data)
 

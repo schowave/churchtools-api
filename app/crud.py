@@ -143,3 +143,65 @@ def delete_background_image(db: Session, setting_name: str) -> None:
     except SQLAlchemyError:
         db.rollback()
         raise
+
+
+def list_profiles(db: Session) -> list[str]:
+    results = db.query(ColorSetting.setting_name).distinct().all()
+    return [r[0] for r in results]
+
+
+def clone_profile(db: Session, source: str, target: str) -> None:
+    source_colors = db.query(ColorSetting).filter(ColorSetting.setting_name == source).first()
+    if not source_colors:
+        raise ValueError(f"Source profile '{source}' does not exist")
+
+    db.add(
+        ColorSetting(
+            setting_name=target,
+            background_color=source_colors.background_color,
+            background_alpha=source_colors.background_alpha,
+            date_color=source_colors.date_color,
+            description_color=source_colors.description_color,
+        )
+    )
+
+    source_logo = db.query(LogoSetting).filter(LogoSetting.setting_name == source).first()
+    if source_logo:
+        db.add(
+            LogoSetting(
+                setting_name=target,
+                logo_data=source_logo.logo_data,
+                logo_filename=source_logo.logo_filename,
+            )
+        )
+
+    source_bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == source).first()
+    if source_bg:
+        db.add(
+            BackgroundImageSetting(
+                setting_name=target,
+                image_data=source_bg.image_data,
+                image_filename=source_bg.image_filename,
+            )
+        )
+
+    db.commit()
+
+
+def delete_profile(db: Session, profile_name: str) -> None:
+    if profile_name == "default":
+        raise ValueError("Cannot delete the default profile")
+
+    db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == profile_name).delete()
+    db.query(LogoSetting).filter(LogoSetting.setting_name == profile_name).delete()
+    db.query(ColorSetting).filter(ColorSetting.setting_name == profile_name).delete()
+    db.commit()
+
+
+def cleanup_orphaned_settings(db: Session) -> None:
+    valid_profiles = {r[0] for r in db.query(ColorSetting.setting_name).all()}
+    db.query(LogoSetting).filter(~LogoSetting.setting_name.in_(valid_profiles)).delete(synchronize_session=False)
+    db.query(BackgroundImageSetting).filter(~BackgroundImageSetting.setting_name.in_(valid_profiles)).delete(
+        synchronize_session=False
+    )
+    db.commit()

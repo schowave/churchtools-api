@@ -72,6 +72,7 @@ class GenerateRequest(BaseModel):
     appointment_ids: List[str]
     color_settings: ColorSettings
     additional_infos: Dict[str, str] = {}
+    profile: str = "default"
 
     @field_validator("appointment_ids")
     @classmethod
