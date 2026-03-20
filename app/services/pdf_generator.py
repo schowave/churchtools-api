@@ -1,7 +1,7 @@
 import io
-import logging
 import os
 
+import structlog
 from babel.dates import format_date
 from PIL import Image, ImageColor
 from reportlab.lib.colors import HexColor, black
@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 from app.schemas import AppointmentData
 from app.utils import normalize_newlines, parse_iso_datetime
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 # Layout constants (16:9 page for church projector display)
 PAGE_WIDTH = 1200

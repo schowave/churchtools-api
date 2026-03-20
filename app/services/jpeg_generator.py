@@ -1,10 +1,10 @@
-import logging
 import zipfile
 from io import BytesIO
 
+import structlog
 from pdf2image import convert_from_bytes
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 def handle_jpeg_generation(pdf_bytes: bytes) -> bytes:

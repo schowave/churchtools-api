@@ -8,6 +8,9 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api import appointments, auth, health
 from app.config import settings
+from app.logging_config import configure_logging
+
+configure_logging(settings.log_format)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

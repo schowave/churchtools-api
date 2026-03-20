@@ -1,11 +1,10 @@
-import logging
-
+import structlog
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models import Appointment, BackgroundImageSetting, ColorSetting, LogoSetting
 from app.schemas import ColorSettings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 def save_additional_infos(db, appointment_info_list):

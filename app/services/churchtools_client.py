@@ -1,14 +1,14 @@
 import asyncio
-import logging
 from typing import List
 
 import httpx
+import structlog
 
 from app.config import settings
 from app.schemas import AppointmentData
 from app.utils import parse_iso_datetime
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 
 class AuthenticationError(Exception):

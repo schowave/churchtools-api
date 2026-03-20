@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     cookie_login_token: str = "login_token"
     version: str = _read_version()
     timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
+    log_format: str = "console"  # "console" or "json"
     timezone: Optional[ZoneInfo] = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
