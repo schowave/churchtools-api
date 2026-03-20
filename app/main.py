@@ -6,7 +6,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api import appointments, auth
 from app.config import settings
-from app.database import create_schema
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -33,7 +32,3 @@ Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
 # Include routes
 app.include_router(auth.router, tags=["auth"])
 app.include_router(appointments.router, tags=["appointments"])
-
-
-# Create database schema
-create_schema()

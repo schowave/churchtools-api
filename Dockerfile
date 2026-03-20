@@ -29,7 +29,8 @@ RUN apt-get update && \
     libfribidi0 \
     libharfbuzz0b \
     libpng16-16 \
-    libjpeg62-turbo && \
+    libjpeg62-turbo \
+    sqlite3 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -46,6 +47,9 @@ WORKDIR /app
 # Copy application source, config, and fonts
 COPY app/ ./app/
 COPY fonts/ ./fonts/
+COPY alembic/ ./alembic/
+COPY alembic.ini entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 COPY pyproject.toml run_fastapi.py ./
 
 ENV PYTHONPATH=/app \
@@ -54,4 +58,4 @@ ENV PYTHONPATH=/app \
 EXPOSE 5005
 VOLUME /app/data
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5005"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -3,12 +3,12 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
-from app.database import Base, create_schema
+from app.database import Base
 from app.models import Appointment, ColorSetting
 from app.schemas import ColorSettings
 
@@ -161,28 +161,6 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(result.background_color, "#d3d3d3")
             mock_logger.error.assert_called_once()
             self.assertIn("Database error", mock_logger.error.call_args[0][0])
-
-    def test_create_schema(self):
-        # Create a fresh in-memory database with no tables
-        test_engine = create_engine("sqlite:///:memory:")
-
-        # Patch the module-level engine so create_schema() uses our test engine
-        with patch("app.database.engine", test_engine), patch("app.database.Base") as mock_base:
-            # Use the real Base.metadata but bind to test engine
-            mock_base.metadata = Base.metadata
-
-            # Verify no tables exist yet
-            inspector = inspect(test_engine)
-            self.assertEqual(inspector.get_table_names(), [])
-
-            # Call create_schema — it imports app.models and creates all tables
-            create_schema()
-
-            # Verify tables were created
-            inspector = inspect(test_engine)
-            table_names = sorted(inspector.get_table_names())
-            self.assertIn("appointments", table_names)
-            self.assertIn("color_settings", table_names)
 
 
 if __name__ == "__main__":
