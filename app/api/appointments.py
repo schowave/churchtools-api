@@ -3,6 +3,7 @@ import os
 from io import BytesIO
 from typing import List, Optional
 
+import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
@@ -21,6 +22,7 @@ from app.crud import (
     save_logo,
 )
 from app.database import DEFAULT_SETTING_NAME, get_db
+from app.dependencies import get_http_client
 from app.schemas import ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
@@ -74,6 +76,7 @@ def _build_template_context(
 async def appointments_page(
     request: Request,
     db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     calendar_ids: Optional[List[str]] = Query(None),
@@ -88,7 +91,7 @@ async def appointments_page(
         end_date = end_date or end_date_default
 
     try:
-        calendars = await fetch_calendars(login_token)
+        calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
         response.delete_cookie(key=settings.cookie_login_token)
@@ -125,6 +128,7 @@ async def appointments_page(
 async def api_appointments(
     request: Request,
     db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: List[str] = Query(...),
@@ -139,7 +143,7 @@ async def api_appointments(
         return JSONResponse({"appointments": []})
 
     try:
-        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int, client)
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -160,6 +164,7 @@ async def api_generate(
     request: Request,
     body: GenerateRequest,
     db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
 ):
     """JSON endpoint for PDF/JPEG generation."""
     login_token = request.cookies.get(settings.cookie_login_token)
@@ -189,7 +194,9 @@ async def api_generate(
     # Fetch appointments from ChurchTools API
     calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]
     try:
-        raw_appointments = await fetch_appointments(login_token, body.start_date, body.end_date, calendar_ids_int)
+        raw_appointments = await fetch_appointments(
+            login_token, body.start_date, body.end_date, calendar_ids_int, client
+        )
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 

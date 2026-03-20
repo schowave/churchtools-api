@@ -64,39 +64,37 @@ async def test_login_page_already_logged_in(config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_login_success(mock_client, config_mock):
+async def test_login_success(config_mock):
     # Mock request
     request_mock = MagicMock(spec=Request)
 
-    # Mock httpx client and responses
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful login response
     login_response = MagicMock()
     login_response.status_code = 200
     login_response.json.return_value = {"data": {"personId": 123}}
     login_response.cookies = {"session": "test_session"}
-    client_instance.post.return_value = login_response
+    client.post.return_value = login_response
 
     # Mock successful token response
     token_response = MagicMock()
     token_response.status_code = 200
     token_response.json.return_value = {"data": "test_token"}
-    client_instance.get.return_value = token_response
+    client.get.return_value = token_response
 
     # Call the function
-    result = await login(request_mock, username="testuser", password="testpass")
+    result = await login(request_mock, username="testuser", password="testpass", client=client)
 
     # Check that client.post was called with correct parameters
-    client_instance.post.assert_called_once_with(
+    client.post.assert_called_once_with(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/login",
         json={"password": "testpass", "rememberMe": True, "username": "testuser"},
     )
 
     # Check that client.get was called with correct parameters
-    client_instance.get.assert_called_once_with(
+    client.get.assert_called_once_with(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/persons/123/logintoken", cookies=login_response.cookies
     )
 
@@ -117,22 +115,20 @@ async def test_login_success(mock_client, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_login_failure(mock_client, templates_mock, config_mock):
+async def test_login_failure(templates_mock, config_mock):
     # Mock request
     request_mock = MagicMock(spec=Request)
 
-    # Mock httpx client and responses
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock failed login response
     login_response = MagicMock()
     login_response.status_code = 401
-    client_instance.post.return_value = login_response
+    client.post.return_value = login_response
 
     # Call the function
-    result = await login(request_mock, username="testuser", password="wrongpass")
+    result = await login(request_mock, username="testuser", password="wrongpass", client=client)
 
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
@@ -151,29 +147,27 @@ async def test_login_failure(mock_client, templates_mock, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_login_token_failure(mock_client, templates_mock, config_mock):
+async def test_login_token_failure(templates_mock, config_mock):
     # Mock request
     request_mock = MagicMock(spec=Request)
 
-    # Mock httpx client and responses
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful login response
     login_response = MagicMock()
     login_response.status_code = 200
     login_response.json.return_value = {"data": {"personId": 123}}
     login_response.cookies = {"session": "test_session"}
-    client_instance.post.return_value = login_response
+    client.post.return_value = login_response
 
     # Mock failed token response
     token_response = MagicMock()
     token_response.status_code = 401
-    client_instance.get.return_value = token_response
+    client.get.return_value = token_response
 
     # Call the function
-    result = await login(request_mock, username="testuser", password="testpass")
+    result = await login(request_mock, username="testuser", password="testpass", client=client)
 
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
@@ -192,22 +186,20 @@ async def test_login_token_failure(mock_client, templates_mock, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_logout(mock_client):
-    # Mock httpx client for the API logout call
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
-    client_instance.post.return_value = MagicMock(status_code=200)
+async def test_logout():
+    # Mock httpx client
+    client = AsyncMock()
+    client.post.return_value = MagicMock(status_code=200)
 
     # Mock request with login token
     request_mock = MagicMock(spec=Request)
     request_mock.cookies.get.return_value = "test_token"
 
     # Call the function
-    result = await logout(request_mock)
+    result = await logout(request_mock, client=client)
 
     # Check that the ChurchTools API logout was called
-    client_instance.post.assert_called_once()
+    client.post.assert_called_once()
 
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)

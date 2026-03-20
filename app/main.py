@@ -1,5 +1,7 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -18,8 +20,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.http_client = httpx.AsyncClient(timeout=30.0)
+    yield
+    await app.state.http_client.aclose()
+
+
 # Create FastAPI application
-app = FastAPI(title="ChurchTools API")
+app = FastAPI(title="ChurchTools API", lifespan=lifespan)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Include static files

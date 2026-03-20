@@ -39,11 +39,9 @@ def config_mock():
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_calendars_success(mock_client, config_mock):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_calendars_success(config_mock):
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful response
     response = MagicMock()
@@ -55,13 +53,13 @@ async def test_fetch_calendars_success(mock_client, config_mock):
             {"id": 3, "name": "Calendar 3", "isPublic": True},
         ]
     }
-    client_instance.get.return_value = response
+    client.get.return_value = response
 
     # Call the function
-    result = await fetch_calendars("test_token")
+    result = await fetch_calendars("test_token", client)
 
     # Check that client.get was called with correct parameters
-    client_instance.get.assert_called_once_with(
+    client.get.assert_called_once_with(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars", headers={"Authorization": "Login test_token"}
     )
 
@@ -72,28 +70,24 @@ async def test_fetch_calendars_success(mock_client, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_calendars_auth_error(mock_client):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_calendars_auth_error():
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock 401 response
     response = MagicMock()
     response.status_code = 401
-    client_instance.get.return_value = response
+    client.get.return_value = response
 
     # Call the function and check that it raises AuthenticationError
     with pytest.raises(AuthenticationError):
-        await fetch_calendars("invalid_token")
+        await fetch_calendars("invalid_token", client)
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments(mock_client, config_mock):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_appointments(config_mock):
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful responses for two calendars
     response1 = MagicMock()
@@ -129,19 +123,19 @@ async def test_fetch_appointments(mock_client, config_mock):
     }
 
     # Set up client to return different responses for different calendar IDs
-    client_instance.get.side_effect = [response1, response2]
+    client.get.side_effect = [response1, response2]
 
     # Call the function
-    result = await fetch_appointments("test_token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("test_token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     # Check that client.get was called twice with correct parameters
-    assert client_instance.get.call_count == 2
-    client_instance.get.assert_any_call(
+    assert client.get.call_count == 2
+    client.get.assert_any_call(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars/1/appointments",
         headers={"Authorization": "Login test_token"},
         params={"from": "2023-01-15", "to": "2023-01-16"},
     )
-    client_instance.get.assert_any_call(
+    client.get.assert_any_call(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars/2/appointments",
         headers={"Authorization": "Login test_token"},
         params={"from": "2023-01-15", "to": "2023-01-16"},
@@ -284,16 +278,19 @@ async def test_appointments_page_with_token(
     # Mock database session
     db_mock = MagicMock()
 
+    # Mock http client
+    client_mock = AsyncMock()
+
     # Mock return values
     mock_get_date.return_value = ("2023-01-15", "2023-01-22")
     mock_fetch_cal.return_value = [{"id": 1, "name": "Calendar 1"}, {"id": 2, "name": "Calendar 2"}]
     mock_load_color.return_value = ColorSettings(name="default")
 
     # Call the function (page renders without appointments, AJAX loads them later)
-    await appointments_page(request_mock, db_mock, start_date=None, end_date=None, calendar_ids=None)
+    await appointments_page(request_mock, db_mock, client_mock, start_date=None, end_date=None, calendar_ids=None)
 
-    # Check that fetch_calendars was called with the token
-    mock_fetch_cal.assert_called_once_with("test_token")
+    # Check that fetch_calendars was called with the token and client
+    mock_fetch_cal.assert_called_once_with("test_token", client_mock)
 
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
@@ -325,8 +322,11 @@ async def test_appointments_page_without_token(mock_fetch):
     # Mock database session
     db_mock = MagicMock()
 
+    # Mock http client
+    client_mock = AsyncMock()
+
     # Call the function
-    result = await appointments_page(request_mock, db_mock)
+    result = await appointments_page(request_mock, db_mock, client_mock)
 
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
@@ -398,6 +398,7 @@ async def test_api_appointments(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
     mock_get_info.return_value = {"1_101": "Saved info"}
@@ -405,13 +406,14 @@ async def test_api_appointments(
     response = await api_appointments(
         request=request,
         db=db,
+        client=client,
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1", "2"],
     )
 
     assert response.status_code == 200
-    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2])
+    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2], client)
 
 
 @pytest.mark.asyncio
@@ -423,11 +425,9 @@ async def test_download_file_path_traversal(config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments_deduplication(mock_client, config_mock):
+async def test_fetch_appointments_deduplication(config_mock):
     """Same appointment appearing in multiple calendars should be deduplicated."""
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    client = AsyncMock()
 
     def make_appointment():
         return {
@@ -447,9 +447,9 @@ async def test_fetch_appointments_deduplication(mock_client, config_mock):
     response2.status_code = 200
     response2.json.return_value = {"data": [make_appointment()]}
 
-    client_instance.get.side_effect = [response1, response2]
+    client.get.side_effect = [response1, response2]
 
-    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     # Same base ID in different calendars -> different composite IDs, both kept
     assert len(result) == 2
@@ -459,11 +459,9 @@ async def test_fetch_appointments_deduplication(mock_client, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments_partial_failure(mock_client, config_mock):
+async def test_fetch_appointments_partial_failure(config_mock):
     """If one calendar fails, appointments from other calendars should still be returned."""
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    client = AsyncMock()
 
     success_response = MagicMock()
     success_response.status_code = 200
@@ -479,9 +477,9 @@ async def test_fetch_appointments_partial_failure(mock_client, config_mock):
     fail_response = MagicMock()
     fail_response.status_code = 500
 
-    client_instance.get.side_effect = [success_response, fail_response]
+    client.get.side_effect = [success_response, fail_response]
 
-    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     assert len(result) == 1
     assert result[0]["base"]["id"] == "1_101"
@@ -510,6 +508,7 @@ async def test_api_generate_pdf(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
     mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
@@ -529,7 +528,7 @@ async def test_api_generate_pdf(
         additional_infos={"1_101": "Extra info"},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
 
     assert response.status_code == 200
     import json
@@ -578,6 +577,7 @@ async def test_api_generate_jpeg(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
     mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
@@ -598,7 +598,7 @@ async def test_api_generate_jpeg(
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
 
     assert response.status_code == 200
     import json
@@ -614,6 +614,7 @@ async def test_api_generate_no_auth():
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = None
     db = MagicMock()
+    client = AsyncMock()
 
     body = GenerateRequest(
         type="pdf",
@@ -630,7 +631,7 @@ async def test_api_generate_no_auth():
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
     assert response.status_code == 401
 
 
@@ -648,6 +649,7 @@ async def test_api_generate_auth_error_mid_session(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "expired_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.side_effect = AuthenticationError()
 
@@ -666,5 +668,5 @@ async def test_api_generate_auth_error_mid_session(
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
     assert response.status_code == 401
