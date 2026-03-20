@@ -14,7 +14,7 @@ dependencies = [
 
     "pdf2image>=1.17",
     "python-dateutil>=2.9",
-    "pytz>=2026.1",
+
     "babel>=2.18",
     "reportlab>=4.4",
 ]

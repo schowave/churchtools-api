@@ -38,3 +38,19 @@ class TestSettings(unittest.TestCase):
         s = Settings()
         assert s.version != "0.0.0"
         assert "." in s.version
+
+    @patch.dict("os.environ", {"CHURCHTOOLS_BASE": "test.church.tools", "TIMEZONE": "America/New_York"}, clear=False)
+    def test_custom_timezone(self):
+        from zoneinfo import ZoneInfo
+
+        from app.config import Settings
+
+        s = Settings()
+        assert s.timezone == ZoneInfo("America/New_York")
+
+    @patch.dict("os.environ", {"CHURCHTOOLS_BASE": "test.church.tools", "TIMEZONE": "Invalid/Zone"}, clear=False)
+    def test_invalid_timezone_raises(self):
+        from app.config import Settings
+
+        with self.assertRaises(Exception):
+            Settings()

@@ -1,25 +1,22 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
+from zoneinfo import ZoneInfo
 
-import pytz
 
+def parse_iso_datetime(dt_str: str, tz: Optional[ZoneInfo] = None) -> datetime:
+    """Converts an ISO datetime string to a timezone-aware datetime."""
+    if tz is None:
+        from app.config import settings
 
-def parse_iso_datetime(dt_str: str) -> datetime:
-    """
-    Converts an ISO datetime string to a timezone-aware datetime object in the Europe/Berlin timezone.
-    """
-    # Create a timezone-aware datetime object in UTC if the string ends with 'Z'
+        tz = settings.timezone
+
     if dt_str.endswith("Z"):
         dt = datetime.fromisoformat(dt_str.rstrip("Z"))
-        utc_dt = dt.replace(tzinfo=pytz.utc)
+        utc_dt = dt.replace(tzinfo=timezone.utc)
     else:
-        # If the string does not end with 'Z', parse it as is
         utc_dt = datetime.fromisoformat(dt_str)
 
-    # Convert the timezone from UTC to Europe/Berlin
-    berlin_tz = pytz.timezone("Europe/Berlin")
-    berlin_dt = utc_dt.astimezone(berlin_tz)
-    return berlin_dt
+    return utc_dt.astimezone(tz)
 
 
 def get_date_range_from_form(start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[str, str]:
