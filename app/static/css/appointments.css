@@ -471,13 +471,13 @@
 .appointment-date {
     font-weight: 600;
     color: var(--secondary-color);
-    font-size: 0.82rem;
+    font-size: 0.92rem;
     font-family: var(--font-family);
 }
 
 .appointment-description {
     color: var(--text-color);
-    font-size: 0.9rem;
+    font-size: 1rem;
     margin-top: 0;
 }
 
