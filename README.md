@@ -5,10 +5,12 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/schowave/churchtools-api)](LICENSE)
 
-A web application for viewing and exporting appointments from any [ChurchTools](https://www.church.tools/) instance as styled PDF documents or JPEG images.
+A web application for creating styled announcement slides from [ChurchTools](https://www.church.tools/) calendar events — exported as PDF or JPEG for use in church services.
 
 <p align="center">
-  <img src="images/dashboard.png" alt="Dashboard" width="700">
+  <img src="images/start.png" alt="Startseite" width="250">
+  <img src="images/kalenderauswahl.png" alt="Kalenderauswahl" width="250">
+  <img src="images/folienerstellung.png" alt="Folienerstellung" width="250">
 </p>
 
 ## Features
