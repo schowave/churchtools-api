@@ -1,0 +1,72 @@
+/* flatpickr-theme.css — Sage green overrides */
+
+.flatpickr-calendar {
+    font-family: var(--font-family);
+    border: 1px solid var(--border-color);
+    border-radius: var(--container-radius);
+    box-shadow: var(--box-shadow-lg);
+}
+
+.flatpickr-months {
+    border-radius: var(--container-radius) var(--container-radius) 0 0;
+    background: var(--primary-subtle);
+}
+
+.flatpickr-months .flatpickr-month {
+    background: transparent;
+    color: var(--text-color);
+    font-family: var(--font-display);
+}
+
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-current-month input.cur-year {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.flatpickr-months .flatpickr-prev-month,
+.flatpickr-months .flatpickr-next-month {
+    color: var(--text-muted);
+    fill: var(--text-muted);
+}
+
+.flatpickr-months .flatpickr-prev-month:hover,
+.flatpickr-months .flatpickr-next-month:hover {
+    color: var(--primary-color);
+    fill: var(--primary-color);
+}
+
+span.flatpickr-weekday {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+}
+
+.flatpickr-day {
+    border-radius: 8px;
+    color: var(--text-color);
+    transition: all 0.15s ease;
+}
+
+.flatpickr-day:hover {
+    background: var(--primary-light);
+    border-color: var(--primary-light);
+    color: var(--primary-color);
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.flatpickr-day.today {
+    border-color: var(--primary-color);
+}
+
+.flatpickr-day.today:hover {
+    background: var(--primary-color);
+    color: white;
+}

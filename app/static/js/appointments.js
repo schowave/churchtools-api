@@ -1,22 +1,33 @@
-/* appointments.js - Consolidated JavaScript for the appointments page */
+/* appointments.js — Vanilla JS (no jQuery) */
+
+const $ = (s, c = document) => c.querySelector(s);
+const $$ = (s, c = document) => c.querySelectorAll(s);
 
 // --- CSRF token helper ---
 
 function getCsrfToken() {
-    var meta = document.querySelector('meta[name="csrf-token"]');
+    var meta = $('meta[name="csrf-token"]');
     if (meta) return meta.getAttribute('content');
-    // Fallback: read from cookie
     var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-// --- Utility functions (no DOM dependency) ---
+// --- Utility functions ---
 
+function showButtonSpinner(btn) {
+    btn.classList.add('is-loading');
+    var label = $('.btn-label', btn);
+    var spinner = $('.btn-spinner', btn);
+    if (label) label.style.display = 'none';
+    if (spinner) spinner.style.display = '';
+}
 
-function showButtonSpinner($btn) {
-    $btn.addClass('is-loading');
-    $btn.find('.btn-label').hide();
-    $btn.find('.btn-spinner').show();
+function hideButtonSpinner(btn) {
+    btn.classList.remove('is-loading');
+    var label = $('.btn-label', btn);
+    var spinner = $('.btn-spinner', btn);
+    if (label) label.style.display = '';
+    if (spinner) spinner.style.display = 'none';
 }
 
 function autoResizeTextarea(textarea) {
@@ -66,7 +77,6 @@ function escapeHtml(text) {
 }
 
 function formatDateWithWeekday(dateStr) {
-    // dateStr is "dd.mm.yyyy"
     var parts = dateStr.split('.');
     if (parts.length !== 3) return dateStr;
     var date = new Date(parts[2], parts[1] - 1, parts[0]);
@@ -74,18 +84,31 @@ function formatDateWithWeekday(dateStr) {
     return days[date.getDay()] + ', ' + dateStr;
 }
 
+// --- Flatpickr helpers ---
+
+function setDateRange(startDate, endDate) {
+    if (window._fpStart) window._fpStart.setDate(startDate, true);
+    if (window._fpEnd) window._fpEnd.setDate(endDate, true);
+}
+
+function formatIso(date) {
+    var y = date.getFullYear();
+    var m = String(date.getMonth() + 1).padStart(2, '0');
+    var d = String(date.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+}
+
 // --- Appointment rendering ---
 
 function renderAppointments(appointments) {
-    var $main = $('.appointments-main');
+    var main = $('.appointments-main');
 
     if (!appointments || appointments.length === 0) {
-        $main.html(
+        main.innerHTML =
             '<div class="empty-state">' +
                 '<p>Keine Termine vorhanden.</p>' +
                 '<p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine laden" klicken.</p>' +
-            '</div>'
-        );
+            '</div>';
         checkAppointments();
         return;
     }
@@ -100,7 +123,6 @@ function renderAppointments(appointments) {
     var lastDate = null;
     var itemIndex = 0;
     appointments.forEach(function (app) {
-        // Insert date group header when date changes
         var dateKey = app.start_date_view;
         if (dateKey !== lastDate) {
             html += '<div class="date-group-header">' + escapeHtml(formatDateWithWeekday(dateKey)) + '</div>';
@@ -120,12 +142,12 @@ function renderAppointments(appointments) {
                 '</span>' +
                 '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
                 '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
-                    ' onclick="event.preventDefault(); this.classList.add(\'hidden\'); var ta=this.closest(\'.appointment-item\').querySelector(\'textarea\'); ta.classList.remove(\'hidden\'); ta.focus();">' +
+                    ' data-action="show-textarea">' +
                     '+ Eigener Text' +
                 '</button>' +
             '</label>' +
             (hasDescription
-                ? '<span class="appointment-info-text' + (hasInfo ? ' overridden' : '') + '" onclick="this.classList.toggle(\'expanded\')">' + escapeHtml(app.information) + '</span>'
+                ? '<span class="appointment-info-text' + (hasInfo ? ' overridden' : '') + '" data-action="toggle-expand">' + escapeHtml(app.information) + '</span>'
                 : '') +
             '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
                 ' class="' + (hasInfo ? '' : 'hidden') + '"' +
@@ -135,51 +157,31 @@ function renderAppointments(appointments) {
     });
 
     html += '</div>';
-    $main.html(html);
+    main.innerHTML = html;
 
-    // Rebind select/deselect buttons
-    $('#selectAllAppointments').on('click', function () {
-        $('.appointment-checkbox').prop('checked', true);
-        updateSelectionCount();
-    });
-    $('#deselectAllAppointments').on('click', function () {
-        $('.appointment-checkbox').prop('checked', false);
-        updateSelectionCount();
-    });
-
-    // Auto-resize textareas
-    $main.find('textarea').each(function () {
-        var textarea = this;
+    // Auto-resize existing textareas
+    $$('textarea', main).forEach(function (textarea) {
         setTimeout(function () { autoResizeTextarea(textarea); }, 50);
-        $(textarea).on('input focus blur', function () {
-            autoResizeTextarea(this);
-            var infoText = $(this).closest('.appointment-item').find('.appointment-info-text');
-            if (infoText.length) {
-                infoText.toggleClass('overridden', this.value.trim().length > 0);
-            }
-        });
     });
 
     checkAppointments();
 }
 
 function fetchAppointmentsAjax() {
-    var startDate = $('#start_date').val();
-    var endDate = $('#end_date').val();
+    var startDate = $('#start_date').value;
+    var endDate = $('#end_date').value;
     var calendarIds = [];
-    $('.calendar-checkbox:checked').each(function () {
-        calendarIds.push($(this).val());
+    $$('.calendar-checkbox:checked').forEach(function (cb) {
+        calendarIds.push(cb.value);
     });
 
-    // Show loading state
-    var $fetchBtn = $('#fetch_btn');
-    showButtonSpinner($fetchBtn);
-    $('.appointments-main').html(
+    var fetchBtn = $('#fetch_btn');
+    showButtonSpinner(fetchBtn);
+    $('.appointments-main').innerHTML =
         '<div class="appointments-loading">' +
             '<span class="spinner-ring-inline spinner-ring-inline--dark"></span>' +
             '<span>Termine werden geladen…</span>' +
-        '</div>'
-    );
+        '</div>';
 
     var params = new URLSearchParams();
     params.append('start_date', startDate);
@@ -200,83 +202,78 @@ function fetchAppointmentsAjax() {
         .then(function (data) {
             if (!data) return;
             renderAppointments(data.appointments);
-            // Reset fetch button
-            $fetchBtn.removeClass('is-loading');
-            $fetchBtn.find('.btn-label').show();
-            $fetchBtn.find('.btn-spinner').hide();
+            hideButtonSpinner(fetchBtn);
         })
         .catch(function (err) {
-            $('.appointments-main').html(
+            $('.appointments-main').innerHTML =
                 '<div class="empty-state">' +
                     '<p>' + escapeHtml(err.message) + '</p>' +
-                '</div>'
-            );
-            $fetchBtn.removeClass('is-loading');
-            $fetchBtn.find('.btn-label').show();
-            $fetchBtn.find('.btn-spinner').hide();
+                '</div>';
+            hideButtonSpinner(fetchBtn);
         });
 }
 
 function updateSelectionCount() {
-    var total = $('.appointment-checkbox').length;
-    var checked = $('.appointment-checkbox:checked').length;
-    $('.appointment-count').text(checked + ' von ' + total + ' ausgewählt');
+    var total = $$('.appointment-checkbox').length;
+    var checked = $$('.appointment-checkbox:checked').length;
+    var counter = $('.appointment-count');
+    if (counter) counter.textContent = checked + ' von ' + total + ' ausgewählt';
 }
 
 function checkAppointments() {
-    var hasAppointments = $('.appointment-checkbox').length > 0;
+    var hasAppointments = $$('.appointment-checkbox').length > 0;
 
-    $('#generate_pdf_btn, #generate_jpeg_btn').prop('disabled', !hasAppointments);
+    $('#generate_pdf_btn').disabled = !hasAppointments;
+    $('#generate_jpeg_btn').disabled = !hasAppointments;
 
-    if (!hasAppointments) {
-        $('#generate_error').show();
-    } else {
-        $('#generate_error').hide();
-    }
+    var errorEl = $('#generate_error');
+    errorEl.style.display = hasAppointments ? 'none' : '';
 }
 
 function generateOutput(type) {
     var appointmentIds = [];
-    $('.appointment-checkbox:checked').each(function () {
-        appointmentIds.push($(this).val());
+    $$('.appointment-checkbox:checked').forEach(function (cb) {
+        appointmentIds.push(cb.value);
     });
 
+    var errorEl = $('#generate_error');
     if (appointmentIds.length === 0) {
-        $('#generate_error').text('Bitte mindestens einen Termin auswählen.').show();
+        errorEl.textContent = 'Bitte mindestens einen Termin auswählen.';
+        errorEl.style.display = '';
         return;
     }
-    $('#generate_error').hide();
+    errorEl.style.display = 'none';
 
     var additionalInfos = {};
     appointmentIds.forEach(function (id) {
         var textarea = $('textarea[name="additional_info_' + id + '"]');
-        if (textarea.length && textarea.val().trim()) {
-            additionalInfos[id] = textarea.val();
+        if (textarea && textarea.value.trim()) {
+            additionalInfos[id] = textarea.value;
         }
     });
 
     var calendarIds = [];
-    $('.calendar-checkbox:checked').each(function () {
-        calendarIds.push($(this).val());
+    $$('.calendar-checkbox:checked').forEach(function (cb) {
+        calendarIds.push(cb.value);
     });
 
     var payload = {
         type: type,
-        start_date: $('#start_date').val(),
-        end_date: $('#end_date').val(),
+        start_date: $('#start_date').value,
+        end_date: $('#end_date').value,
         calendar_ids: calendarIds,
         appointment_ids: appointmentIds,
         color_settings: {
-            background_color: $('#background_color').val(),
-            background_alpha: parseInt($('#alpha').val(), 10),
-            date_color: $('#date_color').val(),
-            description_color: $('#description_color').val()
+            background_color: $('#background_color').value,
+            background_alpha: parseInt($('#alpha').value, 10),
+            date_color: $('#date_color').value,
+            description_color: $('#description_color').value
         },
         additional_infos: additionalInfos
     };
 
-    var $btn = type === 'pdf' ? $('#generate_pdf_btn') : $('#generate_jpeg_btn');
-    showButtonSpinner($btn);
+    var btn = type === 'pdf' ? $('#generate_pdf_btn') : $('#generate_jpeg_btn');
+    showButtonSpinner(btn);
 
     fetch('/api/generate', {
         method: 'POST',
@@ -293,7 +290,6 @@ function generateOutput(type) {
                 throw new Error(data.error || data.detail || 'Fehler beim Generieren');
             });
         }
-        // Extract filename from Content-Disposition header
         var disposition = res.headers.get('Content-Disposition') || '';
         var filenameMatch = disposition.match(/filename=([^;]+)/);
         var filename = filenameMatch ? filenameMatch[1] : (type === 'pdf' ? 'appointments.pdf' : 'appointments.zip');
@@ -304,7 +300,6 @@ function generateOutput(type) {
     })
     .then(function (result) {
         if (!result) return;
-        // Use a link with typed blob so the browser treats it as a safe download
         var url = URL.createObjectURL(result.blob);
         var a = document.createElement('a');
         a.href = url;
@@ -316,221 +311,246 @@ function generateOutput(type) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
-        $btn.removeClass('is-loading');
-        $btn.find('.btn-label').show();
-        $btn.find('.btn-spinner').hide();
+        hideButtonSpinner(btn);
     })
     .catch(function (err) {
         console.error('Generate error:', err);
-        $('#generate_error').text(err.message || 'Unbekannter Fehler').show();
-        $btn.removeClass('is-loading');
-        $btn.find('.btn-label').show();
-        $btn.find('.btn-spinner').hide();
+        var errorEl = $('#generate_error');
+        errorEl.textContent = err.message || 'Unbekannter Fehler';
+        errorEl.style.display = '';
+        hideButtonSpinner(btn);
     });
 }
 
-// --- jQuery-dependent initialization ---
+// --- Initialization ---
 
-$(function () {
-    // Datepicker German locale
-    $.datepicker.regional['de'] = {
-        closeText: 'Schließen',
-        prevText: '&#x3C;Zurück',
-        nextText: 'Vor&#x3E;',
-        currentText: 'Heute',
-        monthNames: ['Januar','Februar','März','April','Mai','Juni',
-            'Juli','August','September','Oktober','November','Dezember'],
-        monthNamesShort: ['Jan','Feb','Mär','Apr','Mai','Jun',
-            'Jul','Aug','Sep','Okt','Nov','Dez'],
-        dayNames: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'],
-        dayNamesShort: ['So','Mo','Di','Mi','Do','Fr','Sa'],
-        dayNamesMin: ['So','Mo','Di','Mi','Do','Fr','Sa'],
-        weekHeader: 'KW',
-        firstDay: 1,
-        isRTL: false,
-        showMonthAfterYear: false,
-        yearSuffix: ''
-    };
-    $.datepicker.setDefaults($.datepicker.regional['de']);
-
-    // Datepicker setup — display dd.mm.yy, store yy-mm-dd in hidden fields
-    $("#start_date_display").datepicker({
-        dateFormat: "dd.mm.yy",
-        altField: "#start_date",
-        altFormat: "yy-mm-dd"
-    });
-    $("#end_date_display").datepicker({
-        dateFormat: "dd.mm.yy",
-        altField: "#end_date",
-        altFormat: "yy-mm-dd"
+document.addEventListener('DOMContentLoaded', function () {
+    // Flatpickr — German locale, display dd.mm.yyyy, store yyyy-mm-dd in hidden fields
+    window._fpStart = flatpickr('#start_date_display', {
+        locale: 'de',
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'd.m.Y',
+        allowInput: true,
+        onChange: function (selectedDates, dateStr) {
+            $('#start_date').value = dateStr;
+        }
     });
 
-    // Initialize display fields from hidden ISO values
-    var startIso = $("#start_date").val();
-    var endIso = $("#end_date").val();
-    if (startIso) {
-        var startParts = startIso.split("-");
-        $("#start_date_display").val(startParts[2] + "." + startParts[1] + "." + startParts[0]);
-    }
-    if (endIso) {
-        var endParts = endIso.split("-");
-        $("#end_date_display").val(endParts[2] + "." + endParts[1] + "." + endParts[0]);
-    }
+    window._fpEnd = flatpickr('#end_date_display', {
+        locale: 'de',
+        dateFormat: 'Y-m-d',
+        altInput: true,
+        altFormat: 'd.m.Y',
+        allowInput: true,
+        onChange: function (selectedDates, dateStr) {
+            $('#end_date').value = dateStr;
+        }
+    });
+
+    // Initialize from hidden ISO values
+    var startIso = $('#start_date').value;
+    var endIso = $('#end_date').value;
+    if (startIso) window._fpStart.setDate(startIso, true);
+    if (endIso) window._fpEnd.setDate(endIso, true);
 
     // Set defaults if no values provided
     if (!startIso || !endIso) {
         var thisWeek = calculateThisWeekDates();
-        $("#start_date_display").datepicker("setDate", thisWeek.start);
-        $("#end_date_display").datepicker("setDate", thisWeek.end);
+        setDateRange(thisWeek.start, thisWeek.end);
+        $('#start_date').value = formatIso(thisWeek.start);
+        $('#end_date').value = formatIso(thisWeek.end);
     }
 
-    // Date preset buttons — set datepicker (auto-syncs to hidden field) then fetch
-    $("#today").click(function () {
+    // Date preset buttons
+    $('#today').addEventListener('click', function () {
         var today = new Date();
-        $("#start_date_display").datepicker("setDate", today);
-        $("#end_date_display").datepicker("setDate", today);
+        setDateRange(today, today);
+        $('#start_date').value = formatIso(today);
+        $('#end_date').value = formatIso(today);
         fetchAppointmentsAjax();
     });
 
-    $("#this-week").click(function () {
+    $('#this-week').addEventListener('click', function () {
         var thisWeek = calculateThisWeekDates();
-        $("#start_date_display").datepicker("setDate", thisWeek.start);
-        $("#end_date_display").datepicker("setDate", thisWeek.end);
+        setDateRange(thisWeek.start, thisWeek.end);
+        $('#start_date').value = formatIso(thisWeek.start);
+        $('#end_date').value = formatIso(thisWeek.end);
         fetchAppointmentsAjax();
     });
 
-    $("#next-week").click(function () {
+    $('#next-week').addEventListener('click', function () {
         var nextWeek = calculateNextWeekDates();
-        $("#start_date_display").datepicker("setDate", nextWeek.start);
-        $("#end_date_display").datepicker("setDate", nextWeek.end);
+        setDateRange(nextWeek.start, nextWeek.end);
+        $('#start_date').value = formatIso(nextWeek.start);
+        $('#end_date').value = formatIso(nextWeek.end);
         fetchAppointmentsAjax();
     });
 
-    // Fetch button — AJAX, no form submit
-    $('#fetch_btn').click(function () {
-        fetchAppointmentsAjax();
-    });
+    // Fetch button
+    $('#fetch_btn').addEventListener('click', fetchAppointmentsAjax);
 
-    // Generate buttons — AJAX, no form submit
-    $('#generate_pdf_btn').click(function () {
-        generateOutput('pdf');
-    });
+    // Generate buttons
+    $('#generate_pdf_btn').addEventListener('click', function () { generateOutput('pdf'); });
+    $('#generate_jpeg_btn').addEventListener('click', function () { generateOutput('jpeg'); });
 
-    $('#generate_jpeg_btn').click(function () {
-        generateOutput('jpeg');
-    });
+    // Event delegation for dynamic content on appointments-main
+    $('.appointments-main').addEventListener('click', function (e) {
+        // Select all / deselect all
+        var target = e.target;
+        if (target.id === 'selectAllAppointments' || target.closest('#selectAllAppointments')) {
+            $$('.appointment-checkbox').forEach(function (cb) { cb.checked = true; });
+            updateSelectionCount();
+            return;
+        }
+        if (target.id === 'deselectAllAppointments' || target.closest('#deselectAllAppointments')) {
+            $$('.appointment-checkbox').forEach(function (cb) { cb.checked = false; });
+            updateSelectionCount();
+            return;
+        }
 
-    // Live selection counter (delegated for dynamically added checkboxes)
-    $(document).on('change', '.appointment-checkbox', updateSelectionCount);
+        // "+ Eigener Text" button
+        var infoBtn = target.closest('[data-action="show-textarea"]');
+        if (infoBtn) {
+            e.preventDefault();
+            infoBtn.classList.add('hidden');
+            var ta = infoBtn.closest('.appointment-item').querySelector('textarea');
+            if (ta) { ta.classList.remove('hidden'); ta.focus(); }
+            return;
+        }
 
-    // Calendar chips toggle (collapsed by default)
-    $('#calendars_toggle').on('click', function () {
-        var $wrap = $('#calendars_wrap');
-        var isExpanded = $(this).attr('aria-expanded') === 'true';
-        if (isExpanded) {
-            $wrap.slideUp(200);
-            $(this).attr('aria-expanded', 'false');
-        } else {
-            $wrap.slideDown(200);
-            $(this).attr('aria-expanded', 'true');
+        // Expand/collapse info text
+        var infoText = target.closest('[data-action="toggle-expand"]');
+        if (infoText) {
+            infoText.classList.toggle('expanded');
         }
     });
 
-    // Calendar chip counter
-    $(document).on('change', '.calendar-checkbox', function () {
-        var total = $('.calendar-checkbox').length;
-        var checked = $('.calendar-checkbox:checked').length;
-        $('.calendar-selection-info').text(checked + ' von ' + total);
+    // Event delegation for checkbox changes
+    $('.appointments-main').addEventListener('change', function (e) {
+        if (e.target.classList.contains('appointment-checkbox')) {
+            updateSelectionCount();
+        }
     });
 
-    // Logo upload - button triggers hidden file input
-    $('#logo_upload_btn').on('click', function () {
-        document.getElementById('logo_upload').click();
+    // Event delegation for textarea input (auto-resize + overridden state)
+    $('.appointments-main').addEventListener('input', function (e) {
+        if (e.target.tagName === 'TEXTAREA') {
+            autoResizeTextarea(e.target);
+            var infoText = e.target.closest('.appointment-item').querySelector('.appointment-info-text');
+            if (infoText) {
+                infoText.classList.toggle('overridden', e.target.value.trim().length > 0);
+            }
+        }
     });
 
-    $('#logo_upload').on('change', function () {
+    // Calendar chips toggle (CSS collapse)
+    $('#calendars_toggle').addEventListener('click', function () {
+        var wrap = $('#calendars_wrap');
+        var isExpanded = this.getAttribute('aria-expanded') === 'true';
+        if (isExpanded) {
+            wrap.classList.remove('is-open');
+            this.setAttribute('aria-expanded', 'false');
+        } else {
+            wrap.classList.add('is-open');
+            this.setAttribute('aria-expanded', 'true');
+        }
+    });
+
+    // Calendar chip counter (delegated)
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('calendar-checkbox')) {
+            var total = $$('.calendar-checkbox').length;
+            var checked = $$('.calendar-checkbox:checked').length;
+            var info = $('.calendar-selection-info');
+            if (info) info.textContent = checked + ' von ' + total;
+        }
+    });
+
+    // Logo upload
+    $('#logo_upload_btn').addEventListener('click', function () {
+        $('#logo_upload').click();
+    });
+
+    $('#logo_upload').addEventListener('change', function () {
         var file = this.files[0];
         if (!file) return;
         var formData = new FormData();
         formData.append('file', file);
-        var $btn = $('#logo_upload_btn');
-        showButtonSpinner($btn);
+        var btn = $('#logo_upload_btn');
+        showButtonSpinner(btn);
         fetch('/logo/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
                 return res.json();
             })
             .then(function () {
-                $('#logo-img').attr('src', '/logo?' + Date.now());
-                $('#logo-preview').show();
-                $('#logo_delete').show();
-                $btn.removeClass('is-loading');
-                $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').text('Gespeichert!').show();
-                setTimeout(function () { $btn.find('.btn-label').text('Hochladen'); }, 2000);
+                $('#logo-img').src = '/logo?' + Date.now();
+                $('#logo-preview').style.display = '';
+                $('#logo_delete').style.display = '';
+                hideButtonSpinner(btn);
+                var label = $('.btn-label', btn);
+                label.textContent = 'Gespeichert!';
+                setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
-                $btn.removeClass('is-loading');
-                $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').show();
+                hideButtonSpinner(btn);
             });
         this.value = '';
     });
 
     // Logo delete
-    $('#logo_delete').on('click', function () {
+    $('#logo_delete').addEventListener('click', function () {
         fetch('/logo', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
-                $('#logo-preview').hide();
-                $('#logo_delete').hide();
+                $('#logo-preview').style.display = 'none';
+                $('#logo_delete').style.display = 'none';
             })
             .catch(function (err) { alert(err.message); });
     });
 
-    // Background image upload - button triggers hidden file input
-    $('#bg_upload_btn').on('click', function () {
-        document.getElementById('bg_upload').click();
+    // Background image upload
+    $('#bg_upload_btn').addEventListener('click', function () {
+        $('#bg_upload').click();
     });
 
-    $('#bg_upload').on('change', function () {
+    $('#bg_upload').addEventListener('change', function () {
         var file = this.files[0];
         if (!file) return;
         var formData = new FormData();
         formData.append('file', file);
-        var $btn = $('#bg_upload_btn');
-        showButtonSpinner($btn);
+        var btn = $('#bg_upload_btn');
+        showButtonSpinner(btn);
         fetch('/background/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
                 return res.json();
             })
             .then(function () {
-                $('#bg-img').attr('src', '/background?' + Date.now());
-                $('#bg-preview').show();
-                $('#bg_delete').show();
-                $btn.removeClass('is-loading');
-                $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').text('Gespeichert!').show();
-                setTimeout(function () { $btn.find('.btn-label').text('Hochladen'); }, 2000);
+                $('#bg-img').src = '/background?' + Date.now();
+                $('#bg-preview').style.display = '';
+                $('#bg_delete').style.display = '';
+                hideButtonSpinner(btn);
+                var label = $('.btn-label', btn);
+                label.textContent = 'Gespeichert!';
+                setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
             })
             .catch(function (err) {
                 alert(err.message);
-                $btn.removeClass('is-loading');
-                $btn.find('.btn-spinner').hide();
-                $btn.find('.btn-label').show();
+                hideButtonSpinner(btn);
             });
         this.value = '';
     });
 
     // Background image delete
-    $('#bg_delete').on('click', function () {
+    $('#bg_delete').addEventListener('click', function () {
         fetch('/background', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
                 if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
-                $('#bg-preview').hide();
-                $('#bg_delete').hide();
+                $('#bg-preview').style.display = 'none';
+                $('#bg_delete').style.display = 'none';
             })
             .catch(function (err) { alert(err.message); });
     });

@@ -8,13 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/static/css/normalize.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/flatpickr.min.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/flatpickr-theme.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/appointments.css?v={{ version }}">
-    <style>.ui-datepicker { z-index: 9999 !important; }</style>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="/static/js/flatpickr.min.js"></script>
+    <script src="/static/js/flatpickr-de.js"></script>
     <script src="/static/js/htmx.min.js"></script>
     <script src="/static/js/alpine.min.js" defer></script>
     <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
@@ -74,7 +74,7 @@
                     <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }}</span>
                     <svg class="chips-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
-                <div class="chips-wrap" id="calendars_wrap" style="display: none;">
+                <div class="chips-wrap" id="calendars_wrap">
                     {% for calendar in calendars %}
                     <label class="calendar-chip">
                         <input type="checkbox" name="calendar_ids" value="{{ calendar['id'] }}"
@@ -95,12 +95,7 @@
     </div>
 
     <!-- Step 2: Appointments list -->
-    <div class="appointments-main"
-         id="appointments-container"
-         hx-get="/fragments/appointments"
-         hx-trigger="load"
-         hx-include="[name='start_date'], [name='end_date'], [name='calendar_ids']:checked"
-         hx-indicator=".appointments-loading">
+    <div class="appointments-main" id="appointments-container" aria-live="polite">
         <div class="appointments-loading">
             <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
             <span>Termine werden geladen…</span>
