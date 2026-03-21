@@ -38,7 +38,7 @@
     /* Typography */
     --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-display: 'Fraunces', Georgia, serif;
-    --font-size-base: 15px;
+    --font-size-base: 16px;
     --line-height: 1.6;
 
     /* Transitions */
@@ -127,7 +127,7 @@ label {
     margin-top: var(--spacing-lg);
     margin-bottom: var(--spacing-xs);
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: var(--text-muted);
     text-align: left;
     text-transform: uppercase;
@@ -146,7 +146,7 @@ select {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-family: var(--font-family);
-    font-size: 0.95rem;
+    font-size: 1rem;
     color: var(--text-color);
     background: white;
     transition: border-color var(--transition-speed) var(--transition-ease),
@@ -172,7 +172,7 @@ input[type="submit"] {
     border-radius: var(--border-radius);
     color: white;
     font-family: var(--font-family);
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--transition-speed) var(--transition-ease),
@@ -209,7 +209,7 @@ input[type="submit"]:active {
     padding: 0.65rem 1.1rem;
     margin-top: var(--spacing-md);
     font-family: var(--font-family);
-    font-size: 0.9rem;
+    font-size: 0.9375rem;
     font-weight: 600;
     color: white;
     text-decoration: none;
@@ -330,7 +330,6 @@ footer {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    html { font-size: 14px; }
     .container {
         padding: var(--spacing-lg);
         max-width: 100%;
