@@ -80,3 +80,43 @@ class GenerateRequest(BaseModel):
         if not v:
             raise ValueError("At least one appointment must be selected")
         return v
+
+
+class EventService(BaseModel):
+    """A single service slot within an event (e.g. 'Predigt', 'Worship')."""
+    service_id: int
+    name: str
+    person_name: str | None = None
+    is_accepted: bool = False
+
+
+class EventSummary(BaseModel):
+    """An event with its service assignments, used for the Dienstplan view."""
+    id: int
+    name: str
+    start_date: str
+    end_date: str
+    calendar_name: str
+    services: list[EventService] = []
+
+
+class AgendaItem(BaseModel):
+    """A single item in an event's agenda (worship rundown)."""
+    position: int
+    type: str = "default"  # "default", "song", "header"
+    title: str
+    start: str | None = None
+    duration_seconds: int = 0
+    note: str | None = None
+    responsible_names: list[str] = []
+    is_before_event: bool = False
+    song_title: str | None = None
+    song_key: str | None = None
+    song_arrangement: str | None = None
+
+    @computed_field
+    @property
+    def duration_display(self) -> str:
+        """Format duration as MM:SS."""
+        minutes, seconds = divmod(self.duration_seconds, 60)
+        return f"{minutes:02d}:{seconds:02d}"
