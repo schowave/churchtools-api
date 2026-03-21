@@ -133,6 +133,16 @@ def _extract_person_name(person: dict | None) -> str | None:
     return person.get("title") or None
 
 
+async def _fetch_service_names(login_token: str, client: httpx.AsyncClient) -> dict[int, str]:
+    """Fetch service definitions and return a {serviceId: name} lookup."""
+    url = f"{settings.churchtools_base_url}/api/services"
+    response = await client.get(url, headers=_auth_headers(login_token))
+    if response.status_code != 200:
+        logger.warning(f"Failed to fetch services: HTTP {response.status_code}")
+        return {}
+    return {svc["id"]: svc.get("name", "") for svc in response.json().get("data", [])}
+
+
 async def fetch_events(
     login_token: str,
     start_date: str,
@@ -141,20 +151,23 @@ async def fetch_events(
     client: httpx.AsyncClient,
 ) -> list[EventSummary]:
     """Fetch events from ChurchTools, filtered by calendar IDs. Canceled events are excluded."""
-    url = f"{settings.churchtools_base_url}/api/events"
-    # Add +1 day to end_date: the API's `to` is currently inclusive but will become
-    # exclusive in a future version. Adding a day makes us forward-compatible.
+    # Fetch events and service name lookup in parallel
+    events_url = f"{settings.churchtools_base_url}/api/events"
     to_date = (datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
     params = {"from": start_date, "to": to_date, "include": "eventServices"}
-    response = await client.get(url, headers=_auth_headers(login_token), params=params)
 
-    if response.status_code in (401, 403):
+    events_response, service_names = await asyncio.gather(
+        client.get(events_url, headers=_auth_headers(login_token), params=params),
+        _fetch_service_names(login_token, client),
+    )
+
+    if events_response.status_code in (401, 403):
         raise AuthenticationError("Login token is invalid or expired")
-    response.raise_for_status()
+    events_response.raise_for_status()
 
     calendar_ids_set = set(calendar_ids)
     events = []
-    for item in response.json().get("data", []):
+    for item in events_response.json().get("data", []):
         if item.get("isCanceled", False):
             continue
         cal = item.get("calendar", {})
@@ -163,10 +176,11 @@ async def fetch_events(
 
         services = []
         for svc in item.get("eventServices", []):
+            service_id = svc.get("serviceId", svc.get("id", 0))
             services.append(
                 EventService(
-                    service_id=svc.get("serviceId", svc.get("id", 0)),
-                    name=svc.get("name") or "",
+                    service_id=service_id,
+                    name=service_names.get(service_id, ""),
                     person_name=_extract_person_name(svc.get("person")),
                     is_accepted=svc.get("isAccepted", False),
                 )
