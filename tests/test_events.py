@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.config import settings
 from app.schemas import AgendaItem, EventService, EventSummary
 from app.services.churchtools_client import fetch_events, _extract_person_name, fetch_agenda
+from app.api.events import api_events, api_event_agenda
 
 
 def test_event_service_with_person():
@@ -338,3 +339,94 @@ async def test_fetch_agenda_auth_error(config_mock):
 
     with pytest.raises(AuthenticationError):
         await fetch_agenda("bad_token", 1, client)
+
+
+# ---------------------------------------------------------------------------
+# Task 4: JSON API endpoints
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def templates_mock():
+    from fastapi.templating import Jinja2Templates
+    mock = MagicMock(spec=Jinja2Templates)
+    with patch("app.api.events.templates", mock):
+        yield mock
+
+
+@pytest.mark.asyncio
+@patch("app.api.events.fetch_events")
+async def test_api_events_success(mock_fetch, config_mock):
+    from fastapi import Request
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "token"
+    client = AsyncMock()
+
+    mock_fetch.return_value = [
+        EventSummary(
+            id=1, name="Gottesdienst", start_date="2026-03-22T09:00:00Z",
+            end_date="2026-03-22T11:00:00Z", calendar_name="GD",
+            services=[EventService(service_id=1, name="Predigt", person_name="Max", is_accepted=True)],
+        )
+    ]
+
+    response = await api_events(
+        request=request, client=client,
+        start_date="2026-03-22", end_date="2026-03-29", calendar_ids=["5"],
+    )
+
+    assert response.status_code == 200
+    mock_fetch.assert_called_once_with("token", "2026-03-22", "2026-03-29", ["5"], client)
+
+
+@pytest.mark.asyncio
+async def test_api_events_no_auth(config_mock):
+    from fastapi import Request
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = None
+    client = AsyncMock()
+
+    response = await api_events(
+        request=request, client=client,
+        start_date="2026-03-22", end_date="2026-03-29", calendar_ids=["5"],
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+@patch("app.api.events.fetch_agenda")
+async def test_api_event_agenda_success(mock_fetch, config_mock):
+    from fastapi import Request
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "token"
+    client = AsyncMock()
+
+    mock_fetch.return_value = [
+        AgendaItem(position=1, type="default", title="Begruessung",
+                   start="2026-03-22T09:00:00Z", duration_seconds=300,
+                   responsible_names=["Max"], is_before_event=False),
+    ]
+
+    response = await api_event_agenda(request=request, event_id=1, client=client)
+
+    assert response.status_code == 200
+    mock_fetch.assert_called_once_with("token", 1, client)
+
+
+@pytest.mark.asyncio
+@patch("app.api.events.fetch_agenda")
+async def test_api_event_agenda_empty(mock_fetch, config_mock):
+    from fastapi import Request
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "token"
+    client = AsyncMock()
+    mock_fetch.return_value = []
+
+    response = await api_event_agenda(request=request, event_id=999, client=client)
+
+    assert response.status_code == 200
