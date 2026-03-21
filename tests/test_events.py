@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from app.config import settings
 from app.schemas import AgendaItem, EventService, EventSummary
 from app.services.churchtools_client import fetch_events, _extract_person_name, fetch_agenda
-from app.api.events import api_events, api_event_agenda
+from app.api.events import api_events, api_event_agenda, api_agenda_pdf, api_services_pdf
 
 
 def test_event_service_with_person():
@@ -430,3 +430,61 @@ async def test_api_event_agenda_empty(mock_fetch, config_mock):
     response = await api_event_agenda(request=request, event_id=999, client=client)
 
     assert response.status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Task 9: PDF export routes
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@patch("app.api.events.create_agenda_pdf")
+@patch("app.api.events.fetch_agenda")
+async def test_api_agenda_pdf(mock_fetch_agenda, mock_create_pdf, config_mock):
+    from fastapi import Request
+    from fastapi.responses import StreamingResponse
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "token"
+    client = AsyncMock()
+
+    mock_fetch_agenda.return_value = [
+        AgendaItem(position=1, type="default", title="Begruessung",
+                   start="2026-03-22T09:00:00Z", duration_seconds=300,
+                   responsible_names=["Max"], is_before_event=False),
+    ]
+    mock_create_pdf.return_value = b"%PDF-1.4 fake"
+
+    response = await api_agenda_pdf(
+        request=request, event_id=1, event_name="Gottesdienst",
+        event_start="2026-03-22T09:00:00Z", client=client,
+    )
+
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/pdf"
+
+
+@pytest.mark.asyncio
+@patch("app.api.events.create_services_pdf")
+@patch("app.api.events.fetch_events")
+async def test_api_services_pdf(mock_fetch_events, mock_create_pdf, config_mock):
+    from fastapi import Request
+    from fastapi.responses import StreamingResponse
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "token"
+    client = AsyncMock()
+
+    mock_fetch_events.return_value = [
+        EventSummary(id=1, name="GD", start_date="2026-03-22T09:00:00Z",
+                     end_date="2026-03-22T11:00:00Z", calendar_name="GD", services=[]),
+    ]
+    mock_create_pdf.return_value = b"%PDF-1.4 fake"
+
+    response = await api_services_pdf(
+        request=request, client=client,
+        start_date="2026-03-22", end_date="2026-03-29", calendar_ids=["5"],
+    )
+
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/pdf"

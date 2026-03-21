@@ -1,9 +1,11 @@
+from io import BytesIO
+from datetime import datetime
 from typing import List, Optional
 
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from starlette import status
 
 from app.config import settings
@@ -14,6 +16,7 @@ from app.services.churchtools_client import (
     fetch_calendars,
     fetch_events,
 )
+from app.services.pdf_generator import create_agenda_pdf, create_services_pdf
 from app.shared import templates
 from app.utils import get_date_range_from_form
 
@@ -147,3 +150,65 @@ async def api_event_agenda(
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
     return JSONResponse({"items": [item.model_dump() for item in items]})
+
+
+@router.get("/api/events/{event_id}/agenda/pdf")
+async def api_agenda_pdf(
+    request: Request,
+    event_id: int,
+    event_name: str = Query(...),
+    event_start: str = Query(...),
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> Response:
+    """Generate and download an agenda PDF for a single event."""
+    login_token = request.cookies.get(settings.cookie_login_token)
+    if not login_token:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    try:
+        items = await fetch_agenda(login_token, event_id, client)
+    except AuthenticationError:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    pdf_bytes = create_agenda_pdf(event_name, event_start, items)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={timestamp}_agenda.pdf"},
+    )
+
+
+@router.get("/api/services/pdf")
+async def api_services_pdf(
+    request: Request,
+    client: httpx.AsyncClient = Depends(get_http_client),
+    start_date: str = Query(...),
+    end_date: str = Query(...),
+    calendar_ids: List[str] = Query(...),
+) -> Response:
+    """Generate and download a services PDF for the selected date range."""
+    login_token = request.cookies.get(settings.cookie_login_token)
+    if not login_token:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    try:
+        events = await fetch_events(login_token, start_date, end_date, calendar_ids, client)
+    except AuthenticationError:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
+
+    # Format date range for PDF title — use strptime directly to avoid
+    # timezone-related date shifts (we only need the date, not the time)
+    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+    date_range = f"{start_dt.strftime('%d.%m.')} – {end_dt.strftime('%d.%m.%Y')}"
+
+    pdf_bytes = create_services_pdf(date_range, events)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={timestamp}_dienstplan.pdf"},
+    )
