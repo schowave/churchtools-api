@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <title>Agenda</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/static/css/normalize.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/flatpickr.min.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/flatpickr-theme.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/events.css?v={{ version }}">
+    <script src="/static/js/flatpickr.min.js"></script>
+    <script src="/static/js/flatpickr-de.js"></script>
+    <script src="/static/js/htmx.min.js"></script>
+    <script src="/static/js/alpine.min.js" defer></script>
+    <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
+    <meta name="page-mode" content="agenda">
+    <script>
+    document.addEventListener('htmx:configRequest', function(event) {
+        var token = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (token) event.detail.headers['X-CSRF-Token'] = token;
+    });
+    </script>
+    <script src="/static/js/events.js?v={{ version }}"></script>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="page-header">
+        <a href="/overview" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Zurück
+        </a>
+        <h1>Agenda</h1>
+        <p class="subtitle">{{ base_url }}</p>
+    </div>
+
+    <!-- Step 1: Date & Calendar Selection -->
+    <div class="search-card">
+        <div class="search-card-inner">
+            <!-- Date range -->
+            <div class="date-row">
+                <div class="date-field">
+                    <label for="start_date_display">Von</label>
+                    <input type="text" id="start_date_display" required placeholder="Startdatum">
+                    <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+                </div>
+                <span class="date-separator">&ndash;</span>
+                <div class="date-field">
+                    <label for="end_date_display">Bis</label>
+                    <input type="text" id="end_date_display" required placeholder="Enddatum">
+                    <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
+                </div>
+            </div>
+
+            <!-- Quick presets -->
+            <div class="date-presets">
+                <button type="button" id="today" class="preset-chip">Heute</button>
+                <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
+                <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+            </div>
+
+            <!-- Calendar chips (collapsible) -->
+            <div class="calendar-chips">
+                <button type="button" class="chips-toggle" id="calendars_toggle" aria-expanded="false">
+                    <span class="chips-toggle-label">Kalender</span>
+                    <span class="calendar-selection-info">{{ selected_calendar_ids|length }} von {{ calendars|length }}</span>
+                    <svg class="chips-toggle-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="chips-outer" id="calendars_wrap">
+                <div class="chips-wrap">
+                    {% for calendar in calendars %}
+                    <label class="calendar-chip">
+                        <input type="checkbox" name="calendar_ids" value="{{ calendar['id'] }}"
+                               class="calendar-checkbox"
+                               {% if calendar['id']|string in selected_calendar_ids %} checked {% endif %}>
+                        <span class="chip-text">{{ calendar['name'] }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                </div>
+            </div>
+
+            <!-- Fetch button -->
+            <button type="button" class="btn btn-fetch" id="fetch_btn">
+                <span class="btn-label">Laden</span>
+                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden&hellip;</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Events list -->
+    <div class="events-list" id="events-list" aria-live="polite">
+        <div class="events-loading">
+            <span class="spinner-ring-inline spinner-ring-inline--dark"></span>
+            <span>Events werden geladen&hellip;</span>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>Version: {{ version }}</p>
+</footer>
+</body>
+</html>
