@@ -166,7 +166,7 @@ async def fetch_events(
             services.append(
                 EventService(
                     service_id=svc.get("serviceId", svc.get("id", 0)),
-                    name=svc.get("name", ""),
+                    name=svc.get("name") or "",
                     person_name=_extract_person_name(svc.get("person")),
                     is_accepted=svc.get("isAccepted", False),
                 )

@@ -84,14 +84,16 @@ class GenerateRequest(BaseModel):
 
 class EventService(BaseModel):
     """A single service slot within an event (e.g. 'Predigt', 'Worship')."""
+
     service_id: int
-    name: str
+    name: str = ""
     person_name: str | None = None
     is_accepted: bool = False
 
 
 class EventSummary(BaseModel):
     """An event with its service assignments, used for the Dienstplan view."""
+
     id: int
     name: str
     start_date: str
@@ -102,6 +104,7 @@ class EventSummary(BaseModel):
 
 class AgendaItem(BaseModel):
     """A single item in an event's agenda (worship rundown)."""
+
     position: int
     type: str = "default"  # "default", "song", "header"
     title: str
