@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.config import settings
 from app.schemas import AgendaItem, EventService, EventSummary
-from app.services.churchtools_client import fetch_events, _extract_person_name
+from app.services.churchtools_client import fetch_events, _extract_person_name, fetch_agenda
 
 
 def test_event_service_with_person():
@@ -228,3 +228,113 @@ def test_extract_person_name_title_fallback():
 
 def test_extract_person_name_none():
     assert _extract_person_name(None) is None
+
+
+# ---------------------------------------------------------------------------
+# Task 3: fetch_agenda
+# ---------------------------------------------------------------------------
+
+
+SAMPLE_AGENDA_RESPONSE = {
+    "data": {
+        "id": 10,
+        "calendarId": 5,
+        "isLocked": False,
+        "items": [
+            {
+                "type": "default",
+                "position": 1,
+                "title": "Begruessung",
+                "start": "2026-03-22T09:00:00Z",
+                "duration": 300,
+                "note": "Herzlich willkommen",
+                "isBeforeEvent": False,
+                "responsible": {
+                    "text": "Max Mustermann",
+                    "persons": [
+                        {
+                            "accepted": True,
+                            "person": {
+                                "title": "Max Mustermann",
+                                "domainAttributes": {"firstName": "Max", "lastName": "Mustermann"},
+                            },
+                        }
+                    ],
+                },
+            },
+            {
+                "type": "song",
+                "position": 2,
+                "title": "Amazing Grace",
+                "start": "2026-03-22T09:05:00Z",
+                "duration": 240,
+                "note": None,
+                "isBeforeEvent": False,
+                "responsible": {"text": "", "persons": []},
+                "song": {
+                    "title": "Amazing Grace",
+                    "arrangement": "Band Version",
+                    "key": "G",
+                },
+            },
+            {
+                "type": "header",
+                "position": 0,
+                "title": "Vorbereitung",
+                "isBeforeEvent": True,
+            },
+        ],
+    }
+}
+
+
+@pytest.mark.asyncio
+async def test_fetch_agenda_success(config_mock):
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = SAMPLE_AGENDA_RESPONSE
+    client.get.return_value = response
+
+    result = await fetch_agenda("token", 1, client)
+
+    assert len(result) == 3
+    default_item = [i for i in result if i.type == "default"][0]
+    assert default_item.title == "Begruessung"
+    assert default_item.duration_seconds == 300
+    assert default_item.responsible_names == ["Max Mustermann"]
+    assert default_item.note == "Herzlich willkommen"
+
+    song_item = [i for i in result if i.type == "song"][0]
+    assert song_item.song_title == "Amazing Grace"
+    assert song_item.song_key == "G"
+    assert song_item.song_arrangement == "Band Version"
+
+    header_item = [i for i in result if i.type == "header"][0]
+    assert header_item.is_before_event is True
+    assert header_item.duration_seconds == 0
+
+
+@pytest.mark.asyncio
+async def test_fetch_agenda_not_found(config_mock):
+    """Events without an agenda return 404 — function should return empty list."""
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 404
+    client.get.return_value = response
+
+    result = await fetch_agenda("token", 999, client)
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_fetch_agenda_auth_error(config_mock):
+    from app.services.churchtools_client import AuthenticationError
+
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 401
+    client.get.return_value = response
+
+    with pytest.raises(AuthenticationError):
+        await fetch_agenda("bad_token", 1, client)

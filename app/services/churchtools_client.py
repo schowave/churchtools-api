@@ -6,7 +6,7 @@ import httpx
 import structlog
 
 from app.config import settings
-from app.schemas import AppointmentData, EventService, EventSummary
+from app.schemas import AgendaItem, AppointmentData, EventService, EventSummary
 from app.utils import parse_iso_datetime
 
 logger = structlog.get_logger()
@@ -184,3 +184,51 @@ async def fetch_events(
         )
 
     return events
+
+
+async def fetch_agenda(
+    login_token: str,
+    event_id: int,
+    client: httpx.AsyncClient,
+) -> list[AgendaItem]:
+    """Fetch the agenda for an event. Returns empty list if no agenda exists (404)."""
+    url = f"{settings.churchtools_base_url}/api/events/{event_id}/agenda"
+    response = await client.get(url, headers=_auth_headers(login_token))
+
+    if response.status_code == 404:
+        return []
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
+    response.raise_for_status()
+
+    data = response.json().get("data", {})
+    items = []
+    for raw_item in data.get("items", []):
+        item_type = raw_item.get("type", "default")
+
+        responsible_names = []
+        responsible = raw_item.get("responsible", {})
+        for entry in responsible.get("persons", []):
+            name = _extract_person_name(entry.get("person"))
+            if name:
+                responsible_names.append(name)
+
+        song = raw_item.get("song", {}) or {}
+
+        items.append(
+            AgendaItem(
+                position=raw_item.get("position", 0),
+                type=item_type if item_type in ("default", "song", "header") else "default",
+                title=raw_item.get("title", ""),
+                start=raw_item.get("start"),
+                duration_seconds=raw_item.get("duration", 0),
+                note=raw_item.get("note"),
+                responsible_names=responsible_names,
+                is_before_event=raw_item.get("isBeforeEvent", False),
+                song_title=song.get("title"),
+                song_key=song.get("key"),
+                song_arrangement=song.get("arrangement"),
+            )
+        )
+
+    return items
