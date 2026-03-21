@@ -49,6 +49,8 @@ make run
 |---|---|---|---|
 | `CHURCHTOOLS_BASE` | Yes | — | Your ChurchTools domain (e.g. `my-church.church.tools`) |
 | `DB_PATH` | No | `churchtools.db` | Path to the SQLite database file |
+| `TIMEZONE` | No | `Europe/Berlin` | Timezone for date display (any valid IANA timezone) |
+| `LOG_FORMAT` | No | `console` | Log output format: `console` (human-readable) or `json` |
 
 ## Deployment
 
@@ -99,7 +101,7 @@ Releases are managed via GitHub Actions:
 
 | Command | Description |
 |---|---|
-| `make run` | Start dev server with auto-reload |
+| `make run` | Run migrations and start dev server with auto-reload |
 | `make test` | Run test suite |
 | `make lint` | Check code style (ruff) |
 | `make format` | Auto-fix code style |

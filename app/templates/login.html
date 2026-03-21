@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="/static/css/normalize.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/login.css?v={{ version }}">
+    <meta name="csrf-token" content="{{ request.cookies.get('csrf_token', '') }}">
 </head>
 <body>
 {% if error %}
@@ -27,11 +28,12 @@
     <span class="base-url-badge">{{ base_url }}</span>
 
     <form method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
         <label for="username">Benutzername:</label>
-        <input type="text" id="username" name="username" required>
+        <input type="text" id="username" name="username" required autocomplete="username">
 
         <label for="password">Passwort:</label>
-        <input type="password" id="password" name="password" required>
+        <input type="password" id="password" name="password" required autocomplete="current-password">
 
         <input type="submit" value="Anmelden" class="btn btn-login">
     </form>

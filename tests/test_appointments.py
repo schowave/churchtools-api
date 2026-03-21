@@ -1,12 +1,12 @@
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.api.appointments import api_generate, appointments_page, download_file
+from app.api.appointments import api_generate, appointments_page
+from app.config import settings
 from app.schemas import AppointmentData, ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
@@ -21,28 +21,22 @@ def templates_mock():
 
 @pytest.fixture
 def config_mock():
-    config_mock = {
+    values = {
         "CHURCHTOOLS_BASE": "test.church.tools",
         "CHURCHTOOLS_BASE_URL": "https://test.church.tools",
-        "FILE_DIRECTORY": "/tmp/test_files",
     }
-    with patch.multiple(
-        "app.config.Config",
-        CHURCHTOOLS_BASE=config_mock["CHURCHTOOLS_BASE"],
-        CHURCHTOOLS_BASE_URL=config_mock["CHURCHTOOLS_BASE_URL"],
-        FILE_DIRECTORY=config_mock["FILE_DIRECTORY"],
+    with (
+        patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
+        patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
+        patch.object(settings, "version", "0.0.0-test"),
     ):
-        # Ensure test directory exists
-        os.makedirs(config_mock["FILE_DIRECTORY"], exist_ok=True)
-        yield config_mock
+        yield values
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_calendars_success(mock_client, config_mock):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_calendars_success(config_mock):
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful response
     response = MagicMock()
@@ -54,13 +48,13 @@ async def test_fetch_calendars_success(mock_client, config_mock):
             {"id": 3, "name": "Calendar 3", "isPublic": True},
         ]
     }
-    client_instance.get.return_value = response
+    client.get.return_value = response
 
     # Call the function
-    result = await fetch_calendars("test_token")
+    result = await fetch_calendars("test_token", client)
 
     # Check that client.get was called with correct parameters
-    client_instance.get.assert_called_once_with(
+    client.get.assert_called_once_with(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars", headers={"Authorization": "Login test_token"}
     )
 
@@ -71,28 +65,24 @@ async def test_fetch_calendars_success(mock_client, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_calendars_auth_error(mock_client):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_calendars_auth_error():
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock 401 response
     response = MagicMock()
     response.status_code = 401
-    client_instance.get.return_value = response
+    client.get.return_value = response
 
     # Call the function and check that it raises AuthenticationError
     with pytest.raises(AuthenticationError):
-        await fetch_calendars("invalid_token")
+        await fetch_calendars("invalid_token", client)
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments(mock_client, config_mock):
-    # Mock httpx client and response
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+async def test_fetch_appointments(config_mock):
+    # Mock httpx client
+    client = AsyncMock()
 
     # Mock successful responses for two calendars
     response1 = MagicMock()
@@ -128,19 +118,19 @@ async def test_fetch_appointments(mock_client, config_mock):
     }
 
     # Set up client to return different responses for different calendar IDs
-    client_instance.get.side_effect = [response1, response2]
+    client.get.side_effect = [response1, response2]
 
     # Call the function
-    result = await fetch_appointments("test_token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("test_token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     # Check that client.get was called twice with correct parameters
-    assert client_instance.get.call_count == 2
-    client_instance.get.assert_any_call(
+    assert client.get.call_count == 2
+    client.get.assert_any_call(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars/1/appointments",
         headers={"Authorization": "Login test_token"},
         params={"from": "2023-01-15", "to": "2023-01-16"},
     )
-    client_instance.get.assert_any_call(
+    client.get.assert_any_call(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/calendars/2/appointments",
         headers={"Authorization": "Login test_token"},
         params={"from": "2023-01-15", "to": "2023-01-16"},
@@ -234,8 +224,8 @@ def test_parse_appointment_nested_format():
     assert result.title == "Nested Event"
 
 
-@patch("app.services.jpeg_generator.convert_from_path")
-def test_handle_jpeg_generation(mock_convert, config_mock):
+@patch("app.services.jpeg_generator.convert_from_bytes")
+def test_handle_jpeg_generation(mock_convert):
     # Mock PDF to image conversion
     mock_image1 = MagicMock()
     mock_image2 = MagicMock()
@@ -248,17 +238,15 @@ def test_handle_jpeg_generation(mock_convert, config_mock):
     mock_image1.save.side_effect = mock_save
     mock_image2.save.side_effect = mock_save
 
-    # Call the function
-    result = handle_jpeg_generation("test.pdf")
+    # Call the function with bytes input
+    pdf_bytes = b"%PDF-1.4 fake pdf content"
+    result = handle_jpeg_generation(pdf_bytes)
 
-    # Check that convert_from_path was called with correct path
-    mock_convert.assert_called_once_with(os.path.join(config_mock["FILE_DIRECTORY"], "test.pdf"))
+    # Check that convert_from_bytes was called with the pdf bytes
+    mock_convert.assert_called_once_with(pdf_bytes)
 
-    # Check that the result is a string containing the ZIP file path
-    assert isinstance(result, str)
-    assert result.endswith(".zip")
-
-    # We could further test the ZIP file contents, but that would require more complex setup
+    # Check that the result is bytes (zip content)
+    assert isinstance(result, bytes)
 
 
 @pytest.mark.asyncio
@@ -283,16 +271,19 @@ async def test_appointments_page_with_token(
     # Mock database session
     db_mock = MagicMock()
 
+    # Mock http client
+    client_mock = AsyncMock()
+
     # Mock return values
     mock_get_date.return_value = ("2023-01-15", "2023-01-22")
     mock_fetch_cal.return_value = [{"id": 1, "name": "Calendar 1"}, {"id": 2, "name": "Calendar 2"}]
     mock_load_color.return_value = ColorSettings(name="default")
 
     # Call the function (page renders without appointments, AJAX loads them later)
-    await appointments_page(request_mock, db_mock, start_date=None, end_date=None, calendar_ids=None)
+    await appointments_page(request_mock, db_mock, client_mock, start_date=None, end_date=None, calendar_ids=None)
 
-    # Check that fetch_calendars was called with the token
-    mock_fetch_cal.assert_called_once_with("test_token")
+    # Check that fetch_calendars was called with the token and client
+    mock_fetch_cal.assert_called_once_with("test_token", client_mock)
 
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
@@ -324,8 +315,11 @@ async def test_appointments_page_without_token(mock_fetch):
     # Mock database session
     db_mock = MagicMock()
 
+    # Mock http client
+    client_mock = AsyncMock()
+
     # Call the function
-    result = await appointments_page(request_mock, db_mock)
+    result = await appointments_page(request_mock, db_mock, client_mock)
 
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
@@ -334,36 +328,6 @@ async def test_appointments_page_without_token(mock_fetch):
 
     # Check that fetch_calendars was not called
     mock_fetch.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_download_file_success(config_mock):
-    # Create a test file
-    test_file_path = os.path.join(config_mock["FILE_DIRECTORY"], "test.txt")
-    with open(test_file_path, "w") as f:
-        f.write("Test content")
-
-    # Call the function
-    result = await download_file("test.txt")
-
-    # Check that the result is a FileResponse
-    assert isinstance(result, FileResponse)
-    assert result.path == test_file_path
-    assert result.filename == "test.txt"
-
-    # Clean up
-    os.remove(test_file_path)
-
-
-@pytest.mark.asyncio
-async def test_download_file_not_found():
-    # Call the function with a non-existent file
-    with pytest.raises(Exception) as context:
-        await download_file("nonexistent.txt")
-
-    # Check that the correct exception was raised
-    assert context.value.status_code == 404
-    assert context.value.detail == "File not found"
 
 
 SAMPLE_APPOINTMENT_DATA = [
@@ -397,6 +361,7 @@ async def test_api_appointments(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
     mock_get_info.return_value = {"1_101": "Saved info"}
@@ -404,29 +369,20 @@ async def test_api_appointments(
     response = await api_appointments(
         request=request,
         db=db,
+        client=client,
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1", "2"],
     )
 
     assert response.status_code == 200
-    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2])
+    mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2], client)
 
 
 @pytest.mark.asyncio
-async def test_download_file_path_traversal(config_mock):
-    """Path traversal attempts should be sanitized to just the filename."""
-    with pytest.raises(Exception) as context:
-        await download_file("../../../etc/passwd")
-    assert context.value.status_code == 404
-
-
-@pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments_deduplication(mock_client, config_mock):
+async def test_fetch_appointments_deduplication(config_mock):
     """Same appointment appearing in multiple calendars should be deduplicated."""
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    client = AsyncMock()
 
     def make_appointment():
         return {
@@ -446,11 +402,11 @@ async def test_fetch_appointments_deduplication(mock_client, config_mock):
     response2.status_code = 200
     response2.json.return_value = {"data": [make_appointment()]}
 
-    client_instance.get.side_effect = [response1, response2]
+    client.get.side_effect = [response1, response2]
 
-    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2], client)
 
-    # Same base ID in different calendars → different composite IDs, both kept
+    # Same base ID in different calendars -> different composite IDs, both kept
     assert len(result) == 2
     ids = {r["base"]["id"] for r in result}
     assert "1_101" in ids
@@ -458,11 +414,9 @@ async def test_fetch_appointments_deduplication(mock_client, config_mock):
 
 
 @pytest.mark.asyncio
-@patch("httpx.AsyncClient")
-async def test_fetch_appointments_partial_failure(mock_client, config_mock):
+async def test_fetch_appointments_partial_failure(config_mock):
     """If one calendar fails, appointments from other calendars should still be returned."""
-    client_instance = AsyncMock()
-    mock_client.return_value.__aenter__.return_value = client_instance
+    client = AsyncMock()
 
     success_response = MagicMock()
     success_response.status_code = 200
@@ -478,9 +432,9 @@ async def test_fetch_appointments_partial_failure(mock_client, config_mock):
     fail_response = MagicMock()
     fail_response.status_code = 500
 
-    client_instance.get.side_effect = [success_response, fail_response]
+    client.get.side_effect = [success_response, fail_response]
 
-    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2])
+    result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     assert len(result) == 1
     assert result[0]["base"]["id"] == "1_101"
@@ -505,13 +459,16 @@ async def test_api_generate_pdf(
     mock_load_bg,
     config_mock,
 ):
-    """POST /api/generate with type=pdf should return download URL."""
+    """POST /api/generate with type=pdf should return StreamingResponse with PDF."""
+    from fastapi.responses import StreamingResponse
+
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
+    mock_create_pdf.return_value = b"%PDF-1.4 fake pdf content"
 
     body = GenerateRequest(
         type="pdf",
@@ -528,13 +485,11 @@ async def test_api_generate_pdf(
         additional_infos={"1_101": "Extra info"},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
 
-    assert response.status_code == 200
-    import json
-
-    data = json.loads(response.body)
-    assert data["download_url"] == "/download/2023-01-15_Termine.pdf"
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/pdf"
+    assert "_appointments.pdf" in response.headers["content-disposition"]
 
     # Verify PDF was created with correct color settings
     mock_create_pdf.assert_called_once()
@@ -573,14 +528,20 @@ async def test_api_generate_jpeg(
     mock_load_bg,
     config_mock,
 ):
-    """POST /api/generate with type=jpeg should return ZIP download URL."""
+    """POST /api/generate with type=jpeg should return StreamingResponse with ZIP."""
+    from fastapi.responses import StreamingResponse
+
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "test_token"
     db = MagicMock()
+    client = AsyncMock()
+
+    pdf_bytes = b"%PDF-1.4 fake pdf content"
+    zip_bytes = b"PK fake zip content"
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_create_pdf.return_value = "2023-01-15_Termine.pdf"
-    mock_jpeg.return_value = "2023-01-15_Termine.zip"
+    mock_create_pdf.return_value = pdf_bytes
+    mock_jpeg.return_value = zip_bytes
 
     body = GenerateRequest(
         type="jpeg",
@@ -597,14 +558,12 @@ async def test_api_generate_jpeg(
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
 
-    assert response.status_code == 200
-    import json
-
-    data = json.loads(response.body)
-    assert data["download_url"] == "/download/2023-01-15_Termine.zip"
-    mock_jpeg.assert_called_once_with("2023-01-15_Termine.pdf")
+    assert isinstance(response, StreamingResponse)
+    assert response.media_type == "application/zip"
+    assert "_appointments.zip" in response.headers["content-disposition"]
+    mock_jpeg.assert_called_once_with(pdf_bytes)
 
 
 @pytest.mark.asyncio
@@ -613,6 +572,7 @@ async def test_api_generate_no_auth():
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = None
     db = MagicMock()
+    client = AsyncMock()
 
     body = GenerateRequest(
         type="pdf",
@@ -629,7 +589,7 @@ async def test_api_generate_no_auth():
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
     assert response.status_code == 401
 
 
@@ -647,6 +607,7 @@ async def test_api_generate_auth_error_mid_session(
     request = MagicMock(spec=Request)
     request.cookies.get.return_value = "expired_token"
     db = MagicMock()
+    client = AsyncMock()
 
     mock_fetch_app.side_effect = AuthenticationError()
 
@@ -665,5 +626,5 @@ async def test_api_generate_auth_error_mid_session(
         additional_infos={},
     )
 
-    response = await api_generate(request=request, body=body, db=db)
+    response = await api_generate(request=request, body=body, db=db, client=client)
     assert response.status_code == 401

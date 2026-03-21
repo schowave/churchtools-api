@@ -17,7 +17,8 @@
     <div class="overview-header">
         <h1>Startseite</h1>
         <form action="/logout" method="post" style="margin:0;">
-            <button type="submit" class="header-logout">Abmelden</button>
+            <input type="hidden" name="_csrf_token" value="{{ request.cookies.get('csrf_token', '') }}">
+            <button type="submit" class="header-logout" aria-label="Abmelden">Abmelden</button>
         </form>
     </div>
     <span class="base-url-badge">{{ base_url }}</span>

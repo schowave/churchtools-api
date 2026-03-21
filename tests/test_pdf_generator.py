@@ -1,5 +1,4 @@
 import io
-import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -19,20 +18,6 @@ from app.services.pdf_generator import (
 
 
 class TestPdfGenerator(unittest.TestCase):
-    def setUp(self):
-        # Mock Config
-        self.config_mock = {"FILE_DIRECTORY": "/tmp/test_files"}
-        self.config_patch = patch(
-            "app.services.pdf_generator.Config", FILE_DIRECTORY=self.config_mock["FILE_DIRECTORY"]
-        )
-        self.config_patch.start()
-
-        # Ensure test directory exists
-        os.makedirs(self.config_mock["FILE_DIRECTORY"], exist_ok=True)
-
-    def tearDown(self):
-        self.config_patch.stop()
-
     @patch("app.services.pdf_generator.ImageReader")
     def test_draw_background_image(self, mock_image_reader):
         # Mock canvas and image
@@ -254,15 +239,9 @@ class TestPdfGenerator(unittest.TestCase):
         self.assertEqual(height, 12 * 3)
 
     @patch("app.services.pdf_generator.canvas.Canvas")
-    @patch("app.services.pdf_generator.datetime")
     @patch("app.services.pdf_generator.wrap_text")
     @patch("app.services.pdf_generator.pdfmetrics")
-    def test_create_pdf(self, mock_pdfmetrics, mock_wrap_text, mock_datetime, mock_canvas):
-        # Mock datetime.now
-        mock_now = MagicMock()
-        mock_now.strftime.return_value = "2023-01-15"
-        mock_datetime.now.return_value = mock_now
-
+    def test_create_pdf(self, mock_pdfmetrics, mock_wrap_text, mock_canvas):
         # Mock Canvas instance
         canvas_instance = MagicMock()
         mock_canvas.return_value = canvas_instance
@@ -308,21 +287,19 @@ class TestPdfGenerator(unittest.TestCase):
                     None,  # image_stream
                 )
 
-        # Check that Canvas was created with the correct file path
+        # Check that Canvas was created with a BytesIO buffer
         mock_canvas.assert_called_once()
         args = mock_canvas.call_args[0]
         kwargs = mock_canvas.call_args[1]
-        self.assertTrue(args[0].startswith(self.config_mock["FILE_DIRECTORY"]))
-        self.assertIn("_Termine.pdf", args[0])
+        self.assertTrue(hasattr(args[0], "read"), "Canvas first arg should be a BytesIO (file-like)")
         self.assertEqual(kwargs["pagesize"], landscape((1200, 675)))
 
         # Check that the canvas methods were called
-        canvas_instance.setTitle.assert_called_once()
-        self.assertIn("_Termine.pdf", canvas_instance.setTitle.call_args[0][0])
+        canvas_instance.setTitle.assert_called_once_with("appointments")
         canvas_instance.save.assert_called_once()
 
-        # Check that the result contains the expected pattern
-        self.assertIn("_Termine.pdf", result)
+        # Check that the result is bytes
+        self.assertIsInstance(result, bytes)
 
 
 def _make_appointment(**overrides) -> AppointmentData:

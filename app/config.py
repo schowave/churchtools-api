@@ -1,33 +1,47 @@
-import logging
-import os
 import tomllib
+from pathlib import Path
+from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-logger = logging.getLogger(__name__)
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def get_version():
-    """Read version from pyproject.toml (single source of truth)."""
+def _read_version() -> str:
     try:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        with open(os.path.join(base_dir, "pyproject.toml"), "rb") as f:
+        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        with open(pyproject, "rb") as f:
             return tomllib.load(f)["project"]["version"]
-    except Exception as e:
-        logger.error(f"Error reading version: {e}")
-    return "0.0.0"
+    except Exception:
+        return "0.0.0"
 
 
-class Config:
-    COOKIE_LOGIN_TOKEN = "login_token"
-    VERSION = get_version()
-    CHURCHTOOLS_BASE = os.getenv("CHURCHTOOLS_BASE", "<SET CHURCHTOOLS_BASE>")
-    DB_PATH = os.getenv("DB_PATH", "churchtools.db")
-    CHURCHTOOLS_BASE_URL = os.getenv("CHURCHTOOLS_BASE_URL", f"https://{CHURCHTOOLS_BASE}")
-    FILE_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_files")
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        arbitrary_types_allowed=True,
+    )
 
-    @classmethod
-    def validate(cls):
-        missing = []
-        if cls.CHURCHTOOLS_BASE.startswith("<SET"):
-            missing.append("CHURCHTOOLS_BASE")
-        if missing:
-            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+    churchtools_base: str = ""
+    db_path: str = "churchtools.db"
+    churchtools_base_url: str = ""
+    cookie_login_token: str = "login_token"
+    version: str = _read_version()
+    timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
+    log_format: str = "console"  # "console" or "json"
+    timezone: Optional[ZoneInfo] = Field(default=None, exclude=True)
+
+    @model_validator(mode="after")
+    def _set_computed_defaults(self) -> "Settings":
+        if not self.churchtools_base_url and self.churchtools_base:
+            self.churchtools_base_url = f"https://{self.churchtools_base}"
+        try:
+            object.__setattr__(self, "timezone", ZoneInfo(self.timezone_name))
+        except (ZoneInfoNotFoundError, KeyError) as e:
+            raise ValueError(f"Invalid timezone: {self.timezone_name}") from e
+        return self
+
+
+settings = Settings()

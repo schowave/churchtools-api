@@ -1,8 +1,7 @@
 import io
-import logging
-import os
-from datetime import datetime
+from pathlib import Path
 
+import structlog
 from babel.dates import format_date
 from PIL import Image, ImageColor
 from reportlab.lib.colors import HexColor, black
@@ -12,11 +11,10 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
-from app.config import Config
 from app.schemas import AppointmentData
 from app.utils import normalize_newlines, parse_iso_datetime
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 # Layout constants (16:9 page for church projector display)
 PAGE_WIDTH = 1200
@@ -43,7 +41,7 @@ FALLBACK_FONT = "Helvetica"
 FALLBACK_FONT_BOLD = "Helvetica-Bold"
 
 # Resolve fonts/ directory relative to project root (two levels up from this file)
-_FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "fonts")
+_FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "fonts"
 
 _cached_fonts = None
 
@@ -61,7 +59,7 @@ def _register_fonts():
     try:
         if font_name not in pdfmetrics.getRegisteredFontNames():
             try:
-                pdfmetrics.registerFont(TTFont(font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
+                pdfmetrics.registerFont(TTFont(font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
             except Exception as e:
                 logger.error(f"Error registering font {font_name}: {e}")
                 font_name = FALLBACK_FONT
@@ -71,17 +69,15 @@ def _register_fonts():
             try:
                 if font_name == PREFERRED_FONT:
                     # Bahnschrift uses the same file for bold
-                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}.ttf")))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
                 else:
-                    pdfmetrics.registerFont(TTFont(bold_font_name, os.path.join(_FONTS_DIR, f"{font_name}-Bold.ttf")))
+                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}-Bold.ttf")))
             except Exception as e:
                 logger.error(f"Error registering bold font {bold_font_name}: {e}")
                 bold_font_name = FALLBACK_FONT_BOLD
                 if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
                     try:
-                        pdfmetrics.registerFont(
-                            TTFont(FALLBACK_FONT_BOLD, os.path.join(_FONTS_DIR, "helvetica-bold.ttf"))
-                        )
+                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, str(_FONTS_DIR / "helvetica-bold.ttf")))
                     except Exception as e2:
                         logger.error(f"Error registering font {FALLBACK_FONT_BOLD}: {e2}")
                         bold_font_name = FALLBACK_FONT
@@ -349,14 +345,12 @@ def _draw_event(
 
 def create_pdf(
     appointments, date_color, background_color, description_color, alpha, image_stream=None, logo_stream=None
-):
+) -> bytes:
     font_name, font_name_bold = _register_fonts()
 
-    current_day = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    filename = f"{current_day}_Termine.pdf"
-    file_path = os.path.join(Config.FILE_DIRECTORY, filename)
-    c = canvas.Canvas(file_path, pagesize=landscape(PAGE_SIZE))
-    c.setTitle(filename)
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=landscape(PAGE_SIZE))
+    c.setTitle("appointments")
 
     try:
         if image_stream:
@@ -385,5 +379,5 @@ def create_pdf(
         )
 
     c.save()
-    logger.info(f"PDF successfully created: {filename} with {len(appointments)} appointments")
-    return filename
+    logger.info(f"PDF successfully created with {len(appointments)} appointments")
+    return buffer.getvalue()

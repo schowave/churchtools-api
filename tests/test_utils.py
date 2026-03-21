@@ -1,7 +1,6 @@
 import unittest
 from datetime import datetime
-
-import pytz
+from zoneinfo import ZoneInfo
 
 from app.utils import get_date_range_from_form, normalize_newlines, parse_iso_datetime
 
@@ -15,13 +14,18 @@ class TestUtils(unittest.TestCase):
         # Check if result is timezone aware
         self.assertIsNotNone(result.tzinfo)
 
-        # Check if conversion to Berlin timezone is correct
-        berlin_tz = pytz.timezone("Europe/Berlin")
-        # We only check if it's the same timezone, not the exact tzinfo object
+        # Check if conversion to Berlin timezone is correct (default)
+        berlin_tz = ZoneInfo("Europe/Berlin")
         self.assertEqual(str(result.tzinfo), str(berlin_tz))
 
         # In winter time Berlin is UTC+1
         self.assertEqual(result.hour, 15)  # 14 UTC = 15 Berlin (assuming standard time)
+
+    def test_parse_iso_datetime_custom_timezone(self):
+        dt_str = "2023-01-15T14:30:00Z"
+        ny_tz = ZoneInfo("America/New_York")
+        result = parse_iso_datetime(dt_str, tz=ny_tz)
+        self.assertEqual(result.hour, 9)  # 14 UTC = 9 EST
 
     def test_normalize_newlines(self):
         # Test with Windows-style line endings

@@ -1,13 +1,14 @@
-import logging
-import os
+from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
 
+import httpx
+import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.config import Config
+from app.config import settings
 from app.crud import (
     delete_background_image,
     delete_logo,
@@ -21,6 +22,7 @@ from app.crud import (
     save_logo,
 )
 from app.database import DEFAULT_SETTING_NAME, get_db
+from app.dependencies import get_http_client
 from app.schemas import ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
@@ -31,13 +33,13 @@ from app.utils import get_date_range_from_form, normalize_newlines
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 
-def _require_auth(request: Request):
+def _require_auth(request: Request) -> None:
     """Raise 401 if no login token is present."""
-    if not request.cookies.get(Config.COOKIE_LOGIN_TOKEN):
+    if not request.cookies.get(settings.cookie_login_token):
         raise HTTPException(status_code=401, detail="Nicht angemeldet")
 
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -60,11 +62,11 @@ def _build_template_context(
         "selected_calendar_ids": selected_calendar_ids,
         "start_date": start_date,
         "end_date": end_date,
-        "base_url": Config.CHURCHTOOLS_BASE,
+        "base_url": settings.churchtools_base,
         "color_settings": color_settings,
         "has_logo": has_logo,
         "has_background_image": has_background_image,
-        "version": Config.VERSION,
+        "version": settings.version,
     }
     context.update(extra)
     return context
@@ -74,11 +76,12 @@ def _build_template_context(
 async def appointments_page(
     request: Request,
     db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
     calendar_ids: Optional[List[str]] = Query(None),
-):
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+) -> Response:
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -88,10 +91,10 @@ async def appointments_page(
         end_date = end_date or end_date_default
 
     try:
-        calendars = await fetch_calendars(login_token)
+        calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
         response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=Config.COOKIE_LOGIN_TOKEN)
+        response.delete_cookie(key=settings.cookie_login_token)
         return response
 
     # Use provided calendar_ids or preselect all
@@ -125,12 +128,13 @@ async def appointments_page(
 async def api_appointments(
     request: Request,
     db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: List[str] = Query(...),
-):
+) -> JSONResponse:
     """JSON endpoint for async appointment loading."""
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -139,7 +143,7 @@ async def api_appointments(
         return JSONResponse({"appointments": []})
 
     try:
-        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int)
+        raw_appointments = await fetch_appointments(login_token, start_date, end_date, calendar_ids_int, client)
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -160,9 +164,10 @@ async def api_generate(
     request: Request,
     body: GenerateRequest,
     db: Session = Depends(get_db),
-):
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> Response:
     """JSON endpoint for PDF/JPEG generation."""
-    login_token = request.cookies.get(Config.COOKIE_LOGIN_TOKEN)
+    login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -177,19 +182,21 @@ async def api_generate(
 
     # Load background image and logo from DB
     background_image_stream = None
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+    bg_data, _ = load_background_image(db, body.profile)
     if bg_data:
         background_image_stream = BytesIO(bg_data)
 
     logo_stream = None
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+    logo_data, _ = load_logo(db, body.profile)
     if logo_data:
         logo_stream = BytesIO(logo_data)
 
     # Fetch appointments from ChurchTools API
     calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]
     try:
-        raw_appointments = await fetch_appointments(login_token, body.start_date, body.end_date, calendar_ids_int)
+        raw_appointments = await fetch_appointments(
+            login_token, body.start_date, body.end_date, calendar_ids_int, client
+        )
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -210,7 +217,7 @@ async def api_generate(
     logger.info(f"Generating {body.type}: {len(selected_appointments)} of {len(appointments)} appointments")
 
     # Generate PDF
-    filename = create_pdf(
+    pdf_bytes = create_pdf(
         selected_appointments,
         color_settings.date_color,
         color_settings.background_color,
@@ -220,15 +227,25 @@ async def api_generate(
         logo_stream,
     )
 
-    # Convert to JPEG if requested
-    if body.type == "jpeg":
-        filename = handle_jpeg_generation(filename)
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
-    return JSONResponse({"download_url": f"/download/{filename}"})
+    if body.type == "jpeg":
+        zip_bytes = handle_jpeg_generation(pdf_bytes)
+        return StreamingResponse(
+            BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={timestamp}_appointments.zip"},
+        )
+
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={timestamp}_appointments.pdf"},
+    )
 
 
 @router.post("/logo/upload")
-async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)) -> JSONResponse:
     """Upload a logo image and store it in the database."""
     _require_auth(request)
     content = await file.read(MAX_UPLOAD_SIZE + 1)
@@ -241,7 +258,7 @@ async def upload_logo(request: Request, file: UploadFile = File(...), db: Sessio
 
 
 @router.get("/logo")
-async def get_logo(db: Session = Depends(get_db)):
+async def get_logo(db: Session = Depends(get_db)) -> Response:
     """Serve the stored logo image for preview."""
     logo_data, logo_filename = load_logo(db, DEFAULT_SETTING_NAME)
     if not logo_data:
@@ -255,7 +272,7 @@ async def get_logo(db: Session = Depends(get_db)):
 
 
 @router.delete("/logo")
-async def remove_logo(request: Request, db: Session = Depends(get_db)):
+async def remove_logo(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
     """Delete the stored logo."""
     _require_auth(request)
     delete_logo(db, DEFAULT_SETTING_NAME)
@@ -263,7 +280,9 @@ async def remove_logo(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/background/upload")
-async def upload_background(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_background(
+    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)
+) -> JSONResponse:
     """Upload a background image and store it in the database."""
     _require_auth(request)
     content = await file.read(MAX_UPLOAD_SIZE + 1)
@@ -276,7 +295,7 @@ async def upload_background(request: Request, file: UploadFile = File(...), db: 
 
 
 @router.get("/background")
-async def get_background(db: Session = Depends(get_db)):
+async def get_background(db: Session = Depends(get_db)) -> Response:
     """Serve the stored background image for preview."""
     image_data, image_filename = load_background_image(db, DEFAULT_SETTING_NAME)
     if not image_data:
@@ -290,22 +309,8 @@ async def get_background(db: Session = Depends(get_db)):
 
 
 @router.delete("/background")
-async def remove_background(request: Request, db: Session = Depends(get_db)):
+async def remove_background(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
     """Delete the stored background image."""
     _require_auth(request)
     delete_background_image(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
-
-
-@router.get("/download/{filename}")
-async def download_file(filename: str):
-    safe_filename = os.path.basename(filename)
-    file_path = os.path.join(Config.FILE_DIRECTORY, safe_filename)
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
-
-    return FileResponse(
-        file_path,
-        filename=safe_filename,
-        headers={"Cache-Control": "no-store"},
-    )

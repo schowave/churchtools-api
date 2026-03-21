@@ -29,7 +29,8 @@ RUN apt-get update && \
     libfribidi0 \
     libharfbuzz0b \
     libpng16-16 \
-    libjpeg62-turbo && \
+    libjpeg62-turbo \
+    sqlite3 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -43,10 +44,20 @@ RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy application source, config, and fonts
+# Copy application source, config, migrations, and fonts
 COPY app/ ./app/
 COPY fonts/ ./fonts/
+COPY alembic/ ./alembic/
+COPY alembic.ini ./
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
 COPY pyproject.toml run_fastapi.py ./
+
+# entrypoint.sh handles:
+# 1. DB directory creation
+# 2. Alembic stamp for existing DBs without migration tracking
+# 3. Alembic upgrade head (run migrations)
+# 4. Start uvicorn
 
 ENV PYTHONPATH=/app \
     DB_PATH=/app/data/churchtools.db
@@ -54,4 +65,7 @@ ENV PYTHONPATH=/app \
 EXPOSE 5005
 VOLUME /app/data
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5005"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5005/health')" || exit 1
+
+ENTRYPOINT ["./entrypoint.sh"]
