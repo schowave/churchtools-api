@@ -390,25 +390,28 @@ def create_pdf(
 def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[AgendaItem]) -> bytes:
     """Create a tabular A4 PDF for a worship service agenda."""
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=15*mm,
-                            leftMargin=15*mm, rightMargin=15*mm)
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
+    )
 
     font_name, font_name_bold = _register_fonts()
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle("AgendaTitle", parent=styles["Heading1"],
-                                  fontName=font_name_bold, fontSize=16, spaceAfter=6)
-    subtitle_style = ParagraphStyle("AgendaSubtitle", parent=styles["Normal"],
-                                     fontName=font_name, fontSize=10, textColor=colors.grey,
-                                     spaceAfter=12)
-    cell_style = ParagraphStyle("AgendaCell", parent=styles["Normal"],
-                                 fontName=font_name, fontSize=9, leading=12)
-    header_cell_style = ParagraphStyle("AgendaHeaderCell", parent=styles["Normal"],
-                                        fontName=font_name_bold, fontSize=9, leading=12,
-                                        textColor=colors.white)
-    section_style = ParagraphStyle("AgendaSection", parent=styles["Normal"],
-                                    fontName=font_name_bold, fontSize=10, leading=14,
-                                    textColor=colors.HexColor("#5E8B5A"))
+    title_style = ParagraphStyle(
+        "AgendaTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
+    )
+    subtitle_style = ParagraphStyle(
+        "AgendaSubtitle", parent=styles["Normal"], fontName=font_name, fontSize=10, textColor=colors.grey, spaceAfter=12
+    )
+    cell_style = ParagraphStyle("AgendaCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
+    section_style = ParagraphStyle(
+        "AgendaSection",
+        parent=styles["Normal"],
+        fontName=font_name_bold,
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor("#5E8B5A"),
+    )
 
     start_dt = parse_iso_datetime(event_start)
     date_str = start_dt.strftime("%d.%m.%Y")
@@ -439,17 +442,19 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
             if item.song_arrangement:
                 title += f"\n{item.song_arrangement}"
 
-        table_data.append([
-            Paragraph(time_str, cell_style),
-            Paragraph(title.replace("\n", "<br/>"), cell_style),
-            Paragraph(item.duration_display, cell_style),
-            Paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
-            Paragraph(item.note or "", cell_style),
-        ])
+        table_data.append(
+            [
+                Paragraph(time_str, cell_style),
+                Paragraph(title.replace("\n", "<br/>"), cell_style),
+                Paragraph(item.duration_display, cell_style),
+                Paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
+                Paragraph(item.note or "", cell_style),
+            ]
+        )
 
     if len(table_data) > 1:
         col_widths = [45, 150, 40, 100, None]
-        available = A4[0] - 30*mm
+        available = A4[0] - 30 * mm
         fixed = sum(w for w in col_widths if w is not None)
         col_widths[-1] = available - fixed
 
@@ -477,21 +482,20 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
 def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
     """Create a tabular A4 PDF for service assignments across events."""
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20*mm, bottomMargin=15*mm,
-                            leftMargin=15*mm, rightMargin=15*mm)
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
+    )
 
     font_name, font_name_bold = _register_fonts()
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle("ServicesTitle", parent=styles["Heading1"],
-                                  fontName=font_name_bold, fontSize=16, spaceAfter=6)
-    subtitle_style = ParagraphStyle("ServicesSubtitle", parent=styles["Normal"],
-                                     fontName=font_name, fontSize=10, textColor=colors.grey,
-                                     spaceAfter=12)
-    cell_style = ParagraphStyle("ServicesCell", parent=styles["Normal"],
-                                 fontName=font_name, fontSize=9, leading=12)
-    event_header_style = ParagraphStyle("ServicesEventHeader", parent=styles["Normal"],
-                                         fontName=font_name_bold, fontSize=10, leading=14)
+    title_style = ParagraphStyle(
+        "ServicesTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
+    )
+    cell_style = ParagraphStyle("ServicesCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
+    event_header_style = ParagraphStyle(
+        "ServicesEventHeader", parent=styles["Normal"], fontName=font_name_bold, fontSize=10, leading=14
+    )
 
     elements = []
     elements.append(Paragraph(f"Dienstplan — {date_range}", title_style))
@@ -512,27 +516,33 @@ def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
         for svc in event.services:
             person = svc.person_name or "\u2014 (offen)"
             status_str = "\u2713" if svc.is_accepted else "?"
-            table_data.append([
-                Paragraph(svc.name, cell_style),
-                Paragraph(person, cell_style),
-                Paragraph(status_str, cell_style),
-            ])
+            table_data.append(
+                [
+                    Paragraph(svc.name, cell_style),
+                    Paragraph(person, cell_style),
+                    Paragraph(status_str, cell_style),
+                ]
+            )
 
-        available = A4[0] - 30*mm
+        available = A4[0] - 30 * mm
         col_widths = [available * 0.35, available * 0.45, available * 0.20]
 
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
         elements.append(table)
         elements.append(Spacer(1, 14))
 
