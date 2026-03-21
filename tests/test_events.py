@@ -1,5 +1,8 @@
 import pytest
+from unittest.mock import AsyncMock, MagicMock, patch
+from app.config import settings
 from app.schemas import AgendaItem, EventService, EventSummary
+from app.services.churchtools_client import fetch_events, _extract_person_name
 
 
 def test_event_service_with_person():
@@ -80,3 +83,148 @@ def test_agenda_item_header():
     assert item.type == "header"
     assert item.is_before_event is True
     assert item.duration_display == "00:00"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: fetch_events + _extract_person_name
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def config_mock():
+    with (
+        patch.object(settings, "churchtools_base", "test.church.tools"),
+        patch.object(settings, "churchtools_base_url", "https://test.church.tools"),
+    ):
+        yield
+
+
+SAMPLE_EVENTS_RESPONSE = {
+    "data": [
+        {
+            "id": 1,
+            "name": "Gottesdienst",
+            "startDate": "2026-03-22T09:00:00Z",
+            "endDate": "2026-03-22T11:00:00Z",
+            "isCanceled": False,
+            "calendar": {
+                "domainType": "calendar",
+                "domainIdentifier": "5",
+                "title": "Gottesdienste",
+            },
+            "eventServices": [
+                {
+                    "id": 10,
+                    "name": "Predigt",
+                    "serviceId": 1,
+                    "isAccepted": True,
+                    "person": {
+                        "domainType": "person",
+                        "domainIdentifier": "42",
+                        "title": "Max Mustermann",
+                        "domainAttributes": {
+                            "firstName": "Max",
+                            "lastName": "Mustermann",
+                        },
+                    },
+                },
+                {
+                    "id": 11,
+                    "name": "Worship",
+                    "serviceId": 2,
+                    "isAccepted": False,
+                    "person": None,
+                },
+            ],
+        },
+        {
+            "id": 2,
+            "name": "Abgesagter Gottesdienst",
+            "startDate": "2026-03-29T09:00:00Z",
+            "endDate": "2026-03-29T11:00:00Z",
+            "isCanceled": True,
+            "calendar": {
+                "domainType": "calendar",
+                "domainIdentifier": "5",
+                "title": "Gottesdienste",
+            },
+            "eventServices": [],
+        },
+        {
+            "id": 3,
+            "name": "Jugendkreis",
+            "startDate": "2026-03-22T18:00:00Z",
+            "endDate": "2026-03-22T20:00:00Z",
+            "isCanceled": False,
+            "calendar": {
+                "domainType": "calendar",
+                "domainIdentifier": "8",
+                "title": "Jugend",
+            },
+            "eventServices": [],
+        },
+    ]
+}
+
+
+@pytest.mark.asyncio
+async def test_fetch_events_filters_by_calendar_and_canceled(config_mock):
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = SAMPLE_EVENTS_RESPONSE
+    client.get.return_value = response
+
+    result = await fetch_events("token", "2026-03-22", "2026-03-29", ["5"], client)
+
+    assert len(result) == 1
+    assert result[0].id == 1
+    assert result[0].name == "Gottesdienst"
+    assert result[0].calendar_name == "Gottesdienste"
+    assert len(result[0].services) == 2
+    assert result[0].services[0].person_name == "Max Mustermann"
+    assert result[0].services[0].is_accepted is True
+    assert result[0].services[1].person_name is None
+
+
+@pytest.mark.asyncio
+async def test_fetch_events_all_calendars(config_mock):
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = SAMPLE_EVENTS_RESPONSE
+    client.get.return_value = response
+
+    result = await fetch_events("token", "2026-03-22", "2026-03-29", ["5", "8"], client)
+
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_fetch_events_auth_error(config_mock):
+    from app.services.churchtools_client import AuthenticationError
+
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 401
+    client.get.return_value = response
+
+    with pytest.raises(AuthenticationError):
+        await fetch_events("bad_token", "2026-03-22", "2026-03-29", ["5"], client)
+
+
+def test_extract_person_name_full():
+    person = {
+        "title": "Max Mustermann",
+        "domainAttributes": {"firstName": "Max", "lastName": "Mustermann"},
+    }
+    assert _extract_person_name(person) == "Max Mustermann"
+
+
+def test_extract_person_name_title_fallback():
+    person = {"title": "Max M.", "domainAttributes": {}}
+    assert _extract_person_name(person) == "Max M."
+
+
+def test_extract_person_name_none():
+    assert _extract_person_name(None) is None

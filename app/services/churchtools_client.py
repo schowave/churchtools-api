@@ -1,11 +1,12 @@
 import asyncio
+from datetime import datetime, timedelta
 from typing import List
 
 import httpx
 import structlog
 
 from app.config import settings
-from app.schemas import AppointmentData
+from app.schemas import AppointmentData, EventService, EventSummary
 from app.utils import parse_iso_datetime
 
 logger = structlog.get_logger()
@@ -118,3 +119,68 @@ def parse_appointment(raw: dict) -> AppointmentData:
         # API field "description" replaces deprecated "information"
         information=raw["base"].get("description") or raw["base"].get("information") or "",
     )
+
+
+def _extract_person_name(person: dict | None) -> str | None:
+    """Extract display name from a person domain object."""
+    if person is None:
+        return None
+    attrs = person.get("domainAttributes", {})
+    first = attrs.get("firstName", "")
+    last = attrs.get("lastName", "")
+    if first and last:
+        return f"{first} {last}"
+    return person.get("title") or None
+
+
+async def fetch_events(
+    login_token: str,
+    start_date: str,
+    end_date: str,
+    calendar_ids: list[str],
+    client: httpx.AsyncClient,
+) -> list[EventSummary]:
+    """Fetch events from ChurchTools, filtered by calendar IDs. Canceled events are excluded."""
+    url = f"{settings.churchtools_base_url}/api/events"
+    # Add +1 day to end_date: the API's `to` is currently inclusive but will become
+    # exclusive in a future version. Adding a day makes us forward-compatible.
+    to_date = (datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+    params = {"from": start_date, "to": to_date, "include": "eventServices"}
+    response = await client.get(url, headers=_auth_headers(login_token), params=params)
+
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
+    response.raise_for_status()
+
+    calendar_ids_set = set(calendar_ids)
+    events = []
+    for item in response.json().get("data", []):
+        if item.get("isCanceled", False):
+            continue
+        cal = item.get("calendar", {})
+        if cal.get("domainIdentifier") not in calendar_ids_set:
+            continue
+
+        services = []
+        for svc in item.get("eventServices", []):
+            services.append(
+                EventService(
+                    service_id=svc.get("serviceId", svc.get("id", 0)),
+                    name=svc.get("name", ""),
+                    person_name=_extract_person_name(svc.get("person")),
+                    is_accepted=svc.get("isAccepted", False),
+                )
+            )
+
+        events.append(
+            EventSummary(
+                id=item["id"],
+                name=item.get("name", ""),
+                start_date=item.get("startDate", ""),
+                end_date=item.get("endDate", ""),
+                calendar_name=cal.get("title", ""),
+                services=services,
+            )
+        )
+
+    return events
