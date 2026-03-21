@@ -219,27 +219,31 @@
     border-bottom-color: transparent;
 }
 
+.chips-outer {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+    border: 0 solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    background: white;
+}
+
+.chips-outer.is-open {
+    grid-template-rows: 1fr;
+    border-width: 1px;
+}
+
 .chips-wrap {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--spacing-2xs);
-    padding: 0 0.875em;
-    border: 0 solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 var(--border-radius) var(--border-radius);
-    background: white;
-    max-height: 0;
     overflow: hidden;
-    opacity: 0;
-    transition: max-height 0.25s ease, opacity 0.25s ease, padding 0.25s ease, border-width 0.05s ease;
 }
 
-.chips-wrap.is-open {
-    max-height: 500px;
-    opacity: 1;
+.chips-outer.is-open .chips-wrap {
     padding: 0.75em 0.875em;
-    border-width: 1px;
 }
 
 .calendar-chip {
@@ -260,9 +264,9 @@
 
 .chip-text {
     display: inline-block;
-    padding: 0.5em 1em;
+    padding: 0.35em 0.75em;
     border-radius: 100px;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 500;
     font-family: var(--font-family);
     border: 1px solid var(--border-color);
@@ -1043,7 +1047,7 @@ footer {
     }
 
     .chip-text {
-        padding: 0.6em 1em;
+        padding: 0.4em 0.75em;
     }
 
     /* Fetch button bigger on mobile */
