@@ -514,8 +514,8 @@ def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
 
         table_data = [["Dienst", "Person", "Status"]]
         for svc in event.services:
-            person = svc.person_name or "\u2014 (offen)"
-            status_str = "\u2713" if svc.is_accepted else "?"
+            person = svc.person_name or "-- (offen)"
+            status_str = "Ja" if svc.is_accepted else "?"
             table_data.append(
                 [
                     Paragraph(svc.name, cell_style),
