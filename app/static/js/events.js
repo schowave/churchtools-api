@@ -471,18 +471,21 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fetch button
     $('#fetch_btn').addEventListener('click', loadEvents);
 
-    // Calendar chips toggle
-    $('#calendars_toggle').addEventListener('click', function () {
-        var wrap = $('#calendars_wrap');
-        var isExpanded = this.getAttribute('aria-expanded') === 'true';
-        if (isExpanded) {
-            wrap.classList.remove('is-open');
-            this.setAttribute('aria-expanded', 'false');
-        } else {
-            wrap.classList.add('is-open');
-            this.setAttribute('aria-expanded', 'true');
-        }
-    });
+    // Calendar chips toggle (only on pages with calendar selection)
+    var calToggle = $('#calendars_toggle');
+    if (calToggle) {
+        calToggle.addEventListener('click', function () {
+            var wrap = $('#calendars_wrap');
+            var isExpanded = this.getAttribute('aria-expanded') === 'true';
+            if (isExpanded) {
+                wrap.classList.remove('is-open');
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                wrap.classList.add('is-open');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+    }
 
     // Calendar chip counter
     document.addEventListener('change', function (e) {
