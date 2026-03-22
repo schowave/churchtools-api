@@ -137,6 +137,8 @@ async def _fetch_service_names(login_token: str, client: httpx.AsyncClient) -> d
     """Fetch service definitions and return a {serviceId: name} lookup."""
     url = f"{settings.churchtools_base_url}/api/services"
     response = await client.get(url, headers=_auth_headers(login_token))
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
     if response.status_code != 200:
         logger.warning(f"Failed to fetch services: HTTP {response.status_code}")
         return {}

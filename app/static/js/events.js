@@ -157,7 +157,7 @@ function renderAgendaEvents(events) {
 
     events.forEach(function (ev, i) {
         var delay = Math.min(i * 0.04, 0.8);
-        html += '<div class="event-card" data-event-id="' + ev.id + '" style="animation-delay:' + delay + 's">' +
+        html += '<div class="event-card" data-event-id="' + ev.id + '" data-event-name="' + escapeHtml(ev.name) + '" data-event-start="' + escapeHtml(ev.start_date) + '" style="animation-delay:' + delay + 's">' +
             '<div class="event-card-header">' +
                 '<svg class="event-expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
                 '<div class="event-card-info">' +
@@ -193,10 +193,12 @@ function toggleEventCard(card) {
     if (body.dataset.loaded === 'true') return;
 
     var eventId = card.dataset.eventId;
-    fetchAgenda(eventId, body);
+    var eventName = card.dataset.eventName || '';
+    var eventStart = card.dataset.eventStart || '';
+    fetchAgenda(eventId, body, eventName, eventStart);
 }
 
-function fetchAgenda(eventId, bodyEl) {
+function fetchAgenda(eventId, bodyEl, eventName, eventStart) {
     fetch('/api/events/' + eventId + '/agenda')
         .then(function (res) {
             if (res.status === 401) {
@@ -209,14 +211,14 @@ function fetchAgenda(eventId, bodyEl) {
         .then(function (data) {
             if (!data) return;
             bodyEl.dataset.loaded = 'true';
-            renderAgendaTable(data.items, bodyEl, eventId);
+            renderAgendaTable(data.items, bodyEl, eventId, eventName, eventStart);
         })
         .catch(function (err) {
             bodyEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(err.message) + '</p></div>';
         });
 }
 
-function renderAgendaTable(items, bodyEl, eventId) {
+function renderAgendaTable(items, bodyEl, eventId, eventName, eventStart) {
     if (!items || items.length === 0) {
         bodyEl.innerHTML = '<div class="empty-state"><p>Keine Agenda vorhanden.</p></div>';
         return;
@@ -261,6 +263,16 @@ function renderAgendaTable(items, bodyEl, eventId) {
     });
 
     html += '</tbody></table>';
+
+    // PDF export button
+    var pdfParams = new URLSearchParams();
+    pdfParams.append('event_name', eventName);
+    pdfParams.append('event_start', eventStart);
+    html += '<div class="agenda-export">' +
+        '<a href="/api/events/' + eventId + '/agenda/pdf?' + pdfParams.toString() + '" class="btn-export" download>' +
+            'PDF herunterladen' +
+        '</a>' +
+    '</div>';
 
     bodyEl.innerHTML = html;
 }
@@ -362,6 +374,14 @@ function renderServicesTable(events) {
     });
 
     html += '</tbody></table></div>';
+
+    // PDF export button
+    var pdfParams = buildEventParams();
+    html += '<div class="services-export">' +
+        '<a href="/api/services/pdf?' + pdfParams.toString() + '" class="btn-export" download>' +
+            'PDF herunterladen' +
+        '</a>' +
+    '</div>';
 
     container.innerHTML = html;
 }
