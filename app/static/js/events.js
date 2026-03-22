@@ -62,6 +62,12 @@ function formatDateTime(isoStr) {
     return day + '.' + month + '.' + year + ' ' + hours + ':' + mins;
 }
 
+function formatTime(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+
 function formatDateShort(isoStr) {
     if (!isoStr) return '';
     var d = new Date(isoStr);
@@ -284,7 +290,7 @@ function renderAgendaRow(item, isBefore) {
     }
 
     return '<tr' + rowClass + '>' +
-        '<td>' + escapeHtml(item.start || '') + '</td>' +
+        '<td>' + escapeHtml(formatTime(item.start)) + '</td>' +
         '<td>' + titleHtml + '</td>' +
         '<td>' + escapeHtml(item.duration_display || '') + '</td>' +
         '<td>' + responsible + '</td>' +
