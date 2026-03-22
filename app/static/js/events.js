@@ -117,8 +117,11 @@ function buildEventParams() {
     var startDate = $('#start_date').value;
     var endDate = $('#end_date').value;
     var calendarIds = [];
-    $$('.calendar-checkbox:checked').forEach(function (cb) {
-        calendarIds.push(cb.value);
+    // For checkboxes, only include checked ones; for hidden inputs, include all
+    $$('.calendar-checkbox').forEach(function (cb) {
+        if (cb.type === 'hidden' || cb.checked) {
+            calendarIds.push(cb.value);
+        }
     });
 
     var params = new URLSearchParams();
