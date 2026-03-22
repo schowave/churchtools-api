@@ -60,7 +60,7 @@ async def test_login_page_already_logged_in(config_mock):
 
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/appointments"
+    assert result.headers["location"] == "/overview"
 
 
 @pytest.mark.asyncio
@@ -101,7 +101,7 @@ async def test_login_success(config_mock):
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/appointments"
+    assert result.headers["location"] == "/overview"
 
     # Check that the cookie was set
     cookie_header = None

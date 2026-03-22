@@ -13,7 +13,7 @@ router = APIRouter()
 async def login_page(request: Request) -> Response:
     login_token = request.cookies.get(settings.cookie_login_token)
     if login_token:
-        return RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
 
     context = {"request": request, "base_url": settings.churchtools_base, "version": settings.version}
     return templates.TemplateResponse("login.html", context)
@@ -41,7 +41,7 @@ async def login(
 
         if token_response.status_code == 200:
             login_token = token_response.json()["data"]
-            redirect = RedirectResponse(url="/appointments", status_code=status.HTTP_303_SEE_OTHER)
+            redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
             is_https = request.url.scheme == "https"
             redirect.set_cookie(
                 key=settings.cookie_login_token,
