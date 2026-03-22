@@ -4,14 +4,18 @@ from pathlib import Path
 import structlog
 from babel.dates import format_date
 from PIL import Image, ImageColor
+from reportlab.lib import colors
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.pagesizes import landscape
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from app.schemas import AppointmentData
+from app.schemas import AgendaItem, AppointmentData, EventSummary
 from app.utils import normalize_newlines, parse_iso_datetime
 
 logger = structlog.get_logger()
@@ -380,4 +384,167 @@ def create_pdf(
 
     c.save()
     logger.info(f"PDF successfully created with {len(appointments)} appointments")
+    return buffer.getvalue()
+
+
+def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[AgendaItem]) -> bytes:
+    """Create a tabular A4 PDF for a worship service agenda."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
+    )
+
+    font_name, font_name_bold = _register_fonts()
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "AgendaTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
+    )
+    subtitle_style = ParagraphStyle(
+        "AgendaSubtitle", parent=styles["Normal"], fontName=font_name, fontSize=10, textColor=colors.grey, spaceAfter=12
+    )
+    cell_style = ParagraphStyle("AgendaCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
+    section_style = ParagraphStyle(
+        "AgendaSection",
+        parent=styles["Normal"],
+        fontName=font_name_bold,
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor("#5E8B5A"),
+    )
+
+    start_dt = parse_iso_datetime(event_start)
+    date_str = start_dt.strftime("%d.%m.%Y")
+
+    elements = []
+    elements.append(Paragraph(f"Agenda — {event_name}", title_style))
+    elements.append(Paragraph(date_str, subtitle_style))
+
+    table_data = [["Zeit", "Titel", "Dauer", "Verantwortlich", "Notiz"]]
+    row_styles = []
+
+    for item in agenda_items:
+        if item.type == "header":
+            table_data.append([Paragraph(item.title, section_style), "", "", "", ""])
+            row_idx = len(table_data) - 1
+            row_styles.append(("SPAN", (0, row_idx), (4, row_idx)))
+            row_styles.append(("BACKGROUND", (0, row_idx), (4, row_idx), colors.HexColor("#F0F3ED")))
+            continue
+
+        time_str = ""
+        if item.start:
+            dt = parse_iso_datetime(item.start)
+            time_str = dt.strftime("%H:%M")
+
+        title = item.title
+        if item.type == "song" and item.song_key:
+            title += f" ({item.song_key})"
+            if item.song_arrangement:
+                title += f"\n{item.song_arrangement}"
+
+        table_data.append(
+            [
+                Paragraph(time_str, cell_style),
+                Paragraph(title.replace("\n", "<br/>"), cell_style),
+                Paragraph(item.duration_display, cell_style),
+                Paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
+                Paragraph(item.note or "", cell_style),
+            ]
+        )
+
+    if len(table_data) > 1:
+        col_widths = [45, 150, 40, 100, None]
+        available = A4[0] - 30 * mm
+        fixed = sum(w for w in col_widths if w is not None)
+        col_widths[-1] = available - fixed
+
+        table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        base_style = [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("ALIGN", (0, 0), (0, -1), "LEFT"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]
+        base_style.extend(row_styles)
+        table.setStyle(TableStyle(base_style))
+        elements.append(table)
+
+    doc.build(elements)
+    return buffer.getvalue()
+
+
+def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
+    """Create a tabular A4 PDF for service assignments across events."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
+    )
+
+    font_name, font_name_bold = _register_fonts()
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        "ServicesTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
+    )
+    cell_style = ParagraphStyle("ServicesCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
+    event_header_style = ParagraphStyle(
+        "ServicesEventHeader", parent=styles["Normal"], fontName=font_name_bold, fontSize=10, leading=14
+    )
+
+    elements = []
+    elements.append(Paragraph(f"Dienstplan — {date_range}", title_style))
+    elements.append(Spacer(1, 6))
+
+    for event in events:
+        start_dt = parse_iso_datetime(event.start_date)
+        event_label = f"{start_dt.strftime('%d.%m.%Y %H:%M')} — {event.name}"
+        elements.append(Paragraph(event_label, event_header_style))
+        elements.append(Spacer(1, 4))
+
+        if not event.services:
+            elements.append(Paragraph("Keine Dienste eingetragen", cell_style))
+            elements.append(Spacer(1, 10))
+            continue
+
+        table_data = [["Dienst", "Person", "Status"]]
+        for svc in event.services:
+            person = svc.person_name or "-- (offen)"
+            status_str = "Ja" if svc.is_accepted else "?"
+            table_data.append(
+                [
+                    Paragraph(svc.name, cell_style),
+                    Paragraph(person, cell_style),
+                    Paragraph(status_str, cell_style),
+                ]
+            )
+
+        available = A4[0] - 30 * mm
+        col_widths = [available * 0.35, available * 0.45, available * 0.20]
+
+        table = Table(table_data, colWidths=col_widths, repeatRows=1)
+        table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
+                    ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ]
+            )
+        )
+        elements.append(table)
+        elements.append(Spacer(1, 14))
+
+    doc.build(elements)
     return buffer.getvalue()
