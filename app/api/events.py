@@ -180,15 +180,18 @@ async def api_agenda_pdf(
     )
 
 
-@router.get("/api/services/pdf")
-async def api_services_pdf(
+@router.get("/api/events/{event_id}/services/pdf")
+async def api_event_services_pdf(
     request: Request,
+    event_id: int,
+    event_name: str = Query(...),
+    event_start: str = Query(...),
     client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: List[str] = Query(...),
 ) -> Response:
-    """Generate and download a services PDF for the selected date range."""
+    """Generate and download a services PDF for a single event."""
     login_token = request.cookies.get(settings.cookie_login_token)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
@@ -198,13 +201,12 @@ async def api_services_pdf(
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
-    # Format date range for PDF title — use strptime directly to avoid
-    # timezone-related date shifts (we only need the date, not the time)
-    start_dt = datetime.strptime(start_date, "%Y-%m-%d")
-    end_dt = datetime.strptime(end_date, "%Y-%m-%d")
-    date_range = f"{start_dt.strftime('%d.%m.')} – {end_dt.strftime('%d.%m.%Y')}"
+    # Filter to the requested event
+    event = next((ev for ev in events if ev.id == event_id), None)
+    if not event:
+        return JSONResponse({"error": "Event nicht gefunden"}, status_code=404)
 
-    pdf_bytes = create_services_pdf(date_range, events)
+    pdf_bytes = create_services_pdf(event_name, [event])
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
     return StreamingResponse(

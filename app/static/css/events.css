@@ -680,11 +680,16 @@
     padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
 }
 
-.agenda-export,
-.services-export {
+.agenda-export {
     display: flex;
     justify-content: flex-end;
     padding: var(--spacing-md) 0 var(--spacing-sm);
+}
+
+.services-export-row td {
+    text-align: right;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: none;
 }
 
 /* ---- Responsive ---- */

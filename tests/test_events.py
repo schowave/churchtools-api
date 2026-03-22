@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.api.events import api_agenda_pdf, api_event_agenda, api_events, api_services_pdf
+from app.api.events import api_agenda_pdf, api_event_agenda, api_event_services_pdf, api_events
 from app.config import settings
 from app.schemas import AgendaItem, EventService, EventSummary
 from app.services.churchtools_client import _extract_person_name, fetch_agenda, fetch_events
@@ -494,7 +494,7 @@ async def test_api_agenda_pdf(mock_fetch_agenda, mock_create_pdf, config_mock):
 @pytest.mark.asyncio
 @patch("app.api.events.create_services_pdf")
 @patch("app.api.events.fetch_events")
-async def test_api_services_pdf(mock_fetch_events, mock_create_pdf, config_mock):
+async def test_api_event_services_pdf(mock_fetch_events, mock_create_pdf, config_mock):
     from fastapi import Request
     from fastapi.responses import StreamingResponse
 
@@ -514,8 +514,11 @@ async def test_api_services_pdf(mock_fetch_events, mock_create_pdf, config_mock)
     ]
     mock_create_pdf.return_value = b"%PDF-1.4 fake"
 
-    response = await api_services_pdf(
+    response = await api_event_services_pdf(
         request=request,
+        event_id=1,
+        event_name="GD",
+        event_start="2026-03-22T09:00:00Z",
         client=client,
         start_date="2026-03-22",
         end_date="2026-03-29",

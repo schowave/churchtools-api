@@ -371,17 +371,19 @@ function renderServicesTable(events) {
                 '</tr>';
             });
         }
+
+        // Per-event PDF export button
+        var evPdfParams = buildEventParams();
+        evPdfParams.append('event_name', ev.name);
+        evPdfParams.append('event_start', ev.start_date);
+        html += '<tr class="services-export-row"><td colspan="4">' +
+            '<a href="/api/events/' + ev.id + '/services/pdf?' + evPdfParams.toString() + '" class="btn-export" download>' +
+                'PDF herunterladen' +
+            '</a>' +
+        '</td></tr>';
     });
 
     html += '</tbody></table></div>';
-
-    // PDF export button
-    var pdfParams = buildEventParams();
-    html += '<div class="services-export">' +
-        '<a href="/api/services/pdf?' + pdfParams.toString() + '" class="btn-export" download>' +
-            'PDF herunterladen' +
-        '</a>' +
-    '</div>';
 
     container.innerHTML = html;
 }
