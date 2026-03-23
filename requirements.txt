@@ -36,7 +36,7 @@ reportlab==4.4.10
 ruff==0.15.2
 six==1.17.0
 SQLAlchemy==2.0.48
-starlette==0.46.2
+starlette==1.0.0
 structlog==25.5.0
 typing-inspection==0.4.2
 typing_extensions==4.15.0
