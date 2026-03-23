@@ -33,7 +33,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-multipart==0.0.22
 reportlab==4.4.10
-ruff==0.15.2
+ruff==0.15.7
 six==1.17.0
 SQLAlchemy==2.0.48
 starlette==0.46.2
