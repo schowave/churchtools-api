@@ -4,7 +4,7 @@ annotated-types==0.7.0
 anyio==4.12.1
 babel==2.18.0
 certifi==2026.2.25
-chardet==6.0.0.post1
+chardet==7.2.0
 charset-normalizer==3.4.4
 click==8.3.1
 coverage==7.13.4
