@@ -12,6 +12,38 @@ function getCsrfToken() {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
+// --- Error helpers ---
+
+// Builds a readable error for a failed response. Proxies answer with HTML pages
+// (e.g. 502 while the container restarts), so the body is only used when it is JSON.
+function responseError(res, fallback) {
+    var contentType = res.headers.get('Content-Type') || '';
+    if (contentType.indexOf('application/json') === -1) {
+        return Promise.resolve(new Error(statusMessage(res.status, fallback)));
+    }
+    return res.json().then(function (data) {
+        // "detail" carries the German message of HTTPExceptions; "error" is only a machine code.
+        var detail = typeof data.detail === 'string' ? data.detail : '';
+        return new Error(detail || statusMessage(res.status, fallback));
+    }, function () {
+        return new Error(statusMessage(res.status, fallback));
+    });
+}
+
+function statusMessage(status, fallback) {
+    if (status === 502 || status === 503 || status === 504) {
+        return 'Server gerade nicht erreichbar (HTTP ' + status + '). Bitte gleich nochmal versuchen.';
+    }
+    if (status === 413) return 'Datei zu groß.';
+    return fallback + ' (HTTP ' + status + ')';
+}
+
+// fetch() rejects with a TypeError when the server cannot be reached at all.
+function errorText(err) {
+    if (err instanceof TypeError) return 'Server nicht erreichbar. Bitte Verbindung prüfen und nochmal versuchen.';
+    return err.message;
+}
+
 // --- Utility functions ---
 
 function showButtonSpinner(btn) {
@@ -320,9 +352,7 @@ function generateOutput(type) {
             return;
         }
         if (!res.ok) {
-            return res.json().then(function (data) {
-                throw new Error(data.error || data.detail || 'Fehler beim Generieren');
-            });
+            return responseError(res, 'Fehler beim Generieren').then(function (err) { throw err; });
         }
         var disposition = res.headers.get('Content-Disposition') || '';
         var filenameMatch = disposition.match(/filename=([^;]+)/);
@@ -350,7 +380,7 @@ function generateOutput(type) {
     .catch(function (err) {
         console.error('Generate error:', err);
         var errorEl = $('#generate_error');
-        errorEl.textContent = err.message || 'Unbekannter Fehler';
+        errorEl.textContent = errorText(err) || 'Unbekannter Fehler';
         errorEl.style.display = '';
         hideButtonSpinner(btn);
     });
@@ -536,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showButtonSpinner(btn);
         fetch('/logo/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
-                if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
+                if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
                 return res.json();
             })
             .then(function () {
@@ -549,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
             })
             .catch(function (err) {
-                alert(err.message);
+                alert(errorText(err));
                 hideButtonSpinner(btn);
             });
         this.value = '';
@@ -559,11 +589,11 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#logo_delete').addEventListener('click', function () {
         fetch('/logo', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
-                if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
+                if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
                 $('#logo-preview').style.display = 'none';
                 $('#logo_delete').style.display = 'none';
             })
-            .catch(function (err) { alert(err.message); });
+            .catch(function (err) { alert(errorText(err)); });
     });
 
     // Background image upload
@@ -580,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showButtonSpinner(btn);
         fetch('/background/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
             .then(function (res) {
-                if (!res.ok) return res.text().then(function (t) { throw new Error('Upload fehlgeschlagen: ' + t); });
+                if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
                 return res.json();
             })
             .then(function () {
@@ -593,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
             })
             .catch(function (err) {
-                alert(err.message);
+                alert(errorText(err));
                 hideButtonSpinner(btn);
             });
         this.value = '';
@@ -603,11 +633,11 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#bg_delete').addEventListener('click', function () {
         fetch('/background', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
             .then(function (res) {
-                if (!res.ok) return res.text().then(function (t) { throw new Error('Löschen fehlgeschlagen: ' + t); });
+                if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
                 $('#bg-preview').style.display = 'none';
                 $('#bg_delete').style.display = 'none';
             })
-            .catch(function (err) { alert(err.message); });
+            .catch(function (err) { alert(errorText(err)); });
     });
 
     // Color presets
