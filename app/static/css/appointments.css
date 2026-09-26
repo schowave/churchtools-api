@@ -889,8 +889,13 @@ textarea:focus {
 }
 
 /* Spacer so content doesn't hide behind bottom bar */
-footer {
-    padding-bottom: 70px;
+body {
+    padding-bottom: calc(var(--spacing-lg) + 70px);
+}
+
+/* Keep the version badge above the export bar */
+.bottom-bar ~ .app-version {
+    bottom: calc(70px + env(safe-area-inset-bottom));
 }
 
 /* ─── Loading state ─────────────────────────── */

@@ -66,3 +66,10 @@ def test_first_visit_login_succeeds_with_rendered_form_token():
     assert "ungültig" in response.text
     # The re-rendered form must carry the token again, so the retry is not blocked.
     assert _form_token(response.text) == token
+
+
+def test_pages_show_installed_version():
+    login = client.get("/")
+    overview = authed_client.get("/overview")
+    for response in (login, overview):
+        assert f'class="app-version" title="Installierte Version">v{settings.version}<' in response.text
