@@ -1,7 +1,7 @@
 """Generate a PDF preview with realistic sample data for local layout testing.
 
 Usage: python scripts/preview_pdf.py
-   or: make preview
+   or: mise run preview
 """
 
 import os
@@ -10,6 +10,7 @@ import sys
 # Allow imports from project root
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from app.schemas import AppointmentData  # noqa: E402
 from app.services.pdf_generator import create_pdf  # noqa: E402
 
 SAMPLE_APPOINTMENTS = [
@@ -219,15 +220,30 @@ ALPHA = 180
 
 
 def main():
-    os.makedirs("app/saved_files", exist_ok=True)
-    filename = create_pdf(
-        SAMPLE_APPOINTMENTS,
+    appointments = [
+        AppointmentData(
+            id=a["id"],
+            title=a["description"],
+            start_date=a["startDate"],
+            end_date=a["endDate"],
+            meeting_at=a["meetingAt"],
+            information=a["information"],
+            additional_info=a["additional_info"],
+        )
+        for a in SAMPLE_APPOINTMENTS
+    ]
+    pdf_bytes = create_pdf(
+        appointments,
         date_color=DATE_COLOR,
         background_color=BACKGROUND_COLOR,
         description_color=DESCRIPTION_COLOR,
         alpha=ALPHA,
     )
-    print(f"Preview PDF created: app/saved_files/{filename}")
+    os.makedirs("app/saved_files", exist_ok=True)
+    path = "app/saved_files/preview.pdf"
+    with open(path, "wb") as f:
+        f.write(pdf_bytes)
+    print(f"Preview PDF created: {path}")
 
 
 if __name__ == "__main__":

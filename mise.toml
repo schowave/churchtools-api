@@ -1,0 +1,56 @@
+[tools]
+python = "3.12"
+uv = "0.11"
+
+[env]
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.install]
+description = "Install app and dev dependencies into .venv"
+run = "uv pip install -e '.[dev]'"
+
+[tasks.lock]
+description = "Regenerate requirements.txt (pinned runtime deps for the Docker image)"
+run = "uv pip compile pyproject.toml --python-version 3.12 --upgrade -o requirements.txt"
+
+[tasks.migrate]
+description = "Run database migrations"
+run = "alembic upgrade head"
+
+[tasks.run]
+description = "Run migrations and start dev server with auto-reload"
+depends = ["migrate"]
+run = "uvicorn app.main:app --reload --host 0.0.0.0 --port 5005"
+
+[tasks.test]
+description = "Run test suite"
+run = "pytest tests/ -q"
+
+[tasks.cov]
+description = "Run test suite with coverage report"
+run = "pytest --cov=app tests/ --cov-report=term --cov-report=xml"
+
+[tasks.lint]
+description = "Check code style (ruff)"
+run = ["ruff check .", "ruff format --check ."]
+
+[tasks.format]
+description = "Auto-fix code style (ruff)"
+run = ["ruff check --fix .", "ruff format ."]
+
+[tasks.preview]
+description = "Render a sample PDF for layout testing"
+run = "python scripts/preview_pdf.py"
+
+[tasks.build]
+description = "Build container image locally"
+run = "podman build -t churchtools-local ."
+
+[tasks.run-docker]
+description = "Build and run the container image locally (data in ./data)"
+depends = ["build"]
+run = """
+mkdir -p data
+podman run --rm -p 5005:5005 -v ./data:/app/data --env-file .env \
+  -e DB_PATH=/app/data/churchtools.db churchtools-local
+"""

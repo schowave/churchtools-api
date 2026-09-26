@@ -288,9 +288,9 @@ async def test_appointments_page_with_token(
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[1]
+    context = call_args[2]
 
-    assert call_args[0] == "appointments.html"
+    assert call_args[1] == "appointments.html"
     assert "calendars" in context
     assert "selected_calendar_ids" in context
     assert "start_date" in context

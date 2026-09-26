@@ -42,6 +42,7 @@ async def fragment_appointments(
         appointment.additional_info = additional_infos.get(appointment.id, "")
 
     return templates.TemplateResponse(
+        request,
         "fragments/appointments.html",
-        {"request": request, "appointments": appointments},
+        {"appointments": appointments},
     )

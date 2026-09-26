@@ -15,8 +15,8 @@ async def login_page(request: Request) -> Response:
     if login_token:
         return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
 
-    context = {"request": request, "base_url": settings.churchtools_base, "version": settings.version}
-    return templates.TemplateResponse("login.html", context)
+    context = {"base_url": settings.churchtools_base, "version": settings.version}
+    return templates.TemplateResponse(request, "login.html", context)
 
 
 @router.post("/")
@@ -53,9 +53,9 @@ async def login(
             return redirect
         else:
             return templates.TemplateResponse(
+                request,
                 "login.html",
                 {
-                    "request": request,
                     "base_url": settings.churchtools_base,
                     "error": "Login-Token konnte nicht abgerufen werden.",
                     "version": settings.version,
@@ -63,9 +63,9 @@ async def login(
             )
     else:
         return templates.TemplateResponse(
+            request,
             "login.html",
             {
-                "request": request,
                 "base_url": settings.churchtools_base,
                 "error": "Benutzername oder Passwort ungültig.",
                 "version": settings.version,
@@ -97,5 +97,5 @@ async def overview(request: Request) -> Response:
         return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
     return templates.TemplateResponse(
-        "overview.html", {"request": request, "base_url": settings.churchtools_base, "version": settings.version}
+        request, "overview.html", {"base_url": settings.churchtools_base, "version": settings.version}
     )

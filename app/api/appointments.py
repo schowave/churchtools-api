@@ -45,7 +45,6 @@ router = APIRouter()
 
 
 def _build_template_context(
-    request: Request,
     calendars: list,
     selected_calendar_ids: list,
     start_date: str,
@@ -57,7 +56,6 @@ def _build_template_context(
 ) -> dict:
     """Build the common template context dict for appointments.html."""
     context = {
-        "request": request,
         "calendars": calendars,
         "selected_calendar_ids": selected_calendar_ids,
         "start_date": start_date,
@@ -110,9 +108,9 @@ async def appointments_page(
     has_background_image = bg_data is not None
 
     return templates.TemplateResponse(
+        request,
         "appointments.html",
         _build_template_context(
-            request,
             calendars,
             selected_calendar_ids,
             start_date,

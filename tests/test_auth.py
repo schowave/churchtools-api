@@ -39,10 +39,9 @@ async def test_login_page(templates_mock, config_mock):
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[1]
+    context = call_args[2]
 
-    assert call_args[0] == "login.html"
-    assert "request" in context
+    assert call_args[1] == "login.html"
     assert "base_url" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
 
@@ -133,10 +132,9 @@ async def test_login_failure(templates_mock, config_mock):
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[1]
+    context = call_args[2]
 
-    assert call_args[0] == "login.html"
-    assert "request" in context
+    assert call_args[1] == "login.html"
     assert "base_url" in context
     assert "error" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
@@ -172,10 +170,9 @@ async def test_login_token_failure(templates_mock, config_mock):
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[1]
+    context = call_args[2]
 
-    assert call_args[0] == "login.html"
-    assert "request" in context
+    assert call_args[1] == "login.html"
     assert "base_url" in context
     assert "error" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
@@ -230,10 +227,9 @@ async def test_overview_with_token(templates_mock, config_mock):
     # Check that templates.TemplateResponse was called with correct parameters
     templates_mock.TemplateResponse.assert_called_once()
     call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[1]
+    context = call_args[2]
 
-    assert call_args[0] == "overview.html"
-    assert "request" in context
+    assert call_args[1] == "overview.html"
     assert "base_url" in context
     assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
 

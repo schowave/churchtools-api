@@ -51,7 +51,7 @@ COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
-COPY pyproject.toml run_fastapi.py ./
+COPY pyproject.toml ./
 
 # entrypoint.sh handles:
 # 1. DB directory creation

@@ -55,9 +55,9 @@ async def agenda_page(
         selected_calendar_ids = [str(cal["id"]) for cal in calendars]
 
     return templates.TemplateResponse(
+        request,
         "agenda.html",
         {
-            "request": request,
             "calendars": calendars,
             "selected_calendar_ids": selected_calendar_ids,
             "start_date": start_date,
@@ -99,9 +99,9 @@ async def services_page(
         selected_calendar_ids = [str(cal["id"]) for cal in calendars]
 
     return templates.TemplateResponse(
+        request,
         "services.html",
         {
-            "request": request,
             "calendars": calendars,
             "selected_calendar_ids": selected_calendar_ids,
             "start_date": start_date,

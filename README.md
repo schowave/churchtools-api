@@ -14,14 +14,15 @@ A web application for creating styled announcement slides from [ChurchTools](htt
   <img src="images/kalenderauswahl.png" alt="Kalenderauswahl" width="300">
 </p>
 <p align="center">
-  <img src="images/folienerstellung.png" alt="Folienerstellung" width="300">
+  <img src="images/termin-folien.png" alt="Termin-Folien" width="300">
 </p>
 
 ## Features
 
+- **Termin-Folien** — styled announcement slides from calendar appointments, exported as PDF or JPEG (ZIP), with custom colors, logo, and background image
+- **Agenda** — service rundowns (songs, items, responsible persons) per event, exportable as PDF
+- **Dienstplan** — who serves in which role per event, exportable as PDF per event
 - **Calendar selection** — choose one or more public calendars from your ChurchTools instance
-- **PDF & JPEG export** — generate formatted appointment lists with customizable styling
-- **Responsive dashboard** — manage calendars, formatting, and exports from a single interface
 
 
 ## Quick Start
@@ -44,9 +45,9 @@ Open [http://localhost:5005](http://localhost:5005)
 git clone https://github.com/schowave/churchtools-api.git
 cd churchtools-api
 cp .env.example .env           # set CHURCHTOOLS_BASE
-python -m venv venv && source venv/bin/activate
-pip install -e ".[dev]"
-make run
+mise install                   # installs Python + uv, creates .venv
+mise run install               # installs app + dev dependencies
+mise run run
 ```
 
 ## Configuration
@@ -98,19 +99,30 @@ Releases are managed via GitHub Actions:
 
 1. Go to **Actions** → **Release** → **Run workflow**
 2. Either enter a version number (e.g. `3.1.0`) or leave empty to auto-increment the patch version (e.g. `3.0.2` → `3.0.3`)
-3. The workflow runs tests, updates `pyproject.toml`, creates a git tag, builds a multi-arch Docker image, and pushes to Docker Hub
+3. The workflow runs tests, updates `pyproject.toml`, creates a git tag, builds the Docker image (linux/amd64), and pushes to Docker Hub
 4. Watchtower picks up the new image automatically on connected hosts
 
 > Requires GitHub Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
 
 ## Development
 
+Tooling is managed with [mise](https://mise.jdx.dev/) (`mise.toml`): it pins Python and uv and activates `.venv` automatically. Run `mise tasks` for the full list.
+
 | Command | Description |
 |---|---|
-| `make run` | Run migrations and start dev server with auto-reload |
-| `make test` | Run test suite |
-| `make lint` | Check code style (ruff) |
-| `make format` | Auto-fix code style |
-| `make build` | Build container image locally |
+| `mise run install` | Install app and dev dependencies into `.venv` |
+| `mise run run` | Run migrations and start dev server with auto-reload |
+| `mise run test` | Run test suite |
+| `mise run cov` | Run test suite with coverage report |
+| `mise run lint` | Check code style (ruff) |
+| `mise run format` | Auto-fix code style |
+| `mise run preview` | Render a sample slide PDF to `app/saved_files/preview.pdf` |
+| `mise run lock` | Regenerate `requirements.txt` (pinned runtime deps for the Docker image) |
+| `mise run build` | Build container image locally (podman) |
+| `mise run run-docker` | Build and run the container locally with `./data` as volume |
+
+Local JPEG export needs poppler (`brew install poppler` / `apt install poppler-utils`); the Docker image ships it.
+
+Dependencies are declared in `pyproject.toml`. After changing them, run `mise run lock` so the Docker image picks up the new pins.
 
 CI runs lint and tests on every push to `main` and on pull requests.

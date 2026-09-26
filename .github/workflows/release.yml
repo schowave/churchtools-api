@@ -16,12 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
 
-    - name: Set up Python 3.12
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
+    - name: Set up tools (mise)
+      uses: jdx/mise-action@v4
 
     - name: Determine version
       id: version
@@ -36,13 +34,13 @@ jobs:
         fi
 
     - name: Install dependencies
-      run: pip install -e ".[dev]"
+      run: mise run install
 
     - name: Lint
-      run: ruff check . && ruff format --check .
+      run: mise run lint
 
     - name: Run tests
-      run: python -m pytest --cov=app tests/ --cov-report=term
+      run: mise run cov
 
     - name: Update version in pyproject.toml
       run: |
@@ -81,7 +79,7 @@ jobs:
         cache-to: type=gha,mode=max
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: v${{ steps.version.outputs.VERSION }}
         generate_release_notes: true
