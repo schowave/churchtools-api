@@ -81,6 +81,13 @@ def get_session_token(session_id: str) -> str | None:
             return None
 
 
+def get_session_expiry(session_id: str) -> datetime | None:
+    """Expiry (naive UTC) of a session, or None if it does not exist."""
+    with database.SessionLocal() as db:
+        row = db.get(LoginSession, _hash(session_id))
+        return row.expires_at if row else None
+
+
 def delete_session(session_id: str) -> None:
     with database.SessionLocal() as db:
         db.query(LoginSession).filter(LoginSession.id_hash == _hash(session_id)).delete()

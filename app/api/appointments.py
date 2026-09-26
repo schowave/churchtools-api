@@ -19,7 +19,7 @@ from app.crud import (
 )
 from app.database import DEFAULT_SETTING_NAME, get_db
 from app.dates import export_timestamp
-from app.schemas import GenerateRequest
+from app.schemas import ColorSettings, GenerateRequest
 from app.services.auth import get_valid_login_token
 from app.services.churchtools_client import (
     AuthenticationError,
@@ -49,10 +49,17 @@ async def appointments_page(
     def styling_context() -> dict:
         logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
         bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+        color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
+        has_logo = logo_data is not None
+        has_background_image = bg_data is not None
         return {
-            "color_settings": load_color_settings(db, DEFAULT_SETTING_NAME),
-            "has_logo": logo_data is not None,
-            "has_background_image": bg_data is not None,
+            "color_settings": color_settings,
+            "has_logo": has_logo,
+            "has_background_image": has_background_image,
+            # First-time users see the design section open; once customised it stays out of the way
+            "design_open": color_settings == ColorSettings(name=DEFAULT_SETTING_NAME)
+            and not has_logo
+            and not has_background_image,
         }
 
     return await render_calendar_page(

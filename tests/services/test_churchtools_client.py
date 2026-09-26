@@ -9,6 +9,7 @@ from app.services.churchtools_client import (
     fetch_agenda,
     fetch_appointments,
     fetch_calendars,
+    fetch_current_user,
     fetch_events,
     legacy_appointment_ids,
     parse_appointment,
@@ -597,3 +598,34 @@ def test_legacy_appointment_ids_number_series_occurrences_by_date():
         "2_7_2026-10-04T08:00:00Z": "2_7",
         "1_9_2026-10-05": "1_9",
     }
+
+
+@pytest.mark.asyncio
+async def test_fetch_current_user(config_mock):
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = {
+        "data": {"id": 42, "firstName": "Erika", "lastName": "Muster", "email": "erika@example.org"}
+    }
+    client = AsyncMock()
+    client.get.return_value = response
+
+    user = await fetch_current_user("token", client)
+
+    client.get.assert_called_once_with(
+        f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/whoami", headers={"Authorization": "Login token"}
+    )
+    assert user.id == 42
+    assert user.full_name == "Erika Muster"
+    assert user.email == "erika@example.org"
+
+
+@pytest.mark.asyncio
+async def test_fetch_current_user_rejected_token(config_mock):
+    response = MagicMock()
+    response.status_code = 401
+    client = AsyncMock()
+    client.get.return_value = response
+
+    with pytest.raises(AuthenticationError):
+        await fetch_current_user("token", client)

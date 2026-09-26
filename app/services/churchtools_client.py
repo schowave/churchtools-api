@@ -6,7 +6,7 @@ import structlog
 
 from app.config import settings
 from app.dates import parse_iso_datetime
-from app.schemas import AgendaItem, AppointmentData, EventService, EventSummary
+from app.schemas import AgendaItem, AppointmentData, CurrentUser, EventService, EventSummary
 
 logger = structlog.get_logger()
 
@@ -28,6 +28,22 @@ def _extract_appointment(item: dict) -> dict:
     if "appointment" in item:
         return item["appointment"]
     return item
+
+
+async def fetch_current_user(login_token: str, client: httpx2.AsyncClient) -> CurrentUser:
+    """Fetch the person the login token belongs to."""
+    response = await client.get(f"{settings.churchtools_base_url}/api/whoami", headers=_auth_headers(login_token))
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
+    response.raise_for_status()
+
+    data = response.json().get("data", {})
+    return CurrentUser(
+        id=data["id"],
+        first_name=data.get("firstName") or "",
+        last_name=data.get("lastName") or "",
+        email=data.get("email") or "",
+    )
 
 
 async def fetch_calendars(login_token: str, client: httpx2.AsyncClient):

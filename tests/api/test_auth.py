@@ -48,7 +48,7 @@ async def test_login_page_already_logged_in(config_mock):
 
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/overview"
+    assert result.headers["location"] == "/appointments"
 
 
 @pytest.mark.asyncio
@@ -101,7 +101,7 @@ async def test_login_success(config_mock):
     # Check that the result is a RedirectResponse
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
-    assert result.headers["location"] == "/overview"
+    assert result.headers["location"] == "/appointments"
 
     # Check that the cookie was set
     cookie_header = None
@@ -247,40 +247,12 @@ async def test_logout():
 
 
 @pytest.mark.asyncio
-async def test_overview_with_token(templates_mock, config_mock):
-    # Mock request with login_token
-    request_mock = MagicMock(spec=Request)
-    request_mock.cookies.get.return_value = "test_token"
+async def test_overview_redirects_to_start_page():
+    """The former start page stays reachable for bookmarks."""
+    result = await overview()
 
-    # Call the function
-    result = await overview(request_mock)
-
-    # Check that templates.TemplateResponse was called with correct parameters
-    templates_mock.TemplateResponse.assert_called_once()
-    call_args = templates_mock.TemplateResponse.call_args[0]
-    context = call_args[2]
-
-    assert call_args[1] == "overview.html"
-    assert "base_url" in context
-    assert context["base_url"] == config_mock["CHURCHTOOLS_BASE"]
-
-    # Check that the result is what was returned by templates.TemplateResponse
-    assert result == templates_mock.TemplateResponse.return_value
-
-
-@pytest.mark.asyncio
-async def test_overview_without_token():
-    # Mock request without login_token
-    request_mock = MagicMock(spec=Request)
-    request_mock.cookies.get.return_value = None
-
-    # Call the function
-    result = await overview(request_mock)
-
-    # Check that the result is a RedirectResponse
-    assert isinstance(result, RedirectResponse)
-    assert result.status_code == 303
-    assert result.headers["location"] == "/"
+    assert result.status_code == 301
+    assert result.headers["location"] == "/appointments"
 
 
 if __name__ == "__main__":

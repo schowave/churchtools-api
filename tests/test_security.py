@@ -59,8 +59,8 @@ def test_forged_cookie_cannot_read_logo(forged_cookie_client):
 
 
 @pytest.mark.real_token_validation
-def test_forged_cookie_on_overview_redirects_and_clears_cookie(forged_cookie_client):
-    response = forged_cookie_client.get("/overview")
+def test_forged_cookie_on_page_redirects_and_clears_cookie(forged_cookie_client):
+    response = forged_cookie_client.get("/profile")
     assert response.status_code == 303
     assert response.headers["location"] == "/"
     assert f'{settings.cookie_session}=""' in response.headers["set-cookie"]

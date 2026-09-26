@@ -34,12 +34,6 @@ def test_login_page_renders():
     assert "<form" in response.text
 
 
-def test_overview_page_renders():
-    response = authed_client.get("/overview")
-    assert response.status_code == 200
-    assert "Termin-Folien" in response.text
-
-
 def test_services_page_renders():
     calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
     with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
@@ -69,21 +63,22 @@ def test_first_visit_login_succeeds_with_rendered_form_token():
     assert _form_token(response.text) == token
 
 
-def test_pages_show_installed_version():
-    login = client.get("/")
-    overview = authed_client.get("/overview")
-    for response in (login, overview):
-        assert f'class="app-version" title="Installierte Version">v{settings.version}<' in response.text
+def test_version_is_shown_on_login_and_profile():
+    """Logged-in pages keep the version on the profile page instead of a floating badge."""
+    assert f'class="app-version" title="Installierte Version">v{settings.version}<' in client.get("/").text
+    with patch("app.api.auth.fetch_current_user", AsyncMock(side_effect=ValueError)):
+        profile = authed_client.get("/profile").text
+    assert f"v{settings.version}" in profile
 
 
-def _render_appointments(has_images: bool) -> str:
+def _render_appointments(has_images: bool, colors: ColorSettings | None = None) -> str:
     from app.database import get_db
 
     image = (b"\x89PNG\r\n\x1a\n", "x.png") if has_images else (None, None)
     app.dependency_overrides[get_db] = lambda: None
     with (
         patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])),
-        patch("app.api.appointments.load_color_settings", return_value=ColorSettings()),
+        patch("app.api.appointments.load_color_settings", return_value=colors or ColorSettings()),
         patch("app.api.appointments.load_logo", return_value=image),
         patch("app.api.appointments.load_background_image", return_value=image),
     ):
@@ -102,6 +97,18 @@ def test_appointments_page_shows_existing_images():
     assert 'src="/background"' in html
 
 
+def test_design_section_is_open_until_customised():
+    assert 'id="design_card" open' in _render_appointments(has_images=False)
+    assert 'id="design_card" open' not in _render_appointments(has_images=True)
+    customised = ColorSettings(background_color="#ffffff")
+    assert 'id="design_card" open' not in _render_appointments(has_images=False, colors=customised)
+
+
+def test_appointments_page_has_no_manual_load_button():
+    """The list reloads on every filter change; a separate load button would be redundant."""
+    assert 'id="fetch_btn"' not in _render_appointments(has_images=False)
+
+
 def test_pages_send_strict_content_security_policy():
     csp = client.get("/").headers["content-security-policy"]
     directives = dict(d.strip().split(" ", 1) for d in csp.split(";") if d.strip())
@@ -118,3 +125,20 @@ def test_templates_contain_no_inline_scripts():
         inline = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", html)
         assert not inline, f"inline <script> in {template}"
         assert not re.search(r"\son[a-z]+=", html), f"inline event handler in {template}"
+
+
+def test_logged_in_pages_show_main_navigation():
+    calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
+    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
+        pages = {path: authed_client.get(path).text for path in ("/agenda", "/services")}
+    pages["/appointments"] = _render_appointments(has_images=False)
+
+    for path, html in pages.items():
+        assert 'aria-label="Hauptmenü"' in html, path
+        assert 'href="/profile"' in html, path
+        # The current page is marked in both the inline links and the mobile menu
+        assert html.count(f'href="{path}" aria-current="page"') == 2, path
+
+
+def test_login_page_has_no_navigation():
+    assert 'aria-label="Hauptmenü"' not in client.get("/").text

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👥</text></svg>">
     <title>Dienstplan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,13 +21,10 @@
     <script src="/static/js/events.js?v={{ version }}"></script>
 </head>
 <body>
-<div class="container">
+{% with active="services" %}{% include "_nav.html" %}{% endwith %}
+<main class="container">
     <!-- Header -->
     <div class="page-header">
-        <a href="/overview" class="back-link">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-            Zurück
-        </a>
         <h1>Dienstplan</h1>
         <p class="subtitle">{{ base_url }}</p>
     </div>
@@ -35,38 +32,34 @@
     <!-- Step 1: Date & Calendar Selection -->
     <div class="search-card">
         <div class="search-card-inner">
-            <!-- Date range -->
-            <div class="date-row">
-                <div class="date-field">
-                    <label for="start_date_display">Von</label>
-                    <input type="text" id="start_date_display" required placeholder="Startdatum">
-                    <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+            <div class="filter-row">
+                <!-- Date range -->
+                <div class="date-row">
+                    <div class="date-field">
+                        <label for="start_date_display">Von</label>
+                        <input type="text" id="start_date_display" required placeholder="Startdatum">
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+                    </div>
+                    <span class="date-separator" aria-hidden="true">&ndash;</span>
+                    <div class="date-field">
+                        <label for="end_date_display">Bis</label>
+                        <input type="text" id="end_date_display" required placeholder="Enddatum">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
+                    </div>
                 </div>
-                <span class="date-separator">&ndash;</span>
-                <div class="date-field">
-                    <label for="end_date_display">Bis</label>
-                    <input type="text" id="end_date_display" required placeholder="Enddatum">
-                    <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
-                </div>
-            </div>
 
-            <!-- Quick presets -->
-            <div class="date-presets">
-                <button type="button" id="today" class="preset-chip">Heute</button>
-                <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
-                <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                <!-- Quick presets -->
+                <div class="date-presets" role="group" aria-label="Zeitraum schnell wählen">
+                    <button type="button" id="today" class="preset-chip">Heute</button>
+                    <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
+                    <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                </div>
             </div>
 
             <!-- All calendars selected (hidden) -->
             {% for calendar in calendars %}
             <input type="hidden" name="calendar_ids" value="{{ calendar['id'] }}" class="calendar-checkbox">
             {% endfor %}
-
-            <!-- Fetch button -->
-            <button type="button" class="btn btn-fetch" id="fetch_btn">
-                <span class="btn-label">Laden</span>
-                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden&hellip;</span>
-            </button>
         </div>
     </div>
 
@@ -77,8 +70,7 @@
             <span>Events werden geladen&hellip;</span>
         </div>
     </div>
-</div>
+</main>
 
-<footer class="app-version" title="Installierte Version">v{{ version }}</footer>
 </body>
 </html>

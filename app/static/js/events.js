@@ -12,24 +12,6 @@ function getPageMode() {
 
 // --- Utility functions ---
 
-function showButtonSpinner(btn) {
-    btn.classList.add('is-loading');
-    var label = $('.btn-label', btn);
-    var spinner = $('.btn-spinner', btn);
-    if (label) label.style.display = 'none';
-    if (spinner) spinner.style.display = '';
-}
-
-function hideButtonSpinner(btn) {
-    btn.classList.remove('is-loading');
-    var label = $('.btn-label', btn);
-    var spinner = $('.btn-spinner', btn);
-    if (label) label.style.display = '';
-    if (spinner) spinner.style.display = 'none';
-}
-
-// Escapes for both text content and quoted attribute values.
-// (textContent/innerHTML would leave quotes intact and allow attribute injection.)
 function escapeHtml(text) {
     if (text === null || text === undefined) return '';
     return String(text)
@@ -379,10 +361,17 @@ function renderServicesTable(events) {
 
 // --- Load events (shared) ---
 
-function loadEvents() {
-    var fetchBtn = $('#fetch_btn');
-    showButtonSpinner(fetchBtn);
+// Date changes reload the list (debounced); answers to superseded requests are dropped
+var loadTimer = null;
+var loadSequence = 0;
 
+function scheduleLoad(delay) {
+    clearTimeout(loadTimer);
+    loadTimer = setTimeout(loadEvents, delay === undefined ? 400 : delay);
+}
+
+function loadEvents() {
+    var sequence = ++loadSequence;
     var container = $('#events-list');
     container.innerHTML =
         '<div class="events-loading">' +
@@ -402,21 +391,21 @@ function loadEvents() {
             return res.json();
         })
         .then(function (data) {
-            if (!data) return;
+            if (!data || sequence !== loadSequence) return;
             var mode = getPageMode();
             if (mode === 'services') {
                 renderServicesTable(data.events);
             } else {
                 renderAgendaEvents(data.events);
             }
-            hideButtonSpinner(fetchBtn);
         })
         .catch(function (err) {
+            if (sequence !== loadSequence) return;
             container.innerHTML =
                 '<div class="empty-state">' +
                     '<p>' + escapeHtml(err.message) + '</p>' +
+                    '<button type="button" class="retry-btn" data-action="retry">Erneut versuchen</button>' +
                 '</div>';
-            hideButtonSpinner(fetchBtn);
         });
 }
 
@@ -432,6 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
         allowInput: true,
         onChange: function (selectedDates, dateStr) {
             $('#start_date').value = dateStr;
+            scheduleLoad();
         }
     });
 
@@ -443,7 +433,13 @@ document.addEventListener('DOMContentLoaded', function () {
         allowInput: true,
         onChange: function (selectedDates, dateStr) {
             $('#end_date').value = dateStr;
+            scheduleLoad();
         }
+    });
+
+    // flatpickr hides the labelled input and shows a generated one; give that one the label
+    [[window._fpStart, 'Von'], [window._fpEnd, 'Bis']].forEach(function (entry) {
+        if (entry[0] && entry[0].altInput) entry[0].altInput.setAttribute('aria-label', entry[1]);
     });
 
     // Initialize from hidden ISO values
@@ -460,33 +456,21 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#end_date').value = formatIso(thisWeek.end);
     }
 
-    // Date preset buttons
+    // Date preset buttons (setDateRange triggers onChange, which reloads)
     $('#today').addEventListener('click', function () {
         var today = new Date();
         setDateRange(today, today);
-        $('#start_date').value = formatIso(today);
-        $('#end_date').value = formatIso(today);
-        loadEvents();
     });
 
     $('#this-week').addEventListener('click', function () {
         var thisWeek = calculateThisWeekDates();
         setDateRange(thisWeek.start, thisWeek.end);
-        $('#start_date').value = formatIso(thisWeek.start);
-        $('#end_date').value = formatIso(thisWeek.end);
-        loadEvents();
     });
 
     $('#next-week').addEventListener('click', function () {
         var nextWeek = calculateNextWeekDates();
         setDateRange(nextWeek.start, nextWeek.end);
-        $('#start_date').value = formatIso(nextWeek.start);
-        $('#end_date').value = formatIso(nextWeek.end);
-        loadEvents();
     });
-
-    // Fetch button
-    $('#fetch_btn').addEventListener('click', loadEvents);
 
     // Calendar chips toggle (only on pages with calendar selection)
     var calToggle = $('#calendars_toggle');
@@ -517,6 +501,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Event delegation for agenda card expand/collapse
     var eventsContainer = $('#events-list');
     eventsContainer.addEventListener('click', function (e) {
+        if (e.target.closest('[data-action="retry"]')) {
+            loadEvents();
+            return;
+        }
         var header = e.target.closest('.event-card-header');
         if (header) {
             var card = header.closest('.event-card');
@@ -524,6 +512,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Auto-fetch on page load
-    loadEvents();
+    // Initial load (replaces the loads scheduled by initializing the date pickers)
+    scheduleLoad(0);
 });
