@@ -628,3 +628,25 @@ async def test_api_generate_auth_error_mid_session(
 
     response = await api_generate(request=request, body=body, db=db, client=client)
     assert response.status_code == 401
+
+
+def test_parse_appointment_all_day():
+    # ChurchTools marks all-day appointments with base.allDay and sends date-only values
+    raw = {
+        "base": {"id": "2_7", "title": "17. So. n. Trinitatis", "allDay": True},
+        "calculated": {"startDate": "2026-09-27", "endDate": "2026-09-27"},
+    }
+
+    result = parse_appointment(raw)
+
+    assert result.all_day is True
+    assert result.start_date_view == "27.09.2026"
+
+
+def test_parse_appointment_timed_is_not_all_day():
+    raw = {
+        "base": {"id": "2_8", "title": "Gottesdienst", "allDay": False},
+        "calculated": {"startDate": "2026-09-27T08:00:00Z", "endDate": "2026-09-27T09:00:00Z"},
+    }
+
+    assert parse_appointment(raw).all_day is False

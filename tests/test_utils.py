@@ -79,3 +79,21 @@ class TestUtils(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_parse_iso_datetime_date_only_is_local_midnight(monkeypatch):
+    # All-day appointments come as plain dates; they must stay on that local date,
+    # independent of the server's system timezone.
+    import time
+    from zoneinfo import ZoneInfo
+
+    monkeypatch.setenv("TZ", "America/New_York")
+    time.tzset()
+    try:
+        berlin = ZoneInfo("Europe/Berlin")
+        result = parse_iso_datetime("2026-09-27", tz=berlin)
+    finally:
+        monkeypatch.undo()
+        time.tzset()
+    assert (result.year, result.month, result.day, result.hour, result.minute) == (2026, 9, 27, 0, 0)
+    assert result.tzinfo == berlin

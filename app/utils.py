@@ -16,6 +16,10 @@ def parse_iso_datetime(dt_str: str, tz: Optional[ZoneInfo] = None) -> datetime:
     else:
         utc_dt = datetime.fromisoformat(dt_str)
 
+    if utc_dt.tzinfo is None:
+        # Values without offset (e.g. all-day dates like "2026-09-27") are local to the
+        # configured timezone; astimezone() would read them in the server's system timezone.
+        return utc_dt.replace(tzinfo=tz)
     return utc_dt.astimezone(tz)
 
 

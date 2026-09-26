@@ -571,3 +571,30 @@ class TestFontRegistration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _appointment(**kwargs):
+    from app.schemas import AppointmentData
+
+    defaults = {"id": "1", "title": "Termin", "start_date": "2026-09-27T08:00:00Z", "end_date": "2026-09-27T09:30:00Z"}
+    return AppointmentData(**{**defaults, **kwargs})
+
+
+def test_format_time_range_timed():
+    from app.services.pdf_generator import _format_time_range
+
+    assert _format_time_range(_appointment()) == "10:00 - 11:30 Uhr"
+
+
+def test_format_time_range_all_day():
+    from app.services.pdf_generator import _format_time_range
+
+    event = _appointment(start_date="2026-09-27", end_date="2026-09-27", all_day=True)
+    assert _format_time_range(event) == "Ganztägig"
+
+
+def test_format_time_range_multi_day_all_day():
+    from app.services.pdf_generator import _format_time_range
+
+    event = _appointment(start_date="2026-10-02", end_date="2026-10-04", all_day=True)
+    assert _format_time_range(event) == "Ganztägig bis 04.10.2026"

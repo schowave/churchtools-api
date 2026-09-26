@@ -118,6 +118,7 @@ def parse_appointment(raw: dict) -> AppointmentData:
         meeting_at=meeting_at,
         # API field "description" replaces deprecated "information"
         information=raw["base"].get("description") or raw["base"].get("information") or "",
+        all_day=bool(raw["base"].get("allDay", False)),
     )
 
 

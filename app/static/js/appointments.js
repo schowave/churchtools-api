@@ -142,7 +142,7 @@ function renderAppointments(appointments) {
             ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
             '<label for="appointment-' + escapeHtml(app.id) + '" class="appointment-label">' +
                 '<span class="appointment-date">' +
-                    (app.start_time_view === app.end_time_view
+                    (app.all_day
                         ? 'Ganztägig'
                         : escapeHtml(app.start_time_view) + ' – ' + escapeHtml(app.end_time_view)) +
                 '</span>' +

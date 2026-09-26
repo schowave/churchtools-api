@@ -23,6 +23,7 @@ class AppointmentData(BaseModel):
     meeting_at: str = ""
     information: str = ""
     additional_info: str = ""
+    all_day: bool = False
 
     @computed_field
     @property

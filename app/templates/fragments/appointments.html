@@ -4,7 +4,7 @@
         {{ appointment.start_date_view }}
     </div>
     <div class="appointment-time">
-        {{ appointment.start_time_view }} - {{ appointment.end_time_view }} Uhr
+        {% if appointment.all_day %}Ganztägig{% else %}{{ appointment.start_time_view }} - {{ appointment.end_time_view }} Uhr{% endif %}
     </div>
     <div class="appointment-title">{{ appointment.title }}</div>
     {% if appointment.meeting_at %}

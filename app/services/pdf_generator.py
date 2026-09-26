@@ -212,6 +212,17 @@ def wrap_text(text, font_name, line_height, max_width):
     return wrapped_lines, text_height
 
 
+def _format_time_range(event: AppointmentData) -> str:
+    """Time line below the date: "10:00 - 11:30 Uhr", "Ganztägig" or "Ganztägig bis 04.10.2026"."""
+    start_dt = parse_iso_datetime(event.start_date)
+    end_dt = parse_iso_datetime(event.end_date)
+    if event.all_day:
+        if end_dt.date() > start_dt.date():
+            return f"Ganztägig bis {end_dt.strftime('%d.%m.%Y')}"
+        return "Ganztägig"
+    return f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
+
+
 def _draw_event(
     c,
     event: AppointmentData,
@@ -308,7 +319,6 @@ def _draw_event(
     c.setFont(font_name_bold, font_size_large)
 
     start_dt = parse_iso_datetime(event.start_date)
-    end_dt = parse_iso_datetime(event.end_date)
     german_day_of_week = format_date(start_dt, format="EEEE", locale="de_DE")
     day_date_str = f"{german_day_of_week}, {start_dt.strftime('%d.%m.%Y')}"
     c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large, day_date_str)
@@ -316,7 +326,7 @@ def _draw_event(
     # Time
     c.setFillColor(HexColor(description_color))
     c.setFont(font_name, font_size_medium)
-    time_str = f"{start_dt.strftime('%H:%M')} - {end_dt.strftime('%H:%M')} Uhr"
+    time_str = _format_time_range(event)
     c.drawString(LEFT_COLUMN_X + INDENT, text_y_position - line_height_large - line_height_medium, time_str)
 
     # MeetingAt (wrapped to left column width)
