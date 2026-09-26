@@ -451,6 +451,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Calendar chips toggle (CSS collapse)
+    // Transparency slider: show the value as percent
+    $('#alpha').addEventListener('input', function () {
+        $('#alphaValue').textContent = Math.round(this.value / 255 * 100) + '%';
+    });
+
     $('#calendars_toggle').addEventListener('click', function () {
         var wrap = $('#calendars_wrap');
         var isExpanded = this.getAttribute('aria-expanded') === 'true';

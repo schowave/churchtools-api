@@ -449,7 +449,8 @@ async def test_api_event_agenda_empty(mock_fetch, config_mock):
 @pytest.mark.asyncio
 @patch("app.api.events.create_agenda_pdf")
 @patch("app.api.events.fetch_agenda")
-async def test_api_agenda_pdf(mock_fetch_agenda, mock_create_pdf, config_mock):
+@patch("app.api.events.fetch_event")
+async def test_api_agenda_pdf(mock_fetch_event, mock_fetch_agenda, mock_create_pdf, config_mock):
     from fastapi import Request
     from fastapi.responses import StreamingResponse
 
@@ -470,16 +471,17 @@ async def test_api_agenda_pdf(mock_fetch_agenda, mock_create_pdf, config_mock):
     ]
     mock_create_pdf.return_value = b"%PDF-1.4 fake"
 
-    response = await api_agenda_pdf(
-        request=request,
-        event_id=1,
-        event_name="Gottesdienst",
-        event_start="2026-03-22T09:00:00Z",
-        client=client,
+    mock_fetch_event.return_value = EventSummary(
+        id=1, name="Gottesdienst", start_date="2026-03-22T09:00:00Z", end_date="2026-03-22T10:00:00Z"
     )
+
+    response = await api_agenda_pdf(request=request, event_id=1, client=client)
 
     assert isinstance(response, StreamingResponse)
     assert response.media_type == "application/pdf"
+    # Title and start come from ChurchTools, not from client-supplied query parameters
+    mock_fetch_event.assert_called_once_with("token", 1, client)
+    assert mock_create_pdf.call_args[0][:2] == ("Gottesdienst", "2026-03-22T09:00:00Z")
 
 
 @pytest.mark.asyncio
@@ -508,8 +510,6 @@ async def test_api_event_services_pdf(mock_fetch_events, mock_create_pdf, config
     response = await api_event_services_pdf(
         request=request,
         event_id=1,
-        event_name="GD",
-        event_start="2026-03-22T09:00:00Z",
         client=client,
         start_date="2026-03-22",
         end_date="2026-03-29",
@@ -518,3 +518,33 @@ async def test_api_event_services_pdf(mock_fetch_events, mock_create_pdf, config
 
     assert isinstance(response, StreamingResponse)
     assert response.media_type == "application/pdf"
+    assert mock_create_pdf.call_args[0][0] == "GD"
+
+
+@pytest.mark.asyncio
+async def test_fetch_event(config_mock):
+    from app.services.churchtools_client import fetch_event
+
+    client = AsyncMock()
+    response = MagicMock()
+    response.status_code = 200
+    response.json.return_value = {
+        "data": {
+            "id": 1275,
+            "name": "GOTTESDIENST",
+            "startDate": "2026-09-06T08:00:00Z",
+            "endDate": "2026-09-06T09:30:00Z",
+            "calendar": {"title": "GOTTESDIENSTE"},
+        }
+    }
+    client.get.return_value = response
+
+    event = await fetch_event("token", 1275, client)
+
+    assert (event.id, event.name, event.start_date, event.calendar_name) == (
+        1275,
+        "GOTTESDIENST",
+        "2026-09-06T08:00:00Z",
+        "GOTTESDIENSTE",
+    )
+    assert client.get.call_args[0][0].endswith("/api/events/1275")

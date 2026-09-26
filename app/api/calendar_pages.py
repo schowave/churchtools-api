@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-import httpx
+import httpx2
 from fastapi import Request
 from fastapi.responses import Response
 
@@ -13,7 +13,7 @@ from app.utils import get_date_range_from_form
 
 async def render_calendar_page(
     request: Request,
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
     template_name: str,
     start_date: str | None,
     end_date: str | None,
@@ -27,12 +27,12 @@ async def render_calendar_page(
     """
     login_token = await get_valid_login_token(request, client)
     if not login_token:
-        return redirect_to_login()
+        return redirect_to_login(request)
 
     try:
         calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
-        return redirect_to_login()
+        return redirect_to_login(request)
 
     default_start, default_end = get_date_range_from_form()
     context = {

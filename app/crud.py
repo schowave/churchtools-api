@@ -1,4 +1,5 @@
 import structlog
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -9,13 +10,15 @@ logger = structlog.get_logger()
 
 
 def save_additional_infos(db: Session, appointment_info_list: list[tuple[str, str]]) -> None:
+    if not appointment_info_list:
+        return
+    rows = [{"id": appointment_id, "additional_info": info} for appointment_id, info in appointment_info_list]
+    statement = sqlite_insert(Appointment).values(rows)
+    statement = statement.on_conflict_do_update(
+        index_elements=[Appointment.id], set_={"additional_info": statement.excluded.additional_info}
+    )
     try:
-        for appointment_id, additional_info in appointment_info_list:
-            appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-            if appointment:
-                appointment.additional_info = additional_info
-            else:
-                db.add(Appointment(id=appointment_id, additional_info=additional_info))
+        db.execute(statement)
         db.commit()
     except SQLAlchemyError:
         db.rollback()

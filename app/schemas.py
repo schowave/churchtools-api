@@ -73,7 +73,6 @@ class GenerateRequest(BaseModel):
     appointment_ids: list[str]
     color_settings: ColorSettings
     additional_infos: dict[str, str] = {}
-    profile: str = "default"
 
     @field_validator("appointment_ids")
     @classmethod
@@ -99,7 +98,7 @@ class EventSummary(BaseModel):
     name: str
     start_date: str
     end_date: str
-    calendar_name: str
+    calendar_name: str = ""
     services: list[EventService] = []
 
 

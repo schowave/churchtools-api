@@ -1,10 +1,17 @@
-import httpx
+import httpx2
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
 from app.dependencies import get_http_client
-from app.services.auth import get_valid_login_token, redirect_to_login
+from app.services import sessions
+from app.services.auth import (
+    clear_session_cookies,
+    forget_login_token,
+    get_valid_login_token,
+    redirect_to_login,
+    set_session_cookie,
+)
 from app.services.rate_limit import LoginRateLimiter
 from app.shared import templates
 
@@ -24,8 +31,7 @@ def _login_error(request: Request, message: str, status_code: int = 200) -> Resp
 
 @router.get("/")
 async def login_page(request: Request) -> Response:
-    login_token = request.cookies.get(settings.cookie_login_token)
-    if login_token:
+    if request.cookies.get(settings.cookie_session):
         return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
 
     context = {"base_url": settings.churchtools_base, "version": settings.version}
@@ -37,7 +43,7 @@ async def login(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> Response:
     client_key = _client_key(request)
     retry_after = login_rate_limiter.retry_after(client_key)
@@ -68,14 +74,8 @@ async def login(
         if token_response.status_code == 200:
             login_token = token_response.json()["data"]
             redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-            is_https = request.url.scheme == "https"
-            redirect.set_cookie(
-                key=settings.cookie_login_token,
-                value=login_token,
-                httponly=True,
-                secure=is_https,
-                samesite="strict" if is_https else "lax",
-            )
+            # The browser only gets a random session id; the token stays on the server
+            set_session_cookie(redirect, request, sessions.create_session(login_token))
             return redirect
         else:
             return _login_error(request, "Login-Token konnte nicht abgerufen werden.")
@@ -85,26 +85,30 @@ async def login(
 
 
 @router.post("/logout")
-async def logout(request: Request, client: httpx.AsyncClient = Depends(get_http_client)) -> RedirectResponse:
-    login_token = request.cookies.get(settings.cookie_login_token)
+async def logout(request: Request, client: httpx2.AsyncClient = Depends(get_http_client)) -> RedirectResponse:
+    session_id = request.cookies.get(settings.cookie_session)
+    login_token = sessions.get_session_token(session_id) if session_id else None
+    if session_id:
+        sessions.delete_session(session_id)
     if login_token:
+        forget_login_token(login_token)
         try:
             await client.post(
                 f"{settings.churchtools_base_url}/api/logout",
                 headers={"Authorization": f"Login {login_token}"},
             )
         except Exception:
-            pass  # Best-effort: still clear local cookie even if API call fails
+            pass  # Best-effort: the local session is gone either way
 
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-    response.delete_cookie(key=settings.cookie_login_token)
+    clear_session_cookies(response, request)
     return response
 
 
 @router.get("/overview")
-async def overview(request: Request, client: httpx.AsyncClient = Depends(get_http_client)) -> Response:
+async def overview(request: Request, client: httpx2.AsyncClient = Depends(get_http_client)) -> Response:
     if not await get_valid_login_token(request, client):
-        return redirect_to_login()
+        return redirect_to_login(request)
 
     return templates.TemplateResponse(
         request, "overview.html", {"base_url": settings.churchtools_base, "version": settings.version}

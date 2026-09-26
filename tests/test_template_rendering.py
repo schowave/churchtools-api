@@ -9,9 +9,10 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.dependencies import get_http_client
 from app.main import app
+from app.schemas import ColorSettings
 
 client = TestClient(app)
-authed_client = TestClient(app, cookies={settings.cookie_login_token: "token"})
+authed_client = TestClient(app, cookies={settings.cookie_session: "token"})
 
 
 def _form_token(html: str) -> str:
@@ -73,3 +74,47 @@ def test_pages_show_installed_version():
     overview = authed_client.get("/overview")
     for response in (login, overview):
         assert f'class="app-version" title="Installierte Version">v{settings.version}<' in response.text
+
+
+def _render_appointments(has_images: bool) -> str:
+    from app.database import get_db
+
+    image = (b"\x89PNG\r\n\x1a\n", "x.png") if has_images else (None, None)
+    app.dependency_overrides[get_db] = lambda: None
+    with (
+        patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])),
+        patch("app.api.appointments.load_color_settings", return_value=ColorSettings()),
+        patch("app.api.appointments.load_logo", return_value=image),
+        patch("app.api.appointments.load_background_image", return_value=image),
+    ):
+        return authed_client.get("/appointments").text
+
+
+def test_appointments_page_does_not_request_missing_images():
+    html = _render_appointments(has_images=False)
+    assert 'src="/logo"' not in html
+    assert 'src="/background"' not in html
+
+
+def test_appointments_page_shows_existing_images():
+    html = _render_appointments(has_images=True)
+    assert 'src="/logo"' in html
+    assert 'src="/background"' in html
+
+
+def test_pages_send_strict_content_security_policy():
+    csp = client.get("/").headers["content-security-policy"]
+    directives = dict(d.strip().split(" ", 1) for d in csp.split(";") if d.strip())
+    assert directives["script-src"] == "'self'"
+    assert directives["object-src"] == "'none'"
+    assert directives["frame-ancestors"] == "'none'"
+
+
+def test_templates_contain_no_inline_scripts():
+    from pathlib import Path
+
+    for template in Path("app/templates").rglob("*.html"):
+        html = template.read_text()
+        inline = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", html)
+        assert not inline, f"inline <script> in {template}"
+        assert not re.search(r"\son[a-z]+=", html), f"inline event handler in {template}"

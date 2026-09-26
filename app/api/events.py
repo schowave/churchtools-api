@@ -1,6 +1,7 @@
+import asyncio
 from io import BytesIO
 
-import httpx
+import httpx2
 import structlog
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.concurrency import run_in_threadpool
@@ -12,6 +13,7 @@ from app.services.auth import get_valid_login_token
 from app.services.churchtools_client import (
     AuthenticationError,
     fetch_agenda,
+    fetch_event,
     fetch_events,
 )
 from app.services.pdf_generator import create_agenda_pdf, create_services_pdf
@@ -24,7 +26,7 @@ router = APIRouter()
 @router.get("/agenda")
 async def agenda_page(
     request: Request,
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     calendar_ids: list[str] | None = Query(None),
@@ -36,7 +38,7 @@ async def agenda_page(
 @router.get("/services")
 async def services_page(
     request: Request,
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     calendar_ids: list[str] | None = Query(None),
@@ -48,7 +50,7 @@ async def services_page(
 @router.get("/api/events")
 async def api_events(
     request: Request,
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: list[str] = Query(...),
@@ -70,7 +72,7 @@ async def api_events(
 async def api_event_agenda(
     request: Request,
     event_id: int,
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """JSON endpoint returning the agenda for a single event."""
     login_token = await get_valid_login_token(request, client)
@@ -89,9 +91,7 @@ async def api_event_agenda(
 async def api_agenda_pdf(
     request: Request,
     event_id: int,
-    event_name: str = Query(...),
-    event_start: str = Query(...),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> Response:
     """Generate and download an agenda PDF for a single event."""
     login_token = await get_valid_login_token(request, client)
@@ -99,11 +99,15 @@ async def api_agenda_pdf(
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
     try:
-        items = await fetch_agenda(login_token, event_id, client)
+        event, items = await asyncio.gather(
+            fetch_event(login_token, event_id, client), fetch_agenda(login_token, event_id, client)
+        )
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
+    if event is None:
+        return JSONResponse({"error": "Event nicht gefunden"}, status_code=404)
 
-    pdf_bytes = await run_in_threadpool(create_agenda_pdf, event_name, event_start, items)
+    pdf_bytes = await run_in_threadpool(create_agenda_pdf, event.name, event.start_date, items)
     timestamp = export_timestamp()
 
     return StreamingResponse(
@@ -117,9 +121,7 @@ async def api_agenda_pdf(
 async def api_event_services_pdf(
     request: Request,
     event_id: int,
-    event_name: str = Query(...),
-    event_start: str = Query(...),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: list[str] = Query(...),
@@ -139,7 +141,7 @@ async def api_event_services_pdf(
     if not event:
         return JSONResponse({"error": "Event nicht gefunden"}, status_code=404)
 
-    pdf_bytes = await run_in_threadpool(create_services_pdf, event_name, [event])
+    pdf_bytes = await run_in_threadpool(create_services_pdf, event.name, [event])
     timestamp = export_timestamp()
 
     return StreamingResponse(

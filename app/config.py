@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     churchtools_base: str = ""
     db_path: str = "churchtools.db"
     churchtools_base_url: str = ""
-    cookie_login_token: str = "login_token"
+    cookie_session: str = "session"
     version: str = _read_version()
     timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
     log_format: str = "console"  # "console" or "json"

@@ -89,9 +89,7 @@ def forged_cookie_client():
     app.dependency_overrides[get_http_client] = lambda: AsyncMock()
     app.dependency_overrides[get_db] = lambda: MagicMock()
     with patch("app.services.auth.validate_login_token", AsyncMock(return_value=False)):
-        yield TestClient(
-            app, cookies={settings.cookie_login_token: "forged", "csrf_token": "t"}, follow_redirects=False
-        )
+        yield TestClient(app, cookies={settings.cookie_session: "forged", "csrf_token": "t"}, follow_redirects=False)
     app.dependency_overrides.clear()
 
 
@@ -123,7 +121,7 @@ def test_forged_cookie_on_overview_redirects_and_clears_cookie(forged_cookie_cli
     response = forged_cookie_client.get("/overview")
     assert response.status_code == 303
     assert response.headers["location"] == "/"
-    assert f'{settings.cookie_login_token}=""' in response.headers["set-cookie"]
+    assert f'{settings.cookie_session}=""' in response.headers["set-cookie"]
 
 
 @pytest.mark.real_token_validation
@@ -150,7 +148,7 @@ def test_forged_cookie_cannot_generate(forged_cookie_client):
 def authed_client():
     app.dependency_overrides[get_http_client] = lambda: AsyncMock()
     app.dependency_overrides[get_db] = lambda: MagicMock()
-    yield TestClient(app, cookies={settings.cookie_login_token: "token", "csrf_token": "t"})
+    yield TestClient(app, cookies={settings.cookie_session: "token", "csrf_token": "t"})
     app.dependency_overrides.clear()
 
 

@@ -165,3 +165,27 @@ class TestDatabase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_save_additional_infos_uses_a_single_statement(tmp_path):
+    from sqlalchemy import event
+    from sqlalchemy.orm import sessionmaker
+
+    from app.database import Base
+    from app.models import Appointment
+
+    engine = create_engine(f"sqlite:///{tmp_path / 'upsert.db'}")
+    Base.metadata.create_all(engine)
+    session = sessionmaker(bind=engine)()
+    session.add(Appointment(id="a1", additional_info="old"))
+    session.commit()
+
+    statements = []
+    event.listen(engine, "before_cursor_execute", lambda *args: statements.append(args[2]))
+    save_additional_infos(session, [(f"a{i}", f"info {i}") for i in range(1, 11)])
+
+    writes = [s for s in statements if s.lstrip().upper().startswith(("INSERT", "UPDATE", "SELECT"))]
+    assert len(writes) == 1
+    stored = get_additional_infos(session, ["a1", "a10"])
+    assert stored == {"a1": "info 1", "a10": "info 10"}
+    session.close()

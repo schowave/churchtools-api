@@ -110,7 +110,9 @@ async def test_login_success(config_mock):
             break
 
     assert cookie_header is not None, "No set-cookie header found"
-    assert b"login_token=test_token" in cookie_header[1]
+    # Autouse fixture maps the session id to the token; the real store is covered in test_sessions.py
+    assert b"session=test_token" in cookie_header[1]
+    assert b"HttpOnly" in cookie_header[1]
 
 
 @pytest.mark.asyncio
@@ -211,7 +213,7 @@ async def test_logout():
             break
 
     assert cookie_header is not None, "No set-cookie header found"
-    assert b"login_token=" in cookie_header[1]
+    assert b'session=""' in cookie_header[1]
     assert b"Max-Age=0" in cookie_header[1]
 
 

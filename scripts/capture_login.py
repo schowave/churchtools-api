@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 APP_URL = os.environ.get("APP_URL", "http://localhost:5005")
 STATE_PATH = Path(os.environ.get("AUTH_STATE", ".auth/state.json"))
-COOKIE_NAME = "login_token"
+COOKIE_NAME = "session"
 TIMEOUT_SECONDS = 300
 
 

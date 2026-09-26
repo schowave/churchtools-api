@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from io import BytesIO
 
-import httpx
+import httpx2
 import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
@@ -36,7 +36,7 @@ MAX_IMAGE_PIXELS = 40_000_000  # guards against decompression bombs
 IMAGE_FORMATS = {"PNG", "JPEG"}
 
 
-async def _require_auth(request: Request, client: httpx.AsyncClient) -> None:
+async def _require_auth(request: Request, client: httpx2.AsyncClient) -> None:
     """Raise 401 unless ChurchTools accepts the login token."""
     if not await get_valid_login_token(request, client):
         raise HTTPException(status_code=401, detail="Nicht angemeldet")
@@ -84,7 +84,7 @@ router = APIRouter()
 async def appointments_page(
     request: Request,
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     calendar_ids: list[str] | None = Query(None),
@@ -107,7 +107,7 @@ async def appointments_page(
 async def api_appointments(
     request: Request,
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
     calendar_ids: list[str] = Query(...),
@@ -143,7 +143,7 @@ async def api_generate(
     request: Request,
     body: GenerateRequest,
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> Response:
     """JSON endpoint for PDF/JPEG generation."""
     login_token = await get_valid_login_token(request, client)
@@ -161,12 +161,12 @@ async def api_generate(
 
     # Load background image and logo from DB
     background_image_stream = None
-    bg_data, _ = load_background_image(db, body.profile)
+    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
     if bg_data:
         background_image_stream = BytesIO(bg_data)
 
     logo_stream = None
-    logo_data, _ = load_logo(db, body.profile)
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
     if logo_data:
         logo_stream = BytesIO(logo_data)
 
@@ -250,7 +250,7 @@ async def upload_logo(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """Upload a logo image and store it in the database."""
     return await _upload_image(
@@ -260,7 +260,7 @@ async def upload_logo(
 
 @router.get("/logo")
 async def get_logo(
-    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+    request: Request, db: Session = Depends(get_db), client: httpx2.AsyncClient = Depends(get_http_client)
 ) -> Response:
     """Serve the stored logo image for preview."""
     return await _serve_image(request, client, lambda: load_logo(db, DEFAULT_SETTING_NAME), "Kein Logo gespeichert")
@@ -268,7 +268,7 @@ async def get_logo(
 
 @router.delete("/logo")
 async def remove_logo(
-    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+    request: Request, db: Session = Depends(get_db), client: httpx2.AsyncClient = Depends(get_http_client)
 ) -> JSONResponse:
     """Delete the stored logo."""
     return await _remove_image(request, client, lambda: delete_logo(db, DEFAULT_SETTING_NAME))
@@ -279,7 +279,7 @@ async def upload_background(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    client: httpx.AsyncClient = Depends(get_http_client),
+    client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """Upload a background image and store it in the database."""
     return await _upload_image(
@@ -289,7 +289,7 @@ async def upload_background(
 
 @router.get("/background")
 async def get_background(
-    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+    request: Request, db: Session = Depends(get_db), client: httpx2.AsyncClient = Depends(get_http_client)
 ) -> Response:
     """Serve the stored background image for preview."""
     return await _serve_image(
@@ -299,7 +299,7 @@ async def get_background(
 
 @router.delete("/background")
 async def remove_background(
-    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+    request: Request, db: Session = Depends(get_db), client: httpx2.AsyncClient = Depends(get_http_client)
 ) -> JSONResponse:
     """Delete the stored background image."""
     return await _remove_image(request, client, lambda: delete_background_image(db, DEFAULT_SETTING_NAME))

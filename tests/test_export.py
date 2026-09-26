@@ -19,7 +19,7 @@ from app.utils import export_timestamp
 def client():
     app.dependency_overrides[get_http_client] = lambda: AsyncMock()
     app.dependency_overrides[get_db] = lambda: None
-    yield TestClient(app, cookies={settings.cookie_login_token: "token", "csrf_token": "t"})
+    yield TestClient(app, cookies={settings.cookie_session: "token", "csrf_token": "t"})
     app.dependency_overrides.clear()
 
 
@@ -67,3 +67,20 @@ def test_pdf_and_jpeg_generation_run_off_the_event_loop(client):
 def test_export_timestamp_uses_configured_timezone():
     utc_now = datetime(2026, 9, 27, 8, 0, 0, tzinfo=UTC)
     assert export_timestamp(utc_now, tz=ZoneInfo("Europe/Berlin")) == "2026-09-27-10-00-00"
+
+
+def test_generate_ignores_client_supplied_profile(client):
+    with (
+        patch("app.api.appointments.fetch_appointments", AsyncMock(return_value=[])),
+        patch("app.api.appointments.create_pdf", return_value=b"%PDF"),
+        patch("app.api.appointments.save_additional_infos"),
+        patch("app.api.appointments.save_color_settings"),
+        patch("app.api.appointments.load_logo", return_value=(None, None)) as load_logo,
+        patch("app.api.appointments.load_background_image", return_value=(None, None)) as load_bg,
+    ):
+        body = {**GENERATE_BODY, "type": "pdf", "profile": "someone-else"}
+        response = client.post("/api/generate", json=body, headers={"X-CSRF-Token": "t"})
+
+    assert response.status_code == 200
+    assert load_logo.call_args[0][1] == "default"
+    assert load_bg.call_args[0][1] == "default"

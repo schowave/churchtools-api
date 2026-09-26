@@ -17,3 +17,19 @@ def _accept_login_tokens(request):
         return
     with patch("app.services.auth.validate_login_token", AsyncMock(return_value=True)):
         yield
+
+
+@pytest.fixture(autouse=True)
+def _in_memory_sessions(request):
+    """Treat the session cookie value as the ChurchTools token unless a test opts out with
+    @pytest.mark.real_sessions (which then provides its own session database)."""
+    if request.node.get_closest_marker("real_sessions"):
+        yield
+        return
+    with (
+        patch("app.services.sessions.get_session_token", side_effect=lambda session_id: session_id),
+        patch("app.services.sessions.create_session", side_effect=lambda login_token: login_token),
+        patch("app.services.sessions.delete_session"),
+        patch("app.services.sessions.purge_expired_sessions"),
+    ):
+        yield

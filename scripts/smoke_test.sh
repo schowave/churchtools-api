@@ -35,6 +35,6 @@ done
 
 curl -sf "$BASE/health" | grep -q '"status":"ok"' || fail "/health did not report ok"
 curl -sf "$BASE/" | grep -q 'name="_csrf_token" value="[^"]' || fail "login page did not render with a CSRF token"
-curl -sf -o /dev/null "$BASE/static/js/htmx.min.js" || fail "static files not served"
+curl -sf -o /dev/null "$BASE/static/js/events.js" || fail "static files not served"
 
 echo "Smoke test passed ($IMAGE via $ENGINE)"

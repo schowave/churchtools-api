@@ -11,7 +11,7 @@ class TestSettings(unittest.TestCase):
         assert s.churchtools_base == "my-church.church.tools"
         assert s.churchtools_base_url == "https://my-church.church.tools"
         assert s.db_path == "churchtools.db"
-        assert s.cookie_login_token == "login_token"
+        assert s.cookie_session == "session"
 
     @patch.dict(
         "os.environ",

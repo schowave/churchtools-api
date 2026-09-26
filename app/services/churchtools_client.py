@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 
-import httpx
+import httpx2
 import structlog
 
 from app.config import settings
@@ -30,7 +30,7 @@ def _extract_appointment(item: dict) -> dict:
     return item
 
 
-async def fetch_calendars(login_token: str, client: httpx.AsyncClient):
+async def fetch_calendars(login_token: str, client: httpx2.AsyncClient):
     url = f"{settings.churchtools_base_url}/api/calendars"
 
     response = await client.get(url, headers=_auth_headers(login_token))
@@ -49,7 +49,7 @@ async def fetch_calendars(login_token: str, client: httpx.AsyncClient):
 
 
 async def _fetch_calendar_appointments(
-    client: httpx.AsyncClient, calendar_id: int, headers: dict, query_params: dict
+    client: httpx2.AsyncClient, calendar_id: int, headers: dict, query_params: dict
 ) -> list[tuple[int, dict]]:
     """Fetch appointments for a single calendar. Returns list of (calendar_id, appointment_dict) tuples."""
     url = f"{settings.churchtools_base_url}/api/calendars/{calendar_id}/appointments"
@@ -66,7 +66,7 @@ async def _fetch_calendar_appointments(
 
 
 async def fetch_appointments(
-    login_token: str, start_date: str, end_date: str, calendar_ids: list[int], client: httpx.AsyncClient
+    login_token: str, start_date: str, end_date: str, calendar_ids: list[int], client: httpx2.AsyncClient
 ):
     headers = _auth_headers(login_token)
     query_params = {
@@ -133,7 +133,7 @@ def _extract_person_name(person: dict | None) -> str | None:
     return person.get("title") or None
 
 
-async def _fetch_service_names(login_token: str, client: httpx.AsyncClient) -> dict[int, str]:
+async def _fetch_service_names(login_token: str, client: httpx2.AsyncClient) -> dict[int, str]:
     """Fetch service definitions and return a {serviceId: name} lookup."""
     url = f"{settings.churchtools_base_url}/api/services"
     response = await client.get(url, headers=_auth_headers(login_token))
@@ -150,7 +150,7 @@ async def fetch_events(
     start_date: str,
     end_date: str,
     calendar_ids: list[str],
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
 ) -> list[EventSummary]:
     """Fetch events from ChurchTools, filtered by calendar IDs. Canceled events are excluded."""
     # Fetch events and service name lookup in parallel
@@ -202,10 +202,30 @@ async def fetch_events(
     return events
 
 
+async def fetch_event(login_token: str, event_id: int, client: httpx2.AsyncClient) -> EventSummary | None:
+    """Fetch a single event's basic data (without services). Returns None if it does not exist."""
+    url = f"{settings.churchtools_base_url}/api/events/{event_id}"
+    response = await client.get(url, headers=_auth_headers(login_token))
+    if response.status_code == 404:
+        return None
+    if response.status_code in (401, 403):
+        raise AuthenticationError("Login token is invalid or expired")
+    response.raise_for_status()
+
+    data = response.json().get("data", {})
+    return EventSummary(
+        id=data["id"],
+        name=data.get("name", ""),
+        start_date=data.get("startDate", ""),
+        end_date=data.get("endDate", ""),
+        calendar_name=(data.get("calendar") or {}).get("title", ""),
+    )
+
+
 async def fetch_agenda(
     login_token: str,
     event_id: int,
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
 ) -> list[AgendaItem]:
     """Fetch the agenda for an event. Returns empty list if no agenda exists (404)."""
     url = f"{settings.churchtools_base_url}/api/events/{event_id}/agenda"
