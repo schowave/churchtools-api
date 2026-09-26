@@ -4,7 +4,7 @@ The role of this file is to describe common mistakes and confusion points that a
 
 - Tools and tasks live in `mise.toml` (no Makefile). Use `mise run test`, `mise run lint`, `mise run format`. The venv is `.venv`, auto-activated by mise.
 - `requirements.txt` is generated (`mise run lock`) and holds only runtime deps for the Docker image. Declare dependencies in `pyproject.toml`, never edit `requirements.txt` by hand.
-- ruff >= 0.16 also formats Python code blocks in Markdown; `docs/` is excluded in `pyproject.toml` for that reason.
+- ruff >= 0.16 also formats Python code blocks in Markdown files, so `mise run lint` can fail on `.md` changes.
 
 ## Known pitfalls
 
