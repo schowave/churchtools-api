@@ -403,3 +403,167 @@ input[type="submit"]:active {
         animation: none !important;
     }
 }
+
+/* ─── Main navigation (_nav.html) ───────────── */
+.app-nav {
+    position: relative;
+    z-index: 400; /* dropdown above page content and the export bar */
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 720px;
+    padding: var(--spacing-sm) var(--spacing-xl);
+    text-align: left;
+}
+
+.app-nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border-radius: var(--border-radius);
+    transition: color var(--transition-speed) var(--transition-ease),
+                background-color var(--transition-speed) var(--transition-ease);
+}
+
+.app-nav a:hover,
+.app-nav a[aria-current="page"] {
+    color: var(--primary-color);
+}
+
+.app-nav a:focus-visible,
+.app-nav summary:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.app-nav .app-nav-brand {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-right: auto;
+}
+
+.app-nav-links {
+    display: flex;
+    gap: var(--spacing-2xs);
+}
+
+.app-nav-links a {
+    padding: 6px 10px;
+}
+
+.app-nav-links a[aria-current="page"] {
+    background-color: var(--primary-light);
+}
+
+.app-nav-profile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    background: var(--container-bg);
+    border-radius: 50% !important;
+}
+
+.app-nav-profile[aria-current="page"] {
+    border-color: var(--primary-color);
+}
+
+/* Mobile menu: hidden on wide screens, where the links are shown inline */
+.app-nav-menu {
+    display: none;
+    position: relative;
+}
+
+.app-nav-menu summary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2xs);
+    list-style: none;
+    cursor: pointer;
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--container-bg);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.app-nav-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.app-nav-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-2xs);
+    background: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow-lg);
+}
+
+.app-nav-dropdown a {
+    padding: 10px 12px;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.app-nav-dropdown a[aria-current="page"] {
+    background-color: var(--primary-light);
+}
+
+@media (max-width: 640px) {
+    .app-nav { padding: var(--spacing-xs) 0; gap: var(--spacing-sm); }
+    .app-nav-links { display: none; }
+    .app-nav-menu { display: block; }
+}
+
+/* ─── Profile page ──────────────────────────── */
+.container.profile {
+    max-width: 480px;
+    text-align: left;
+}
+
+.profile-name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin: 0 0 var(--spacing-lg);
+}
+
+.profile-details {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--spacing-sm) var(--spacing-lg);
+    margin: 0 0 var(--spacing-lg);
+}
+
+.profile-details dt {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.profile-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.profile-details a {
+    color: var(--primary-color);
+}
+
+.profile-logout .btn {
+    margin-top: 0;
+}

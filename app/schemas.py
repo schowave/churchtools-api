@@ -91,6 +91,19 @@ class EventService(BaseModel):
     is_accepted: bool = False
 
 
+class CurrentUser(BaseModel):
+    """The logged-in ChurchTools person, shown on the profile page."""
+
+    id: int
+    first_name: str = ""
+    last_name: str = ""
+    email: str = ""
+
+    @property
+    def full_name(self) -> str:
+        return f"{self.first_name} {self.last_name}".strip()
+
+
 class EventSummary(BaseModel):
     """An event with its service assignments, used for the Dienstplan view."""
 

@@ -188,3 +188,13 @@ def test_logout_ends_server_session(session_db, churchtools):
     cleared = next(c for c in response.headers.get_list("set-cookie") if c.startswith(f"{settings.cookie_session}="))
     assert "HttpOnly" in cleared and "SameSite" in cleared
     assert client.get("/overview").status_code == 303
+
+
+def test_session_expiry(session_db):
+    session_id = sessions.create_session("ct-login-token")
+
+    expiry = sessions.get_session_expiry(session_id)
+
+    assert expiry is not None
+    assert expiry - sessions._now() > sessions.SESSION_LIFETIME - timedelta(minutes=1)
+    assert sessions.get_session_expiry("unknown") is None

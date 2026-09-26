@@ -1,3 +1,5 @@
+from datetime import UTC
+
 import httpx2
 import structlog
 from fastapi import APIRouter, Depends, Form, Request, status
@@ -13,6 +15,7 @@ from app.services.auth import (
     redirect_to_login,
     set_session_cookie,
 )
+from app.services.churchtools_client import AuthenticationError, fetch_current_user
 from app.services.rate_limit import LoginRateLimiter
 from app.web import get_http_client, templates
 
@@ -126,3 +129,32 @@ async def overview(request: Request, client: httpx2.AsyncClient = Depends(get_ht
     return templates.TemplateResponse(
         request, "overview.html", {"base_url": settings.churchtools_base, "version": settings.version}
     )
+
+
+@router.get("/profile")
+async def profile(request: Request, client: httpx2.AsyncClient = Depends(get_http_client)) -> Response:
+    login_token = await get_valid_login_token(request, client)
+    if not login_token:
+        return redirect_to_login(request)
+
+    try:
+        user = await fetch_current_user(login_token, client)
+    except AuthenticationError:
+        return redirect_to_login(request)
+    except (httpx2.HTTPError, ValueError, KeyError) as exc:
+        # The page still has to offer logout when ChurchTools is down
+        logger.warning("profile_user_fetch_failed", error=type(exc).__name__)
+        user = None
+
+    session_id = request.cookies.get(settings.cookie_session)
+    expires_at = await run_in_threadpool(sessions.get_session_expiry, session_id)
+    expires_local = expires_at.replace(tzinfo=UTC).astimezone(settings.timezone) if expires_at else None
+
+    context = {
+        "base_url": settings.churchtools_base,
+        "churchtools_url": settings.churchtools_base_url,
+        "version": settings.version,
+        "user": user,
+        "session_expires": expires_local.strftime("%d.%m.%Y, %H:%M Uhr") if expires_local else None,
+    }
+    return templates.TemplateResponse(request, "profile.html", context)

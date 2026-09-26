@@ -6,37 +6,6 @@
     box-sizing: border-box;
 }
 
-/* Header bar */
-.overview-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-md);
-}
-
-.overview-header h1 {
-    margin-bottom: 0;
-}
-
-.header-logout {
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    font-family: var(--font-family);
-    font-size: 0.85rem;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 6px 12px;
-    border-radius: var(--border-radius);
-    transition: color var(--transition-speed) var(--transition-ease),
-                background-color var(--transition-speed) var(--transition-ease);
-}
-
-.header-logout:hover {
-    color: var(--danger-color);
-    background-color: rgba(181, 74, 58, 0.08);
-}
-
 /* Tile container */
 .tiles-container {
     display: flex;

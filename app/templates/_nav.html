@@ -1,0 +1,25 @@
+{# Main navigation for logged-in pages. Set `active` via {% with %}: overview, appointments, agenda, services, profile #}
+{% set nav_items = [("appointments", "/appointments", "Termin-Folien"), ("agenda", "/agenda", "Agenda"), ("services", "/services", "Dienstplan")] %}
+<nav class="app-nav" aria-label="Hauptmenü">
+    <a href="/overview" class="app-nav-brand"{% if active == "overview" %} aria-current="page"{% endif %}>ChurchTools Folien</a>
+    <div class="app-nav-links">
+        {% for key, href, label in nav_items %}
+        <a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </div>
+    <details class="app-nav-menu">
+        <summary aria-label="Menü">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+            Menü
+        </summary>
+        <div class="app-nav-dropdown">
+            <a href="/overview"{% if active == "overview" %} aria-current="page"{% endif %}>Startseite</a>
+            {% for key, href, label in nav_items %}
+            <a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+        </div>
+    </details>
+    <a href="/profile" class="app-nav-profile" aria-label="Profil"{% if active == "profile" %} aria-current="page"{% endif %}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+</nav>

@@ -36,30 +36,6 @@
     font-weight: 400;
 }
 
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-xs);
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: color var(--transition-speed) var(--transition-ease);
-    margin-bottom: var(--spacing-sm);
-}
-
-.back-link:hover {
-    color: var(--primary-color);
-}
-
-.back-link svg {
-    transition: transform var(--transition-speed) var(--transition-ease);
-}
-
-.back-link:hover svg {
-    transform: translateX(-2px);
-}
-
 /* ─── Search card ───────────────────────────── */
 .search-card {
     background: white;

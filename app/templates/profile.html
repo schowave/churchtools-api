@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+    <title>Profil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/static/vendor/css/normalize.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
+</head>
+<body>
+{% with active="profile" %}{% include "_nav.html" %}{% endwith %}
+<div class="container profile page-enter">
+    <h1>Profil</h1>
+
+    {% if user %}
+    <p class="profile-name">{{ user.full_name or "Unbekannter Name" }}</p>
+    {% else %}
+    <div class="alert alert-error">Deine Daten konnten nicht geladen werden. ChurchTools ist gerade nicht erreichbar.</div>
+    {% endif %}
+
+    <dl class="profile-details">
+        {% if user %}
+        <dt>E-Mail</dt>
+        <dd>{{ user.email or "–" }}</dd>
+        <dt>Person-ID</dt>
+        <dd>{{ user.id }}</dd>
+        {% endif %}
+        <dt>ChurchTools</dt>
+        <dd><a href="{{ churchtools_url }}" target="_blank" rel="noopener">{{ base_url }}</a></dd>
+        {% if session_expires %}
+        <dt>Angemeldet bis</dt>
+        <dd>{{ session_expires }}</dd>
+        {% endif %}
+        <dt>App-Version</dt>
+        <dd>v{{ version }}</dd>
+    </dl>
+
+    <form action="/logout" method="post" class="profile-logout">
+        <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
+        <button type="submit" class="btn btn--danger">Abmelden</button>
+    </form>
+</div>
+</body>
+</html>

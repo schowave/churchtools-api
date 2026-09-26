@@ -118,3 +118,20 @@ def test_templates_contain_no_inline_scripts():
         inline = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>", html)
         assert not inline, f"inline <script> in {template}"
         assert not re.search(r"\son[a-z]+=", html), f"inline event handler in {template}"
+
+
+def test_logged_in_pages_show_main_navigation():
+    calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
+    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
+        pages = {path: authed_client.get(path).text for path in ("/overview", "/agenda", "/services")}
+    pages["/appointments"] = _render_appointments(has_images=False)
+
+    for path, html in pages.items():
+        assert 'aria-label="Hauptmenü"' in html, path
+        assert 'href="/profile"' in html, path
+        # The current page is marked in both the inline links and the mobile menu
+        assert html.count(f'href="{path}" aria-current="page"') == 2 or path == "/overview", path
+
+
+def test_login_page_has_no_navigation():
+    assert 'aria-label="Hauptmenü"' not in client.get("/").text

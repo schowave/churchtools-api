@@ -13,14 +13,9 @@
     <link rel="stylesheet" href="/static/css/overview.css?v={{ version }}">
 </head>
 <body>
+{% with active="overview" %}{% include "_nav.html" %}{% endwith %}
 <div class="container page-enter">
-    <div class="overview-header">
-        <h1>Startseite</h1>
-        <form action="/logout" method="post" style="margin:0;">
-            <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
-            <button type="submit" class="header-logout" aria-label="Abmelden">Abmelden</button>
-        </form>
-    </div>
+    <h1>Startseite</h1>
     <span class="base-url-badge">{{ base_url }}</span>
     <div class="tiles-container">
         <a href="/appointments" class="tile">
