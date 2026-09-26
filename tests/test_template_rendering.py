@@ -159,5 +159,16 @@ def test_navigation_shows_initials_of_the_logged_in_person():
     assert '<span aria-hidden="true">EM</span>' in html
 
 
+def test_login_error_is_announced_inside_the_card():
+    fresh = TestClient(app)
+    page = fresh.get("/")
+    response = fresh.post("/", data={"username": "u", "password": "p", "_csrf_token": _form_token(page.text)})
+    card = response.text.split('class="login-card', 1)[1]
+    assert 'class="login-error" role="alert"' in card
+    assert "ungültig" in card
+    # Reset link points to the ChurchTools instance
+    assert f'href="{settings.churchtools_base_url}"' in response.text
+
+
 def test_login_page_has_no_navigation():
     assert 'aria-label="Hauptmenü"' not in client.get("/").text

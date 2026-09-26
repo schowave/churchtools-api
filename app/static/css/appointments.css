@@ -57,25 +57,44 @@
 }
 
 /* ─── Date group headers ────────────────────── */
+/* Day rows: a tinted band so days stand apart from the appointments below them */
 .date-group-header {
     position: sticky;
     top: 0;
     z-index: 2;
     font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-2xs);
-    border-bottom: 1px solid var(--border-color);
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--text-color);
+    background: var(--primary-light);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--input-border);
+    border-bottom: 1px solid var(--input-border);
     letter-spacing: 0.01em;
 }
 
 .date-group-header:first-child {
+    border-top: none;
     border-top-left-radius: var(--container-radius);
     border-top-right-radius: var(--container-radius);
+}
+
+.date-weekday {
+    font-weight: 700;
+}
+
+.date-badge {
+    display: inline-block;
+    vertical-align: 0.1em;
+    margin-left: var(--spacing-xs);
+    padding: 0.1em 0.6em;
+    font-family: var(--font-family);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: white;
+    background: var(--primary-color);
+    border-radius: 100px;
 }
 
 /* ─── Staggered fade-in ─────────────────────── */

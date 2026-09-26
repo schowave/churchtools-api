@@ -40,8 +40,17 @@ def _username_key(username: str) -> str:
     return username.strip().casefold()
 
 
+def _login_context(**extra) -> dict:
+    return {
+        "base_url": settings.churchtools_base,
+        "churchtools_url": settings.churchtools_base_url,
+        "version": settings.version,
+        **extra,
+    }
+
+
 def _login_error(request: Request, message: str, status_code: int = 200) -> Response:
-    context = {"base_url": settings.churchtools_base, "error": message, "version": settings.version}
+    context = _login_context(error=message)
     return templates.TemplateResponse(request, "login.html", context, status_code=status_code)
 
 
@@ -50,7 +59,7 @@ async def login_page(request: Request) -> Response:
     if request.cookies.get(settings.cookie_session):
         return RedirectResponse(url=START_PAGE, status_code=status.HTTP_303_SEE_OTHER)
 
-    context = {"base_url": settings.churchtools_base, "version": settings.version}
+    context = _login_context()
     if request.query_params.get("hinweis") == "abgelaufen":
         # Set by the CSRF middleware when a form was submitted from a page that had been open too long
         context["error"] = "Die Seite war zu lange geöffnet. Bitte erneut anmelden."

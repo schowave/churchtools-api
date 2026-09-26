@@ -189,6 +189,21 @@ function closeCustomTextEditor(item) {
     textarea.classList.add('hidden');
 }
 
+// "dd.mm.yyyy" -> day header: bold weekday, date, and a badge for today/tomorrow
+function renderDateHeader(dateStr) {
+    var parts = dateStr.split('.');
+    var date = new Date(parts[2], parts[1] - 1, parts[0]);
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    var dayDiff = Math.round((date - today) / 86400000);
+    var badge = dayDiff === 0 ? 'Heute' : (dayDiff === 1 ? 'Morgen' : '');
+    var weekday = formatDateWithWeekday(dateStr).split(',')[0];
+    return '<div class="date-group-header">' +
+        '<span class="date-weekday">' + escapeHtml(weekday) + '</span>, ' + escapeHtml(dateStr) +
+        (badge ? ' <span class="date-badge">' + badge + '</span>' : '') +
+        '</div>';
+}
+
 // Loaded appointments by id, for the slide preview
 var appointmentsById = {};
 
@@ -220,7 +235,7 @@ function renderAppointments(appointments) {
         appointmentsById[app.id] = app;
         var dateKey = app.start_date_view;
         if (dateKey !== lastDate) {
-            html += '<div class="date-group-header">' + escapeHtml(formatDateWithWeekday(dateKey)) + '</div>';
+            html += renderDateHeader(dateKey);
             lastDate = dateKey;
         }
         var customText = (app.additional_info || '').trim();

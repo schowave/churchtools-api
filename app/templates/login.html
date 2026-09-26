@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
-    <title>Anmeldung</title>
+    <title>Anmelden · ChurchTools Folien</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
@@ -12,31 +12,53 @@
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/login.css?v={{ version }}">
     <meta name="csrf-token" content="{{ request.state.csrf_token }}">
+    <script src="/static/js/login.js?v={{ version }}"></script>
 </head>
 <body>
-{% if error %}
-<div class="alert alert-error">{{ error }}</div>
-{% endif %}
-
-<main class="container page-enter">
-    <div class="login-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-        </svg>
+<main class="login-shell">
+    <div class="login-brand">
+        <span class="login-logo" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="6" y1="9" x2="13" y2="9"/><line x1="6" y1="13" x2="10" y2="13"/>
+            </svg>
+        </span>
+        <p class="login-app-name">ChurchTools Folien</p>
+        <p class="login-tagline">Termin-Folien, Agenda und Dienstplan aus ChurchTools</p>
     </div>
-    <h1>Anmeldung</h1>
-    <span class="base-url-badge">{{ base_url }}</span>
 
-    <form method="POST">
-        <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
-        <label for="username">Benutzername:</label>
-        <input type="text" id="username" name="username" required autocomplete="username">
+    <section class="login-card page-enter" aria-labelledby="login-title">
+        <h1 id="login-title">Anmelden</h1>
+        <p class="login-intro">Mit deinem ChurchTools-Zugang bei <span class="login-instance">{{ base_url }}</span></p>
 
-        <label for="password">Passwort:</label>
-        <input type="password" id="password" name="password" required autocomplete="current-password">
+        {% if error %}
+        <div class="login-error" role="alert">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
 
-        <input type="submit" value="Anmelden" class="btn btn-login">
-    </form>
+        <form method="POST" id="login_form">
+            <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
+            <label for="username">Benutzername oder E-Mail</label>
+            <input type="text" id="username" name="username" required autocomplete="username" autocapitalize="none" spellcheck="false">
+
+            <label for="password">Passwort</label>
+            <div class="password-field">
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+                <button type="button" class="password-toggle" id="password_toggle" aria-controls="password" aria-pressed="false" hidden>Anzeigen</button>
+            </div>
+
+            <button type="submit" class="btn btn-login" id="login_submit">
+                <span class="btn-label">Anmelden</span>
+                <span class="btn-spinner" hidden><span class="spinner-ring-inline"></span> Wird angemeldet…</span>
+            </button>
+        </form>
+
+        <p class="login-help">
+            Passwort vergessen?
+            <a href="{{ churchtools_url }}" target="_blank" rel="noopener">In ChurchTools zurücksetzen<span aria-hidden="true"> ↗</span><span class="sr-only"> (neues Fenster)</span></a>
+        </p>
+    </section>
 </main>
 <footer class="app-version" title="Installierte Version">v{{ version }}</footer>
 </body>
