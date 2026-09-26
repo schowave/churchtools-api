@@ -1,5 +1,7 @@
 import httpx2
+import structlog
 from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
@@ -14,6 +16,7 @@ from app.services.auth import (
 from app.services.rate_limit import LoginRateLimiter
 from app.web import get_http_client, templates
 
+logger = structlog.get_logger()
 router = APIRouter()
 
 login_rate_limiter = LoginRateLimiter()
@@ -34,6 +37,9 @@ async def login_page(request: Request) -> Response:
         return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
 
     context = {"base_url": settings.churchtools_base, "version": settings.version}
+    if request.query_params.get("hinweis") == "abgelaufen":
+        # Set by the CSRF middleware when a form was submitted from a page that had been open too long
+        context["error"] = "Die Seite war zu lange geöffnet. Bitte erneut anmelden."
     return templates.TemplateResponse(request, "login.html", context)
 
 
@@ -58,9 +64,12 @@ async def login(
 
     data = {"password": password, "rememberMe": True, "username": username}
 
-    response = await client.post(f"{settings.churchtools_base_url}/api/login", json=data)
+    try:
+        response = await client.post(f"{settings.churchtools_base_url}/api/login", json=data)
+        if response.status_code != 200:
+            login_rate_limiter.record_failure(client_key)
+            return _login_error(request, "Benutzername oder Passwort ungültig.")
 
-    if response.status_code == 200:
         login_rate_limiter.record_success(client_key)
         person_id = response.json()["data"]["personId"]
         # Use session cookies from the login response to retrieve the long-lived login token.
@@ -69,26 +78,31 @@ async def login(
         token_response = await client.get(
             f"{settings.churchtools_base_url}/api/persons/{person_id}/logintoken", cookies=response.cookies
         )
-
-        if token_response.status_code == 200:
-            login_token = token_response.json()["data"]
-            redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
-            # The browser only gets a random session id; the token stays on the server
-            set_session_cookie(redirect, request, sessions.create_session(login_token))
-            return redirect
-        else:
+        if token_response.status_code != 200:
             return _login_error(request, "Login-Token konnte nicht abgerufen werden.")
-    else:
-        login_rate_limiter.record_failure(client_key)
-        return _login_error(request, "Benutzername oder Passwort ungültig.")
+        login_token = token_response.json()["data"]
+    except httpx2.HTTPError as exc:
+        logger.warning("login_churchtools_unreachable", error=type(exc).__name__)
+        return _login_error(
+            request, "ChurchTools ist gerade nicht erreichbar. Bitte später erneut versuchen.", status_code=502
+        )
+    except (ValueError, KeyError, TypeError) as exc:
+        # Not JSON or not the expected shape (e.g. an HTML error page, or a login step we do not support)
+        logger.warning("login_unexpected_response", error=type(exc).__name__)
+        return _login_error(request, "Unerwartete Antwort von ChurchTools. Anmeldung nicht möglich.", status_code=502)
+
+    redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
+    # The browser only gets a random session id; the token stays on the server
+    set_session_cookie(redirect, request, await run_in_threadpool(sessions.create_session, login_token))
+    return redirect
 
 
 @router.post("/logout")
 async def logout(request: Request, client: httpx2.AsyncClient = Depends(get_http_client)) -> RedirectResponse:
     session_id = request.cookies.get(settings.cookie_session)
-    login_token = sessions.get_session_token(session_id) if session_id else None
+    login_token = await run_in_threadpool(sessions.get_session_token, session_id) if session_id else None
     if session_id:
-        sessions.delete_session(session_id)
+        await run_in_threadpool(sessions.delete_session, session_id)
     if login_token:
         forget_login_token(login_token)
         try:

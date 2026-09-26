@@ -41,7 +41,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        # Browsers ignore HSTS over plain HTTP; the scheme is https behind a trusted proxy (FORWARDED_ALLOW_IPS)
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         # Routes may set a stricter policy (e.g. served images)
         response.headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
         return response
@@ -93,6 +95,22 @@ async def validation_handler(request: Request, exc: RequestValidationError):
     detail = [{"loc": list(err.get("loc", ())), "msg": err.get("msg", "")} for err in exc.errors()]
     logger.info("request_validation_failed", path=request.url.path, errors=detail)
     return JSONResponse({"error": "validation_error", "detail": detail}, status_code=422)
+
+
+@app.exception_handler(httpx2.HTTPError)
+async def churchtools_error_handler(request: Request, exc: httpx2.HTTPError):
+    # ChurchTools unreachable or answering with an error status (raise_for_status)
+    logger.warning("churchtools_request_failed", path=request.url.path, error=type(exc).__name__, message=str(exc))
+    detail = "ChurchTools ist gerade nicht erreichbar. Bitte später erneut versuchen."
+    return JSONResponse({"error": "upstream_error", "detail": detail}, status_code=502)
+
+
+@app.exception_handler(Exception)
+async def internal_error_handler(request: Request, exc: Exception):
+    # Starlette re-raises the exception after this handler, so the traceback is still logged by uvicorn
+    logger.error("unhandled_exception", path=request.url.path, error=type(exc).__name__)
+    detail = "Interner Fehler. Bitte erneut versuchen."
+    return JSONResponse({"error": "internal_error", "detail": detail}, status_code=500)
 
 
 # Include routes

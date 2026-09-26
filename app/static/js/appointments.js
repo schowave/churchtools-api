@@ -5,11 +5,29 @@ const $$ = (s, c = document) => c.querySelectorAll(s);
 
 // --- CSRF token helper ---
 
+// The cookie is the current token; the meta tag can be stale when a mobile browser restores a
+// tab after dropping its cookies (any request then sets a new cookie).
 function getCsrfToken() {
-    var meta = $('meta[name="csrf-token"]');
-    if (meta) return meta.getAttribute('content');
     var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-    return match ? decodeURIComponent(match[1]) : '';
+    if (match) return decodeURIComponent(match[1]);
+    var meta = $('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+}
+
+// fetch() for state-changing requests. On a CSRF rejection it fetches a fresh token cookie
+// (any GET sets one) and retries once, so an old open page just works instead of showing an error.
+function csrfFetch(url, options) {
+    function send() {
+        var headers = Object.assign({}, options.headers, { 'X-CSRF-Token': getCsrfToken() });
+        return fetch(url, Object.assign({}, options, { headers: headers }));
+    }
+    return send().then(function (res) {
+        if (res.status !== 403) return res;
+        return res.clone().json().then(function (data) {
+            if (!data || data.error !== 'csrf_failed') return res;
+            return fetch('/health', { cache: 'no-store' }).then(send);
+        }, function () { return res; });
+    });
 }
 
 // --- Error helpers ---
@@ -341,9 +359,9 @@ function generateOutput(type) {
     var btn = type === 'pdf' ? $('#generate_pdf_btn') : $('#generate_jpeg_btn');
     showButtonSpinner(btn);
 
-    fetch('/api/generate', {
+    csrfFetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
     .then(function (res) {
@@ -564,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('file', file);
         var btn = $('#logo_upload_btn');
         showButtonSpinner(btn);
-        fetch('/logo/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
+        csrfFetch('/logo/upload', { method: 'POST', body: formData })
             .then(function (res) {
                 if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
                 return res.json();
@@ -587,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Logo delete
     $('#logo_delete').addEventListener('click', function () {
-        fetch('/logo', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
+        csrfFetch('/logo', { method: 'DELETE' })
             .then(function (res) {
                 if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
                 $('#logo-preview').style.display = 'none';
@@ -608,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('file', file);
         var btn = $('#bg_upload_btn');
         showButtonSpinner(btn);
-        fetch('/background/upload', { method: 'POST', headers: { 'X-CSRF-Token': getCsrfToken() }, body: formData })
+        csrfFetch('/background/upload', { method: 'POST', body: formData })
             .then(function (res) {
                 if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
                 return res.json();
@@ -631,7 +649,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Background image delete
     $('#bg_delete').addEventListener('click', function () {
-        fetch('/background', { method: 'DELETE', headers: { 'X-CSRF-Token': getCsrfToken() } })
+        csrfFetch('/background', { method: 'DELETE' })
             .then(function (res) {
                 if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
                 $('#bg-preview').style.display = 'none';

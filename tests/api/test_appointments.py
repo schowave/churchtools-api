@@ -1,5 +1,6 @@
+import json
 import threading
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
@@ -26,7 +27,7 @@ def templates_mock():
 SAMPLE_APPOINTMENT_DATA = [
     {
         "base": {
-            "id": "1_101",
+            "id": "1_101_2023-01-15T10:00:00Z",
             "caption": "Event 1",
             "information": "Info 1",
             "address": {"meetingAt": "Location 1"},
@@ -138,7 +139,7 @@ async def test_api_appointments(
     client = AsyncMock()
 
     mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
-    mock_get_info.return_value = {"1_101": "Saved info"}
+    mock_get_info.return_value = {"1_101_2023-01-15T10:00:00Z": "Saved info"}
 
     response = await api_appointments(
         request=request,
@@ -151,6 +152,37 @@ async def test_api_appointments(
 
     assert response.status_code == 200
     mock_fetch_app.assert_called_once_with("test_token", "2023-01-15", "2023-01-22", [1, 2], client)
+    assert json.loads(response.body)["appointments"][0]["additional_info"] == "Saved info"
+
+
+APPOINTMENT_ID = "1_101_2023-01-15T10:00:00Z"
+
+
+@pytest.mark.asyncio
+@patch("app.api.appointments.claim_legacy_additional_infos", return_value={APPOINTMENT_ID: "Old text"})
+@patch("app.api.appointments.get_additional_infos", return_value={})
+@patch("app.api.appointments.fetch_appointments")
+async def test_api_appointments_migrates_texts_saved_under_old_ids(
+    mock_fetch_app, mock_get_info, mock_claim, config_mock
+):
+    """Custom texts saved before the id change are looked up under the old id and moved."""
+    from app.api.appointments import api_appointments
+
+    request = MagicMock(spec=Request)
+    request.cookies.get.return_value = "test_token"
+    mock_fetch_app.return_value = SAMPLE_APPOINTMENT_DATA
+
+    response = await api_appointments(
+        request=request,
+        db=MagicMock(),
+        client=AsyncMock(),
+        start_date="2023-01-15",
+        end_date="2023-01-22",
+        calendar_ids=["1"],
+    )
+
+    mock_claim.assert_called_once_with(ANY, {APPOINTMENT_ID: "1_101"})
+    assert json.loads(response.body)["appointments"][0]["additional_info"] == "Old text"
 
 
 @pytest.mark.asyncio
@@ -185,14 +217,14 @@ async def test_api_generate_pdf(
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1"],
-        appointment_ids=["1_101"],
+        appointment_ids=["1_101_2023-01-15T10:00:00Z"],
         color_settings={
             "background_color": "#0000ff",
             "background_alpha": 100,
             "date_color": "#ff0000",
             "description_color": "#00ff00",
         },
-        additional_infos={"1_101": "Extra info"},
+        additional_infos={"1_101_2023-01-15T10:00:00Z": "Extra info"},
     )
 
     response = await api_generate(request=request, body=body, db=db, client=client)
@@ -212,7 +244,7 @@ async def test_api_generate_pdf(
     # Verify additional infos were saved
     mock_save_info.assert_called_once()
     save_args = mock_save_info.call_args[0]
-    assert save_args[1] == [("1_101", "Extra info")]
+    assert save_args[1] == [("1_101_2023-01-15T10:00:00Z", "Extra info")]
 
     # Verify color settings were saved with name="default"
     mock_save_color.assert_called_once()
@@ -258,7 +290,7 @@ async def test_api_generate_jpeg(
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1"],
-        appointment_ids=["1_101"],
+        appointment_ids=["1_101_2023-01-15T10:00:00Z"],
         color_settings={
             "background_color": "#ffffff",
             "background_alpha": 128,
@@ -289,7 +321,7 @@ async def test_api_generate_no_auth():
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1"],
-        appointment_ids=["1_101"],
+        appointment_ids=["1_101_2023-01-15T10:00:00Z"],
         color_settings={
             "background_color": "#ffffff",
             "background_alpha": 128,
@@ -326,7 +358,7 @@ async def test_api_generate_auth_error_mid_session(
         start_date="2023-01-15",
         end_date="2023-01-22",
         calendar_ids=["1"],
-        appointment_ids=["1_101"],
+        appointment_ids=["1_101_2023-01-15T10:00:00Z"],
         color_settings={
             "background_color": "#ffffff",
             "background_alpha": 128,

@@ -7,7 +7,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from app.crud import get_additional_infos, load_color_settings, save_additional_infos, save_color_settings
+from app.crud import (
+    claim_legacy_additional_infos,
+    get_additional_infos,
+    load_color_settings,
+    save_additional_infos,
+    save_color_settings,
+)
 from app.database import Base
 from app.models import Appointment, ColorSetting
 from app.schemas import ColorSettings
@@ -31,6 +37,27 @@ class TestDatabase(unittest.TestCase):
         # Close session and remove temporary database
         self.session.close()
         os.unlink(self.temp_db_file.name)
+
+    def test_claim_legacy_additional_infos_moves_text_to_current_id(self):
+        save_additional_infos(self.session, [("1_101", "Old text"), ("1_101_1", "Second"), ("1_102", "")])
+
+        claimed = claim_legacy_additional_infos(
+            self.session,
+            {
+                "1_101_2026-10-04T08:00:00Z": "1_101",
+                "1_101_2026-10-11T08:00:00Z": "1_101_1",
+                "1_102_2026-10-05T18:00:00Z": "1_102",
+            },
+        )
+
+        assert claimed == {"1_101_2026-10-04T08:00:00Z": "Old text", "1_101_2026-10-11T08:00:00Z": "Second"}
+        stored = {row.id: row.additional_info for row in self.session.query(Appointment).all()}
+        # Legacy rows are gone, so another date range cannot attach them to other occurrences
+        assert stored == claimed
+
+    def test_claim_legacy_additional_infos_without_legacy_rows(self):
+        assert claim_legacy_additional_infos(self.session, {"1_101_2026-10-04T08:00:00Z": "1_101"}) == {}
+        assert claim_legacy_additional_infos(self.session, {}) == {}
 
     def test_save_and_get_additional_infos(self):
         # Test data

@@ -45,6 +45,9 @@ RUN python -m pip uninstall -y pip
 COPY app/resources/fonts/ /usr/share/fonts/custom/
 RUN fc-cache -fv
 
+# Unprivileged user the app runs as (entrypoint.sh drops root after fixing volume ownership)
+RUN groupadd --system app && useradd --system --gid app --no-create-home app
+
 WORKDIR /app
 
 # Copy application source (including fonts), config and migrations

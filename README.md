@@ -60,6 +60,9 @@ mise run run
 | `DB_PATH` | No | `churchtools.db` | Path to the SQLite database file |
 | `TIMEZONE` | No | `Europe/Berlin` | Timezone for date display (any valid IANA timezone) |
 | `LOG_FORMAT` | No | `console` | Log output format: `console` (human-readable) or `json` |
+| `FORWARDED_ALLOW_IPS` | No | `127.0.0.1` | Addresses of reverse proxies whose `X-Forwarded-*` headers are trusted (read by uvicorn). See [Behind a reverse proxy](#behind-a-reverse-proxy) |
+
+Colors, logo and background image are shared by everyone who logs in: there is one set of settings per installation, and each export saves the colors used.
 
 ## Deployment
 
@@ -94,6 +97,17 @@ services:
       - CHURCHTOOLS_BASE=your-instance.church.tools
     restart: unless-stopped
 ```
+
+### Behind a reverse proxy
+
+When the app runs behind a reverse proxy (Synology reverse proxy, Traefik, nginx, Caddy), set `FORWARDED_ALLOW_IPS` to the proxy's address as seen from the container, for example its Docker network address or `*` if the container port is only reachable through the proxy. Without it the app sees every request as coming from the proxy over HTTP:
+
+- the login rate limit counts all users as one client, so a few failed logins lock everyone out for five minutes
+- cookies are not marked `Secure` and no HSTS header is sent
+
+Do not set `*` if port 5005 is reachable directly: clients could then fake their IP address and bypass the login rate limit.
+
+The container starts as root only to hand the data volume to the unprivileged `app` user, then runs the app as that user.
 
 ## Releases
 

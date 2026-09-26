@@ -34,6 +34,33 @@ def get_additional_infos(db: Session, appointment_ids: list[str]) -> dict[str, s
         return {}
 
 
+def claim_legacy_additional_infos(db: Session, legacy_ids: dict[str, str]) -> dict[str, str]:
+    """Move custom texts stored under pre-v7.1 ids to the current ids ({current: legacy}).
+
+    Each legacy row is claimed once and then deleted, so a later load with another date range
+    cannot attach it to a different occurrence again.
+    """
+    if not legacy_ids:
+        return {}
+    current_by_legacy = {legacy: current for current, legacy in legacy_ids.items()}
+    try:
+        rows = db.query(Appointment).filter(Appointment.id.in_(current_by_legacy)).all()
+        claimed = {current_by_legacy[row.id]: row.additional_info for row in rows if row.additional_info}
+        for row in rows:
+            db.delete(row)
+        db.flush()
+        if claimed:
+            db.add_all(Appointment(id=current, additional_info=info) for current, info in claimed.items())
+        db.commit()
+        if rows:
+            logger.info("legacy_additional_infos_migrated", claimed=len(claimed), removed=len(rows))
+        return claimed
+    except SQLAlchemyError as e:
+        db.rollback()
+        logger.error("database_error", operation="claim_legacy_additional_infos", error=str(e))
+        return {}
+
+
 def save_color_settings(db: Session, settings: ColorSettings) -> None:
     try:
         color_setting = db.query(ColorSetting).filter(ColorSetting.setting_name == settings.name).first()

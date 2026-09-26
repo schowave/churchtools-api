@@ -81,18 +81,11 @@ async def fetch_appointments(
     results = await asyncio.gather(*tasks)
 
     for calendar_results in results:
-        appointment_counts = {}
-
         for calendar_id, appointment in calendar_results:
-            base_id = str(appointment["base"]["id"])
-            appointment_id = str(calendar_id) + "_" + base_id
-
-            if appointment_id in appointment_counts:
-                appointment_counts[appointment_id] += 1
-                appointment_id += f"_{appointment_counts[appointment_id]}"
-            else:
-                appointment_counts[appointment_id] = 0
-
+            # Occurrences of a series share base.id; the start date tells them apart. The id must not
+            # depend on the requested date range, since custom texts are stored under it.
+            start_date = appointment["calculated"]["startDate"]
+            appointment_id = f"{calendar_id}_{appointment['base']['id']}_{start_date}"
             if appointment_id not in seen_ids:
                 seen_ids.add(appointment_id)
                 appointment["base"]["id"] = appointment_id
@@ -100,6 +93,25 @@ async def fetch_appointments(
 
     appointments.sort(key=lambda x: parse_iso_datetime(x["calculated"]["startDate"]))
     return appointments
+
+
+def legacy_appointment_ids(appointment_ids: list[str]) -> dict[str, str]:
+    """Map current appointment ids to the ids used before v7.1, for migrating stored custom texts.
+
+    Old ids were "{calendar}_{base}" for the first occurrence of a series in the loaded range and
+    "{calendar}_{base}_{n}" for the n-th one after it. Recomputing them for the current range yields
+    the occurrence the old version showed the text on.
+    """
+    occurrences: dict[str, list[tuple[datetime, str]]] = {}
+    for appointment_id in appointment_ids:
+        calendar_id, base_id, start_date = appointment_id.split("_", 2)
+        occurrences.setdefault(f"{calendar_id}_{base_id}", []).append((parse_iso_datetime(start_date), appointment_id))
+
+    legacy_ids = {}
+    for series_id, entries in occurrences.items():
+        for index, (_, appointment_id) in enumerate(sorted(entries)):
+            legacy_ids[appointment_id] = series_id if index == 0 else f"{series_id}_{index}"
+    return legacy_ids
 
 
 def parse_appointment(raw: dict) -> AppointmentData:

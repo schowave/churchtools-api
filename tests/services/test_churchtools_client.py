@@ -10,6 +10,7 @@ from app.services.churchtools_client import (
     fetch_appointments,
     fetch_calendars,
     fetch_events,
+    legacy_appointment_ids,
     parse_appointment,
 )
 
@@ -119,8 +120,8 @@ async def test_fetch_appointments(config_mock):
 
     # Check that appointments were returned and IDs were modified
     assert len(result) == 2
-    assert result[0]["base"]["id"] == "1_101"
-    assert result[1]["base"]["id"] == "2_102"
+    assert result[0]["base"]["id"] == "1_101_2023-01-15T10:00:00Z"
+    assert result[1]["base"]["id"] == "2_102_2023-01-16T14:00:00Z"
 
 
 def test_parse_appointment():
@@ -235,8 +236,8 @@ async def test_fetch_appointments_deduplication(config_mock):
     # Same base ID in different calendars -> different composite IDs, both kept
     assert len(result) == 2
     ids = {r["base"]["id"] for r in result}
-    assert "1_101" in ids
-    assert "2_101" in ids
+    assert "1_101_2023-01-15T10:00:00Z" in ids
+    assert "2_101_2023-01-15T10:00:00Z" in ids
 
 
 @pytest.mark.asyncio
@@ -263,7 +264,7 @@ async def test_fetch_appointments_partial_failure(config_mock):
     result = await fetch_appointments("token", "2023-01-15", "2023-01-16", [1, 2], client)
 
     assert len(result) == 1
-    assert result[0]["base"]["id"] == "1_101"
+    assert result[0]["base"]["id"] == "1_101_2023-01-15T10:00:00Z"
 
 
 def test_parse_appointment_all_day():
@@ -551,3 +552,48 @@ async def test_fetch_event(config_mock):
         "GOTTESDIENSTE",
     )
     assert client.get.call_args[0][0].endswith("/api/events/1275")
+
+
+@pytest.mark.asyncio
+async def test_fetch_appointments_series_ids_do_not_depend_on_date_range(config_mock):
+    """Occurrences of a series keep their id when the date range changes, so custom texts stay attached."""
+
+    def occurrence(start):
+        return {
+            "base": {"id": "101", "title": "Hauskreis", "address": {}},
+            "calculated": {"startDate": start, "endDate": start},
+        }
+
+    def response(*starts):
+        mock = MagicMock()
+        mock.status_code = 200
+        mock.json.return_value = {"data": [occurrence(s) for s in starts]}
+        return mock
+
+    client = AsyncMock()
+    client.get.side_effect = [
+        response("2023-01-15T10:00:00Z", "2023-01-22T10:00:00Z"),
+        response("2023-01-22T10:00:00Z"),
+    ]
+
+    wide = await fetch_appointments("token", "2023-01-15", "2023-01-22", [1], client)
+    narrow = await fetch_appointments("token", "2023-01-20", "2023-01-22", [1], client)
+
+    assert [a["base"]["id"] for a in wide] == ["1_101_2023-01-15T10:00:00Z", "1_101_2023-01-22T10:00:00Z"]
+    assert narrow[0]["base"]["id"] == wide[1]["base"]["id"]
+
+
+def test_legacy_appointment_ids_number_series_occurrences_by_date():
+    ids = [
+        "1_7_2026-10-11T08:00:00Z",
+        "1_7_2026-10-04T08:00:00Z",
+        "2_7_2026-10-04T08:00:00Z",
+        "1_9_2026-10-05",
+    ]
+
+    assert legacy_appointment_ids(ids) == {
+        "1_7_2026-10-04T08:00:00Z": "1_7",
+        "1_7_2026-10-11T08:00:00Z": "1_7_1",
+        "2_7_2026-10-04T08:00:00Z": "2_7",
+        "1_9_2026-10-05": "1_9",
+    }

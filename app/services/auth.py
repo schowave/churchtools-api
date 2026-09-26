@@ -3,6 +3,7 @@ import time
 
 import httpx2
 from fastapi import HTTPException, Request, status
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
@@ -62,12 +63,12 @@ async def get_valid_login_token(request: Request, client: httpx2.AsyncClient) ->
     session_id = request.cookies.get(settings.cookie_session)
     if not session_id:
         return None
-    login_token = sessions.get_session_token(session_id)
+    login_token = await run_in_threadpool(sessions.get_session_token, session_id)
     if not login_token:
         return None
     if not await validate_login_token(login_token, client):
         # Token was revoked in ChurchTools: the session is useless
-        sessions.delete_session(session_id)
+        await run_in_threadpool(sessions.delete_session, session_id)
         return None
     return login_token
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.api.calendar_pages import render_calendar_page
 from app.crud import (
+    claim_legacy_additional_infos,
     get_additional_infos,
     load_background_image,
     load_color_settings,
@@ -20,7 +21,12 @@ from app.database import DEFAULT_SETTING_NAME, get_db
 from app.dates import export_timestamp
 from app.schemas import GenerateRequest
 from app.services.auth import get_valid_login_token
-from app.services.churchtools_client import AuthenticationError, fetch_appointments, parse_appointment
+from app.services.churchtools_client import (
+    AuthenticationError,
+    fetch_appointments,
+    legacy_appointment_ids,
+    parse_appointment,
+)
 from app.services.jpeg_generator import handle_jpeg_generation
 from app.services.pdf.slides import create_pdf
 from app.text import normalize_newlines
@@ -78,7 +84,16 @@ async def api_appointments(
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
     appointments = [parse_appointment(raw) for raw in raw_appointments]
-    additional_infos = get_additional_infos(db, [app.id for app in appointments])
+    appointment_ids = [app.id for app in appointments]
+
+    def load_additional_infos() -> dict[str, str]:
+        infos = get_additional_infos(db, appointment_ids)
+        # Texts saved before v7.1 are stored under the old, range-dependent ids
+        missing = {new: old for new, old in legacy_appointment_ids(appointment_ids).items() if new not in infos}
+        infos.update(claim_legacy_additional_infos(db, missing))
+        return infos
+
+    additional_infos = await run_in_threadpool(load_additional_infos)
     for appointment in appointments:
         appointment.additional_info = additional_infos.get(appointment.id, "")
 
@@ -107,19 +122,18 @@ async def api_generate(
     appointment_info_list = [
         (app_id, normalize_newlines(body.additional_infos.get(app_id, ""))) for app_id in body.appointment_ids
     ]
-    save_additional_infos(db, appointment_info_list)
-    save_color_settings(db, color_settings)
 
-    # Load background image and logo from DB
-    background_image_stream = None
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
-    if bg_data:
-        background_image_stream = BytesIO(bg_data)
+    def save_and_load_images() -> tuple[bytes | None, bytes | None]:
+        save_additional_infos(db, appointment_info_list)
+        save_color_settings(db, color_settings)
+        bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+        logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+        return bg_data, logo_data
 
-    logo_stream = None
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
-    if logo_data:
-        logo_stream = BytesIO(logo_data)
+    # Sync DB access stays off the event loop
+    bg_data, logo_data = await run_in_threadpool(save_and_load_images)
+    background_image_stream = BytesIO(bg_data) if bg_data else None
+    logo_stream = BytesIO(logo_data) if logo_data else None
 
     # Fetch appointments from ChurchTools API
     calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]

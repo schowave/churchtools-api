@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 import httpx2
 from fastapi import Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import Response
 
 from app.config import settings
@@ -45,5 +46,5 @@ async def render_calendar_page(
         "version": settings.version,
     }
     if extra_context:
-        context.update(extra_context())
+        context.update(await run_in_threadpool(extra_context))
     return templates.TemplateResponse(request, template_name, context)

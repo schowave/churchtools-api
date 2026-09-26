@@ -3,6 +3,7 @@ from io import BytesIO
 
 import httpx2
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from PIL import Image
 from sqlalchemy.orm import Session
@@ -63,13 +64,13 @@ router = APIRouter()
 async def _upload_image(request, file, client, save: Callable[[bytes, str], None]) -> JSONResponse:
     await require_auth(request, client)
     content = await _read_image_upload(file)
-    save(content, file.filename)
+    await run_in_threadpool(save, content, file.filename)
     return JSONResponse({"status": "ok", "filename": file.filename})
 
 
 async def _serve_image(request, client, load: Callable[[], tuple], missing_detail: str) -> Response:
     await require_auth(request, client)
-    data, _ = load()
+    data, _ = await run_in_threadpool(load)
     if not data:
         raise HTTPException(status_code=404, detail=missing_detail)
     return _image_response(data, missing_detail)
@@ -77,7 +78,7 @@ async def _serve_image(request, client, load: Callable[[], tuple], missing_detai
 
 async def _remove_image(request, client, delete: Callable[[], None]) -> JSONResponse:
     await require_auth(request, client)
-    delete()
+    await run_in_threadpool(delete)
     return JSONResponse({"status": "ok"})
 
 

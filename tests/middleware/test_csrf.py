@@ -114,3 +114,43 @@ def test_csrf_allows_post_with_form_token():
 
     response = client.post("/test", data={"_csrf_token": csrf_token})
     assert response.status_code == 200
+
+
+def _csrf_app():
+    from app.middleware.csrf import CSRFMiddleware
+
+    test_app = FastAPI()
+    test_app.add_middleware(CSRFMiddleware, exempt_paths=["/health"])
+
+    @test_app.get("/page")
+    async def page():
+        return HTMLResponse("<html></html>")
+
+    @test_app.post("/test")
+    async def test_post():
+        return JSONResponse({"ok": True})
+
+    return test_app
+
+
+def test_csrf_cookie_survives_browser_restart():
+    """A session cookie is dropped by mobile browsers while the tab stays open; the token needs a lifetime."""
+    response = TestClient(_csrf_app()).get("/page")
+    assert "Max-Age=" in response.headers["set-cookie"]
+
+
+def test_csrf_rejection_for_js_callers_is_retryable_and_readable():
+    client = TestClient(_csrf_app(), cookies={"csrf_token": "current"})
+    response = client.post("/test", headers={"X-CSRF-Token": "stale"}, json={})
+
+    assert response.status_code == 403
+    assert response.json()["error"] == "csrf_failed"
+    assert "neu laden" in response.json()["detail"]
+
+
+def test_csrf_rejection_for_html_forms_redirects_to_login_with_hint():
+    client = TestClient(_csrf_app(), follow_redirects=False)
+    response = client.post("/test", data={"username": "u"})
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/?hinweis=abgelaufen"

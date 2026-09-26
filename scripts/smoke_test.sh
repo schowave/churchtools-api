@@ -37,4 +37,6 @@ curl -sf "$BASE/health" | grep -q '"status":"ok"' || fail "/health did not repor
 curl -sf "$BASE/" | grep -q 'name="_csrf_token" value="[^"]' || fail "login page did not render with a CSRF token"
 curl -sf -o /dev/null "$BASE/static/js/events.js" || fail "static files not served"
 
+"$ENGINE" exec "$NAME" grep -q '^Uid:[[:space:]]*0[[:space:]]' /proc/1/status && fail "app runs as root"
+
 echo "Smoke test passed ($IMAGE via $ENGINE)"

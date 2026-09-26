@@ -3,15 +3,6 @@
 var $ = function (s, c) { return (c || document).querySelector(s); };
 var $$ = function (s, c) { return (c || document).querySelectorAll(s); };
 
-// --- CSRF token helper ---
-
-function getCsrfToken() {
-    var meta = $('meta[name="csrf-token"]');
-    if (meta) return meta.getAttribute('content');
-    var match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-    return match ? decodeURIComponent(match[1]) : '';
-}
-
 // --- Page mode detection ---
 
 function getPageMode() {

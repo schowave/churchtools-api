@@ -2,9 +2,24 @@ import secrets
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 
 COOKIE_NAME = "csrf_token"
+# Without max_age the cookie dies with the browser session; mobile browsers drop those while a tab stays open.
+COOKIE_MAX_AGE = 30 * 24 * 3600
+# Login page shows a hint for this query value (see app/api/auth.py)
+EXPIRED_FORM_REDIRECT = "/?hinweis=abgelaufen"
+
+
+def _reject(request: Request) -> Response:
+    """Plain HTML forms get sent back to the login page with a hint; JS callers get a code they can retry on."""
+    content_type = request.headers.get("content-type", "")
+    if "X-CSRF-Token" not in request.headers and "application/x-www-form-urlencoded" in content_type:
+        return RedirectResponse(EXPIRED_FORM_REDIRECT, status_code=303)
+    return JSONResponse(
+        {"error": "csrf_failed", "detail": "Die Seite war zu lange geöffnet. Bitte neu laden und erneut versuchen."},
+        status_code=403,
+    )
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):
@@ -26,6 +41,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             response.set_cookie(
                 COOKIE_NAME,
                 token,
+                max_age=COOKIE_MAX_AGE,
                 httponly=False,
                 samesite="lax",
                 secure=request.url.scheme == "https",
@@ -37,7 +53,7 @@ class CSRFMiddleware(BaseHTTPMiddleware):
 
         cookie_token = request.cookies.get(COOKIE_NAME)
         if not cookie_token:
-            return JSONResponse({"error": "CSRF token missing"}, status_code=403)
+            return _reject(request)
         # Templates rendered in response to a POST (e.g. failed login) need the token too.
         request.state.csrf_token = cookie_token
 
@@ -57,4 +73,4 @@ class CSRFMiddleware(BaseHTTPMiddleware):
             if form_token and secrets.compare_digest(str(form_token), cookie_token):
                 return await call_next(request)
 
-        return JSONResponse({"error": "CSRF token mismatch"}, status_code=403)
+        return _reject(request)

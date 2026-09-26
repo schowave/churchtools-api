@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx2
 import pytest
 from fastapi import Request
 from fastapi.responses import RedirectResponse
@@ -48,6 +49,18 @@ async def test_login_page_already_logged_in(config_mock):
     assert isinstance(result, RedirectResponse)
     assert result.status_code == 303
     assert result.headers["location"] == "/overview"
+
+
+@pytest.mark.asyncio
+async def test_login_page_shows_hint_after_expired_form(templates_mock, config_mock):
+    request_mock = MagicMock(spec=Request)
+    request_mock.cookies.get.return_value = None
+    request_mock.query_params = {"hinweis": "abgelaufen"}
+
+    await login_page(request_mock)
+
+    context = templates_mock.TemplateResponse.call_args[0][2]
+    assert context["error"] == "Die Seite war zu lange geöffnet. Bitte erneut anmelden."
 
 
 @pytest.mark.asyncio
@@ -170,6 +183,34 @@ async def test_login_token_failure(templates_mock, config_mock):
 
     # Check that the result is what was returned by templates.TemplateResponse
     assert result == templates_mock.TemplateResponse.return_value
+
+
+@pytest.mark.asyncio
+async def test_login_churchtools_unreachable(templates_mock, config_mock):
+    client = AsyncMock()
+    client.post.side_effect = httpx2.ConnectError("connection refused")
+
+    await login(MagicMock(spec=Request), username="testuser", password="testpass", client=client)
+
+    _, kwargs = templates_mock.TemplateResponse.call_args
+    context = templates_mock.TemplateResponse.call_args[0][2]
+    assert context["error"] == "ChurchTools ist gerade nicht erreichbar. Bitte später erneut versuchen."
+    assert kwargs["status_code"] == 502
+
+
+@pytest.mark.asyncio
+async def test_login_unexpected_response(templates_mock, config_mock):
+    """A 200 without the expected JSON (e.g. an HTML page) shows a message instead of crashing."""
+    client = AsyncMock()
+    login_response = MagicMock()
+    login_response.status_code = 200
+    login_response.json.side_effect = ValueError("not json")
+    client.post.return_value = login_response
+
+    await login(MagicMock(spec=Request), username="testuser", password="testpass", client=client)
+
+    context = templates_mock.TemplateResponse.call_args[0][2]
+    assert context["error"] == "Unerwartete Antwort von ChurchTools. Anmeldung nicht möglich."
 
 
 @pytest.mark.asyncio
