@@ -12,6 +12,7 @@ venv
 .venv
 .ruff_cache
 .claude
+.auth
 mise.toml
 tests
 images

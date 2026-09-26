@@ -54,3 +54,14 @@ mkdir -p data
 podman run --rm -p 5005:5005 -v ./data:/app/data --env-file .env \
   -e DB_PATH=/app/data/churchtools.db churchtools-local
 """
+
+[tasks.login]
+description = "Log in via browser against the running app and save the session to .auth/state.json"
+run = [
+  "uv run --no-project --with playwright playwright install chromium",
+  "uv run --no-project --with playwright python scripts/capture_login.py",
+]
+
+[tasks.login-clear]
+description = "Delete the saved browser session (.auth/)"
+run = "rm -rf .auth"
