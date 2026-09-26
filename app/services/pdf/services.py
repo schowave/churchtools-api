@@ -64,7 +64,7 @@ def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
         table.setStyle(
             TableStyle(
                 [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4A7547")),
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
                     ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
                     ("FONTSIZE", (0, 0), (-1, -1), 9),

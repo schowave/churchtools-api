@@ -35,7 +35,7 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
         fontName=font_name_bold,
         fontSize=10,
         leading=14,
-        textColor=colors.HexColor("#5E8B5A"),
+        textColor=colors.HexColor("#4A7547"),
     )
 
     start_dt = parse_iso_datetime(event_start)
@@ -78,14 +78,14 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
         )
 
     if len(table_data) > 1:
-        col_widths = [45, 150, 40, 100, None]
+        col_widths = [45, 140, 62, 100, None]  # "Dauer" fits "1 Std. 5 Min." on one line
         available = A4[0] - 30 * mm
         fixed = sum(w for w in col_widths if w is not None)
         col_widths[-1] = available - fixed
 
         table = Table(table_data, colWidths=col_widths, repeatRows=1)
         base_style = [
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4A7547")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
             ("FONTSIZE", (0, 0), (-1, -1), 9),

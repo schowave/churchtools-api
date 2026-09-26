@@ -29,17 +29,6 @@ function formatIso(date) {
     return y + '-' + m + '-' + d;
 }
 
-function formatDateTime(isoStr) {
-    if (!isoStr) return '';
-    var d = new Date(isoStr);
-    var day = String(d.getDate()).padStart(2, '0');
-    var month = String(d.getMonth() + 1).padStart(2, '0');
-    var year = d.getFullYear();
-    var hours = String(d.getHours()).padStart(2, '0');
-    var mins = String(d.getMinutes()).padStart(2, '0');
-    return day + '.' + month + '.' + year + ' ' + hours + ':' + mins;
-}
-
 function formatTime(isoStr) {
     if (!isoStr) return '';
     var d = new Date(isoStr);
@@ -101,11 +90,8 @@ function buildEventParams() {
     var startDate = $('#start_date').value;
     var endDate = $('#end_date').value;
     var calendarIds = [];
-    // For checkboxes, only include checked ones; for hidden inputs, include all
-    $$('.calendar-checkbox').forEach(function (cb) {
-        if (cb.type === 'hidden' || cb.checked) {
-            calendarIds.push(cb.value);
-        }
+    $$('.calendar-checkbox:checked').forEach(function (cb) {
+        calendarIds.push(cb.value);
     });
 
     var params = new URLSearchParams();
@@ -117,34 +103,60 @@ function buildEventParams() {
     return params;
 }
 
+// --- Shared rendering helpers ---
+
+var CHEVRON_ICON = '<svg class="event-expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"' +
+    ' stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
+var PDF_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
+    ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>' +
+    '<polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>';
+
+function plural(count, one, many) {
+    return count + ' ' + (count === 1 ? one : many);
+}
+
+function showListMessage(title, hint, withRetry) {
+    $('#events-list').innerHTML =
+        '<div class="empty-state">' +
+            '<p>' + escapeHtml(title) + '</p>' +
+            (hint ? '<p class="empty-state-hint">' + escapeHtml(hint) + '</p>' : '') +
+            (withRetry ? '<button type="button" class="retry-btn" data-action="retry">Erneut versuchen</button>' : '') +
+        '</div>';
+}
+
+function showNoEvents() {
+    showListMessage('Keine Termine in diesem Zeitraum.', 'Wähle einen anderen Zeitraum oder weitere Kalender.', false);
+}
+
+function pdfLink(href, eventName) {
+    return '<a href="' + href + '" class="btn-export" download aria-label="PDF für ' + escapeHtml(eventName) + ' herunterladen">' +
+        PDF_ICON + '<span>PDF</span></a>';
+}
+
 // --- Agenda rendering ---
 
 function renderAgendaEvents(events) {
-    var container = $('#events-list');
-
     if (!events || events.length === 0) {
-        container.innerHTML =
-            '<div class="empty-state">' +
-                '<p>Keine Events gefunden.</p>' +
-                '<p class="empty-state-hint">Bitte Datum und Kalender anpassen.</p>' +
-            '</div>';
+        showNoEvents();
         return;
     }
 
-    var html = '<div class="events-count">' + events.length + ' Event' + (events.length !== 1 ? 's' : '') + ' gefunden</div>';
+    var html = '<p class="events-count">' + plural(events.length, 'Termin', 'Termine') +
+        ' <span class="events-count-hint">· zum Anzeigen der Agenda aufklappen</span></p>';
 
     events.forEach(function (ev, i) {
         var delay = Math.min(i * 0.04, 0.8);
+        var bodyId = 'agenda-body-' + ev.id;
         html += '<div class="event-card" data-event-id="' + ev.id + '" style="animation-delay:' + delay + 's">' +
-            '<div class="event-card-header">' +
-                '<svg class="event-expand-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
-                '<div class="event-card-info">' +
-                    '<div class="event-card-title">' + escapeHtml(ev.name) + '</div>' +
-                    '<div class="event-card-meta">' + escapeHtml(formatDateShort(ev.start_date)) + '</div>' +
-                '</div>' +
+            '<button type="button" class="event-card-header" aria-expanded="false" aria-controls="' + bodyId + '">' +
+                CHEVRON_ICON +
+                '<span class="event-card-info">' +
+                    '<span class="event-card-title">' + escapeHtml(ev.name) + '</span>' +
+                    '<span class="event-card-meta">' + escapeHtml(formatDateShort(ev.start_date)) + '</span>' +
+                '</span>' +
                 '<span class="event-card-calendar">' + escapeHtml(ev.calendar_name) + '</span>' +
-            '</div>' +
-            '<div class="event-card-body">' +
+            '</button>' +
+            '<div class="event-card-body" id="' + bodyId + '">' +
                 '<div class="agenda-loading">' +
                     '<span class="spinner-ring-inline spinner-ring-inline--dark"></span>' +
                     '<span>Agenda wird geladen&hellip;</span>' +
@@ -153,210 +165,173 @@ function renderAgendaEvents(events) {
         '</div>';
     });
 
-    container.innerHTML = html;
+    $('#events-list').innerHTML = html;
 }
 
 function toggleEventCard(card) {
-    var isExpanded = card.classList.contains('is-expanded');
-
-    if (isExpanded) {
-        card.classList.remove('is-expanded');
-        return;
-    }
-
-    card.classList.add('is-expanded');
+    var header = $('.event-card-header', card);
+    var isExpanded = card.classList.toggle('is-expanded');
+    header.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    if (!isExpanded) return;
 
     // Only fetch if not already loaded
     var body = $('.event-card-body', card);
     if (body.dataset.loaded === 'true') return;
-
-    var eventId = card.dataset.eventId;
-    fetchAgenda(eventId, body);
+    fetchAgenda(card.dataset.eventId, body, $('.event-card-title', card).textContent);
 }
 
-function fetchAgenda(eventId, bodyEl) {
+function fetchAgenda(eventId, bodyEl, eventName) {
     fetch('/api/events/' + eventId + '/agenda')
         .then(function (res) {
             if (res.status === 401) {
                 window.location.href = '/';
                 return;
             }
-            if (!res.ok) throw new Error('Fehler beim Laden der Agenda');
+            if (!res.ok) throw new Error('Die Agenda konnte nicht geladen werden.');
             return res.json();
         })
         .then(function (data) {
             if (!data) return;
             bodyEl.dataset.loaded = 'true';
-            renderAgendaTable(data.items, bodyEl, eventId);
+            renderAgendaTable(data.items, bodyEl, eventId, eventName);
         })
         .catch(function (err) {
-            bodyEl.innerHTML = '<div class="empty-state"><p>' + escapeHtml(err.message) + '</p></div>';
+            bodyEl.innerHTML = '<div class="agenda-empty">' + escapeHtml(err.message) + '</div>';
         });
 }
 
-function renderAgendaTable(items, bodyEl, eventId) {
+function renderAgendaTable(items, bodyEl, eventId, eventName) {
     if (!items || items.length === 0) {
-        bodyEl.innerHTML = '<div class="empty-state"><p>Keine Agenda vorhanden.</p></div>';
+        bodyEl.innerHTML = '<div class="agenda-empty">Für diesen Termin gibt es in ChurchTools keine Agenda.</div>';
         return;
     }
 
-    // Separate before-event items
-    var beforeItems = [];
-    var mainItems = [];
-    items.forEach(function (item) {
-        if (item.is_before_event) {
-            beforeItems.push(item);
-        } else {
-            mainItems.push(item);
-        }
-    });
+    var beforeItems = items.filter(function (item) { return item.is_before_event; });
+    var mainItems = items.filter(function (item) { return !item.is_before_event; });
 
-    var html = '<table class="agenda-table">' +
+    var html = '<div class="agenda-toolbar">' + pdfLink('/api/events/' + eventId + '/agenda/pdf', eventName) + '</div>' +
+        '<table class="agenda-table">' +
         '<thead><tr>' +
-            '<th>Zeit</th>' +
-            '<th>Titel</th>' +
-            '<th>Dauer</th>' +
-            '<th>Verantwortlich</th>' +
-            '<th>Notiz</th>' +
+            '<th scope="col">Zeit</th>' +
+            '<th scope="col">Programmpunkt</th>' +
+            '<th scope="col">Dauer</th>' +
+            '<th scope="col">Verantwortlich</th>' +
+            '<th scope="col">Notiz</th>' +
         '</tr></thead><tbody>';
 
-    // Before-event section
+    // "Vor dem Gottesdienst" / "Gottesdienst" are levels above the headers from ChurchTools
     if (beforeItems.length > 0) {
-        html += '<tr class="agenda-header-row"><td colspan="5">Vor dem Gottesdienst</td></tr>';
-        beforeItems.forEach(function (item) {
-            html += renderAgendaRow(item, true);
-        });
-        html += '<tr class="agenda-header-row"><td colspan="5">Gottesdienst</td></tr>';
+        html += '<tr class="agenda-part-row"><th colspan="5" scope="colgroup">Vor dem Gottesdienst</th></tr>';
+        beforeItems.forEach(function (item) { html += renderAgendaItem(item, true); });
+        html += '<tr class="agenda-part-row"><th colspan="5" scope="colgroup">Gottesdienst</th></tr>';
     }
-
-    // Main items
-    mainItems.forEach(function (item) {
-        if (item.type === 'header') {
-            html += '<tr class="agenda-header-row"><td colspan="5">' + escapeHtml(item.title) + '</td></tr>';
-        } else {
-            html += renderAgendaRow(item, false);
-        }
-    });
+    mainItems.forEach(function (item) { html += renderAgendaItem(item, false); });
 
     html += '</tbody></table>';
-
-    // PDF export button
-    html += '<div class="agenda-export">' +
-        '<a href="/api/events/' + eventId + '/agenda/pdf" class="btn-export" download>' +
-            'PDF herunterladen' +
-        '</a>' +
-    '</div>';
-
     bodyEl.innerHTML = html;
 }
 
-function renderAgendaRow(item, isBefore) {
-    var rowClass = isBefore ? ' class="agenda-before-event"' : '';
-    var titleHtml = escapeHtml(item.title);
+function renderAgendaItem(item, isBefore) {
+    if (item.type === 'header') {
+        return '<tr class="agenda-header-row"><td colspan="5">' + escapeHtml(item.title) + '</td></tr>';
+    }
 
-    // Song info
+    var titleHtml = escapeHtml(item.title);
     if (item.type === 'song' && (item.song_key || item.song_arrangement)) {
         var parts = [];
-        if (item.song_key) parts.push(escapeHtml(item.song_key));
+        if (item.song_key) parts.push('Tonart ' + escapeHtml(item.song_key));
         if (item.song_arrangement) parts.push(escapeHtml(item.song_arrangement));
-        titleHtml += '<br><span class="agenda-song-info">' + parts.join(' / ') + '</span>';
+        titleHtml += '<span class="agenda-song-info">' + parts.join(' · ') + '</span>';
     }
 
-    // Note
-    var noteHtml = '';
-    if (item.note) {
-        noteHtml = '<span class="agenda-note">' + escapeHtml(item.note) + '</span>';
-    }
+    var responsible = item.responsible_names && item.responsible_names.length > 0
+        ? escapeHtml(item.responsible_names.join(', '))
+        : '';
 
-    // Responsible persons
-    var responsible = '';
-    if (item.responsible_names && item.responsible_names.length > 0) {
-        responsible = escapeHtml(item.responsible_names.join(', '));
-    }
-
-    return '<tr' + rowClass + '>' +
-        '<td>' + escapeHtml(formatTime(item.start)) + '</td>' +
-        '<td>' + titleHtml + '</td>' +
-        '<td>' + escapeHtml(item.duration_display || '') + '</td>' +
-        '<td>' + responsible + '</td>' +
-        '<td>' + noteHtml + '</td>' +
+    return '<tr' + (isBefore ? ' class="agenda-before-event"' : '') + '>' +
+        '<td class="agenda-time">' + escapeHtml(formatTime(item.start)) + '</td>' +
+        '<td class="agenda-title">' + titleHtml + '</td>' +
+        '<td class="agenda-duration">' + escapeHtml(item.duration_display || '') + '</td>' +
+        '<td class="agenda-responsible">' + responsible + '</td>' +
+        '<td>' + (item.note ? '<span class="agenda-note">' + escapeHtml(item.note) + '</span>' : '') + '</td>' +
     '</tr>';
 }
 
 // --- Services rendering ---
 
-function renderServicesTable(events) {
-    var container = $('#events-list');
+function serviceStats(services) {
+    var stats = { total: services.length, accepted: 0, pending: 0, open: 0 };
+    services.forEach(function (svc) {
+        if (!svc.person_name) stats.open++;
+        else if (svc.is_accepted) stats.accepted++;
+        else stats.pending++;
+    });
+    return stats;
+}
 
+function renderServiceStatus(svc) {
+    if (!svc.person_name) return '<span class="status-badge status-open">Offen</span>';
+    if (svc.is_accepted) return '<span class="status-badge status-accepted">Zugesagt</span>';
+    return '<span class="status-badge status-pending">Ausstehend</span>';
+}
+
+function renderServicesTable(events) {
     if (!events || events.length === 0) {
-        container.innerHTML =
-            '<div class="empty-state">' +
-                '<p>Keine Events gefunden.</p>' +
-                '<p class="empty-state-hint">Bitte Datum und Kalender anpassen.</p>' +
-            '</div>';
+        showNoEvents();
         return;
     }
 
-    var html = '<div class="events-count">' + events.length + ' Event' + (events.length !== 1 ? 's' : '') + ' gefunden</div>';
+    var openTotal = 0;
+    events.forEach(function (ev) { openTotal += serviceStats(ev.services || []).open; });
 
-    html += '<div class="services-table-wrapper">' +
-        '<table class="services-table">' +
-        '<thead><tr>' +
-            '<th>Event</th>' +
-            '<th>Dienst</th>' +
-            '<th>Person</th>' +
-            '<th>Status</th>' +
-        '</tr></thead><tbody>';
+    var html = '<p class="events-count">' + plural(events.length, 'Termin', 'Termine') +
+        (openTotal > 0
+            ? ' · <span class="events-count-open">' + plural(openTotal, 'Dienst', 'Dienste') + ' offen</span>'
+            : ' · alle Dienste besetzt') +
+        '</p>';
 
-    events.forEach(function (ev) {
-        var serviceCount = ev.services ? ev.services.length : 0;
+    var pdfParams = buildEventParams().toString();
 
-        // Event group header
-        html += '<tr class="services-event-header">' +
-            '<td colspan="4">' +
-                escapeHtml(ev.name) +
-                '<span class="services-event-meta">' + escapeHtml(formatDateShort(ev.start_date)) + ' &mdash; ' + escapeHtml(ev.calendar_name) + '</span>' +
-            '</td>' +
-        '</tr>';
+    events.forEach(function (ev, i) {
+        var services = ev.services || [];
+        var stats = serviceStats(services);
+        var delay = Math.min(i * 0.04, 0.8);
 
-        if (serviceCount === 0) {
-            html += '<tr><td colspan="4" class="status-open">Keine Dienste zugewiesen</td></tr>';
-        } else {
-            ev.services.forEach(function (svc) {
-                var personHtml = svc.person_name
-                    ? escapeHtml(svc.person_name)
-                    : '<span class="status-open">&mdash; (offen)</span>';
+        var summary = services.length === 0
+            ? 'Keine Dienste eingetragen'
+            : stats.accepted + ' von ' + stats.total + ' zugesagt' +
+              (stats.pending ? ' · ' + stats.pending + ' ausstehend' : '') +
+              (stats.open ? ' · <strong class="summary-open">' + stats.open + ' offen</strong>' : '');
 
-                var statusHtml = '';
-                if (!svc.person_name) {
-                    statusHtml = '<span class="status-open">?</span>';
-                } else if (svc.is_accepted) {
-                    statusHtml = '<span class="status-accepted">&#10003; Zugesagt</span>';
-                } else {
-                    statusHtml = '<span class="status-pending">? Ausstehend</span>';
-                }
+        html += '<section class="service-card" style="animation-delay:' + delay + 's" aria-label="' + escapeHtml(ev.name) + '">' +
+            '<header class="service-card-header">' +
+                '<div class="event-card-info">' +
+                    '<h2 class="event-card-title">' + escapeHtml(ev.name) + '</h2>' +
+                    '<span class="event-card-meta">' + escapeHtml(formatDateShort(ev.start_date)) +
+                        ' · ' + escapeHtml(ev.calendar_name) + '</span>' +
+                    '<span class="service-summary">' + summary + '</span>' +
+                '</div>' +
+                pdfLink('/api/events/' + ev.id + '/services/pdf?' + pdfParams, ev.name) +
+            '</header>';
 
-                html += '<tr>' +
-                    '<td></td>' +
-                    '<td>' + escapeHtml(svc.name) + '</td>' +
-                    '<td>' + personHtml + '</td>' +
-                    '<td>' + statusHtml + '</td>' +
+        if (services.length > 0) {
+            html += '<table class="services-table">' +
+                '<thead class="sr-only"><tr><th scope="col">Dienst</th><th scope="col">Person</th><th scope="col">Status</th></tr></thead><tbody>';
+            services.forEach(function (svc) {
+                html += '<tr' + (svc.person_name ? '' : ' class="is-open"') + '>' +
+                    '<td class="service-name">' + escapeHtml(svc.name) + '</td>' +
+                    '<td class="service-person">' + (svc.person_name
+                        ? escapeHtml(svc.person_name)
+                        : '<span class="service-unassigned">Nicht besetzt</span>') + '</td>' +
+                    '<td class="service-status">' + renderServiceStatus(svc) + '</td>' +
                 '</tr>';
             });
+            html += '</tbody></table>';
         }
-
-        // Per-event PDF export button
-        var evPdfParams = buildEventParams();
-        html += '<tr class="services-export-row"><td colspan="4">' +
-            '<a href="/api/events/' + ev.id + '/services/pdf?' + evPdfParams.toString() + '" class="btn-export" download>' +
-                'PDF herunterladen' +
-            '</a>' +
-        '</td></tr>';
+        html += '</section>';
     });
 
-    html += '</tbody></table></div>';
-
-    container.innerHTML = html;
+    $('#events-list').innerHTML = html;
 }
 
 // --- Load events (shared) ---
@@ -372,28 +347,29 @@ function scheduleLoad(delay) {
 
 function loadEvents() {
     var sequence = ++loadSequence;
-    var container = $('#events-list');
-    container.innerHTML =
+    if ($$('.calendar-checkbox:checked').length === 0) {
+        showListMessage('Kein Kalender ausgewählt.', 'Wähle unter „Kalender“ mindestens einen aus.', false);
+        return;
+    }
+
+    $('#events-list').innerHTML =
         '<div class="events-loading">' +
             '<span class="spinner-ring-inline spinner-ring-inline--dark"></span>' +
-            '<span>Events werden geladen&hellip;</span>' +
+            '<span>Termine werden geladen&hellip;</span>' +
         '</div>';
 
-    var params = buildEventParams();
-
-    fetch('/api/events?' + params.toString())
+    fetch('/api/events?' + buildEventParams().toString())
         .then(function (res) {
             if (res.status === 401) {
                 window.location.href = '/';
                 return;
             }
-            if (!res.ok) throw new Error('Fehler beim Laden der Events');
+            if (!res.ok) throw new Error('Termine konnten nicht geladen werden.');
             return res.json();
         })
         .then(function (data) {
             if (!data || sequence !== loadSequence) return;
-            var mode = getPageMode();
-            if (mode === 'services') {
+            if (getPageMode() === 'services') {
                 renderServicesTable(data.events);
             } else {
                 renderAgendaEvents(data.events);
@@ -401,11 +377,7 @@ function loadEvents() {
         })
         .catch(function (err) {
             if (sequence !== loadSequence) return;
-            container.innerHTML =
-                '<div class="empty-state">' +
-                    '<p>' + escapeHtml(err.message) + '</p>' +
-                    '<button type="button" class="retry-btn" data-action="retry">Erneut versuchen</button>' +
-                '</div>';
+            showListMessage(err.message, 'Bitte prüfe die Verbindung.', true);
         });
 }
 
@@ -478,13 +450,8 @@ document.addEventListener('DOMContentLoaded', function () {
         calToggle.addEventListener('click', function () {
             var wrap = $('#calendars_wrap');
             var isExpanded = this.getAttribute('aria-expanded') === 'true';
-            if (isExpanded) {
-                wrap.classList.remove('is-open');
-                this.setAttribute('aria-expanded', 'false');
-            } else {
-                wrap.classList.add('is-open');
-                this.setAttribute('aria-expanded', 'true');
-            }
+            wrap.classList.toggle('is-open', !isExpanded);
+            this.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
         });
     }
 
@@ -495,6 +462,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var checked = $$('.calendar-checkbox:checked').length;
             var info = $('.calendar-selection-info');
             if (info) info.textContent = checked + ' von ' + total;
+            scheduleLoad(700);
         }
     });
 

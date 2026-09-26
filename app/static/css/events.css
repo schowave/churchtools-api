@@ -101,14 +101,29 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* The header is a <button> (keyboard and screen reader operable); reset the global button styles */
 .event-card-header {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    width: 100%;
+    margin: 0;
     padding: var(--spacing-md) var(--spacing-lg);
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    letter-spacing: normal;
+    background: none;
+    border: none;
+    border-radius: 0;
     cursor: pointer;
     transition: background-color var(--transition-speed) var(--transition-ease);
     user-select: none;
+}
+
+.event-card-header:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--primary-color);
 }
 
 .event-card-header:hover {
@@ -128,6 +143,8 @@
 .event-card-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .event-card-title {
@@ -206,7 +223,19 @@
     border-bottom: none;
 }
 
-/* Header-type rows (section dividers) */
+/* "Vor dem Gottesdienst" / "Gottesdienst": parts above the headers that come from ChurchTools */
+.agenda-part-row th {
+    padding: var(--spacing-md) var(--spacing-sm) var(--spacing-2xs);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--input-border);
+    background: none;
+}
+
+/* Header-type rows from ChurchTools (e.g. "Eröffnung") */
 .agenda-header-row td {
     font-family: var(--font-display);
     font-weight: 600;
@@ -217,126 +246,141 @@
     border-bottom: 1px solid var(--border-color);
 }
 
-/* Before-event items */
+/* Before-event items: quieter, but still readable (no opacity, it breaks contrast) */
 .agenda-before-event td {
-    opacity: 0.6;
-    font-style: italic;
+    color: var(--text-muted);
 }
 
-.agenda-before-event td:first-child::before {
-    content: '';
+.agenda-time,
+.agenda-duration {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
 }
 
-/* Song info badge */
+.agenda-duration {
+    color: var(--text-muted);
+}
+
+/* Song info (key, arrangement) under the title */
 .agenda-song-info {
-    display: inline-block;
+    display: block;
+    width: fit-content;
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--secondary-color);
-    background: rgba(198, 123, 74, 0.1);
+    background: rgba(165, 88, 42, 0.08);
     padding: 0.15em 0.5em;
     border-radius: 4px;
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
-/* Agenda note */
 .agenda-note {
     font-size: 0.8125rem;
     color: var(--text-muted);
-    margin-top: 2px;
     white-space: pre-line;
 }
 
-/* ---- Services table ---- */
-.services-table-wrapper {
+.agenda-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--spacing-xs);
+}
+
+.agenda-empty {
+    padding: var(--spacing-md) 0;
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+
+/* ---- Services: one card per event ---- */
+.service-card {
     background: white;
     border: 1px solid var(--border-color);
     border-radius: var(--container-radius);
     box-shadow: var(--box-shadow);
-    overflow: hidden;
     margin-bottom: var(--spacing-md);
+    overflow: hidden;
     animation: itemFadeIn 0.3s var(--transition-ease) both;
+}
+
+.service-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.service-summary {
+    margin-top: var(--spacing-2xs);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.summary-open {
+    color: var(--danger-color);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .services-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
-}
-
-.services-table th {
-    text-align: left;
-    font-weight: 600;
-    font-size: 0.8125rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-bottom: 2px solid var(--border-color);
-    background: var(--primary-subtle);
-    white-space: nowrap;
+    font-size: 0.9375rem;
 }
 
 .services-table td {
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-bottom: 1px solid var(--primary-light);
     vertical-align: middle;
-    color: var(--text-color);
 }
 
 .services-table tr:last-child td {
     border-bottom: none;
 }
 
-/* Event group header row in services table */
-.services-event-header td {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--text-color);
-    background: var(--primary-light);
-    padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.services-event-meta {
-    font-family: var(--font-family);
-    font-size: 0.8125rem;
-    font-weight: 400;
+.service-name {
+    width: 38%;
     color: var(--text-muted);
-    display: block;
-    margin-top: 2px;
 }
 
-/* Status badges */
-.status-accepted {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
+.service-status {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
+
+.services-table tr.is-open {
+    background: rgba(181, 74, 58, 0.04);
+}
+
+.service-unassigned {
+    color: var(--danger-color);
+    font-style: italic;
+}
+
+/* Status badges: text and color, so the state never depends on color alone */
+.status-badge {
+    display: inline-block;
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--success-color);
-    background: rgba(94, 139, 90, 0.1);
-    padding: 0.2em 0.6em;
+    padding: 0.2em 0.65em;
     border-radius: 100px;
+}
+
+.status-accepted {
+    color: var(--success-color);
+    background: rgba(74, 117, 71, 0.1);
 }
 
 .status-pending {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: 0.8125rem;
-    font-weight: 600;
     color: var(--secondary-color);
-    background: rgba(198, 123, 74, 0.1);
-    padding: 0.2em 0.6em;
-    border-radius: 100px;
+    background: rgba(165, 88, 42, 0.1);
 }
 
 .status-open {
-    font-size: 0.875rem;
-    color: var(--text-muted);
-    font-style: italic;
+    color: white;
+    background: var(--danger-color);
 }
 
 /* ---- Event count ---- */
@@ -344,21 +388,32 @@
     font-size: 0.9375rem;
     color: var(--text-muted);
     font-weight: 500;
-    margin-bottom: var(--spacing-md);
+    margin: 0 0 var(--spacing-md);
+}
+
+.events-count-hint {
+    font-weight: 400;
+}
+
+.events-count-open {
+    color: var(--danger-color);
+    font-weight: 600;
 }
 
 /* ---- PDF export button ---- */
 .btn-export {
     display: inline-flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    padding: 0.5em 1em;
+    gap: var(--spacing-2xs);
+    flex-shrink: 0;
+    padding: 0.4em 0.9em;
     font-family: var(--font-family);
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--primary-color);
-    background: var(--primary-subtle);
-    border: 1px solid var(--border-color);
+    text-decoration: none;
+    background: white;
+    border: 1px solid var(--primary-color);
     border-radius: 100px;
     cursor: pointer;
     transition: all var(--transition-speed) var(--transition-ease);
@@ -368,25 +423,11 @@
 .btn-export:hover {
     background: var(--primary-color);
     color: white;
-    border-color: var(--primary-color);
 }
 
-.event-card-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
-}
-
-.agenda-export {
-    display: flex;
-    justify-content: flex-end;
-    padding: var(--spacing-md) 0 var(--spacing-sm);
-}
-
-.services-export-row td {
-    text-align: right;
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-top: none;
+.btn-export:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 /* ---- Responsive ---- */
@@ -530,16 +571,25 @@
         grid-column: 1 / -1;
     }
 
-    .agenda-table tr.agenda-header-row {
+    .agenda-table tr.agenda-header-row,
+    .agenda-table tr.agenda-part-row {
         padding: 0;
         border-bottom: none;
+    }
+
+    .agenda-part-row th {
+        grid-column: 1 / -1;
     }
 
     .agenda-header-row td {
         padding: var(--spacing-xs) var(--spacing-sm);
     }
 
-    /* Services row: service and person stacked, status on the right */
+    /* Services row: service above person, status on the right */
+    .service-card-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
     .services-table tr {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -549,48 +599,23 @@
         column-gap: var(--spacing-sm);
         align-items: center;
         padding: var(--spacing-sm) var(--spacing-md);
-        border-bottom: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--primary-light);
+    }
+
+    .services-table tr:last-child {
+        border-bottom: none;
     }
 
     .services-table td {
         padding: 0;
         border: none;
+        width: auto;
         overflow-wrap: anywhere;
     }
 
-    .services-table td:first-child:empty {
-        display: none;
-    }
-
-    .services-table td:nth-child(2) {
-        grid-area: service;
-        font-size: 0.8125rem;
-        color: var(--text-muted);
-    }
-
-    .services-table td:nth-child(3) { grid-area: person; }
-    .services-table td:nth-child(4) { grid-area: status; }
-
-    .services-table td[colspan] {
-        grid-column: 1 / -1;
-        grid-row: auto;
-    }
-
-    .services-table tr.services-event-header,
-    .services-table tr.services-export-row {
-        display: block;
-        padding: 0;
-    }
-
-    .services-table .services-event-header td {
-        display: block;
-        padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
-    }
-
-    .services-table .services-export-row td {
-        display: block;
-        padding: var(--spacing-sm) var(--spacing-md);
-    }
+    .service-name { grid-area: service; font-size: 0.8125rem; }
+    .service-person { grid-area: person; }
+    .service-status { grid-area: status; }
 
     .events-list {
         margin-bottom: var(--spacing-lg);

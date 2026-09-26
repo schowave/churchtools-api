@@ -148,6 +148,10 @@ class AgendaItem(BaseModel):
     @computed_field
     @property
     def duration_display(self) -> str:
-        """Format duration as MM:SS."""
-        minutes, seconds = divmod(self.duration_seconds, 60)
-        return f"{minutes:02d}:{seconds:02d}"
+        """Duration as "5 Min." or "1 Std. 5 Min." ("MM:SS" looked like a clock time); empty if none."""
+        if self.duration_seconds <= 0:
+            return ""
+        total_minutes = max(1, round(self.duration_seconds / 60))
+        hours, minutes = divmod(total_minutes, 60)
+        parts = ([f"{hours} Std."] if hours else []) + ([f"{minutes} Min."] if minutes else [])
+        return " ".join(parts)

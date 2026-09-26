@@ -52,7 +52,7 @@ def test_agenda_item_default():
         song_key=None,
         song_arrangement=None,
     )
-    assert item.duration_display == "05:00"
+    assert item.duration_display == "5 Min."
 
 
 def test_agenda_item_song():
@@ -89,7 +89,16 @@ def test_agenda_item_header():
     )
     assert item.type == "header"
     assert item.is_before_event is True
-    assert item.duration_display == "00:00"
+    assert item.duration_display == ""
+
+
+@pytest.mark.parametrize(
+    ("seconds", "expected"),
+    [(0, ""), (30, "1 Min."), (180, "3 Min."), (1200, "20 Min."), (3600, "1 Std."), (3900, "1 Std. 5 Min.")],
+)
+def test_agenda_duration_reads_as_a_length_not_a_clock_time(seconds, expected):
+    # "15:00" for a quarter of an hour looked like a start time
+    assert AgendaItem(position=1, title="x", duration_seconds=seconds).duration_display == expected
 
 
 def test_error_response_model():

@@ -13,6 +13,11 @@
     text-align: left;
 }
 
+/* The container is transparent here; the global hover shadow would outline the whole page */
+.container:hover {
+    box-shadow: none;
+}
+
 /* ─── Page header ───────────────────────────── */
 .page-header {
     margin-bottom: var(--spacing-xl);

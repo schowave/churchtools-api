@@ -109,6 +109,15 @@ def test_appointments_page_has_no_manual_load_button():
     assert 'id="fetch_btn"' not in _render_appointments(has_images=False)
 
 
+def test_agenda_and_services_offer_calendar_selection():
+    calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}, {"id": 2, "name": "Jugend", "isPublic": True}]
+    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
+        for path in ("/agenda", "/services"):
+            html = authed_client.get(path).text
+            assert html.count('type="checkbox" name="calendar_ids"') == 2, path
+            assert 'id="fetch_btn"' not in html, path
+
+
 def test_pages_send_strict_content_security_policy():
     csp = client.get("/").headers["content-security-policy"]
     directives = dict(d.strip().split(" ", 1) for d in csp.split(";") if d.strip())
