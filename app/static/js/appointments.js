@@ -31,12 +31,8 @@ function hideButtonSpinner(btn) {
 }
 
 function autoResizeTextarea(textarea) {
-    textarea.style.height = '24px';
-    if (textarea.value.trim().length > 0) {
-        if (textarea.scrollHeight > 24) {
-            textarea.style.height = textarea.scrollHeight + 'px';
-        }
-    }
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.max(textarea.scrollHeight, 56) + 'px';
 }
 
 function calculateThisWeekDates() {
@@ -106,6 +102,43 @@ function formatIso(date) {
 
 // --- Appointment rendering ---
 
+var PENCIL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"' +
+    ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/>' +
+    '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>';
+
+function formatShortDate(isoDate) {
+    var parts = isoDate.slice(0, 10).split('-');
+    return parts[2] + '.' + parts[1] + '.';
+}
+
+function renderTimeColumn(app) {
+    if (app.all_day) {
+        var multiDay = app.end_date.slice(0, 10) !== app.start_date.slice(0, 10);
+        return '<span class="all-day-label">ganztägig</span>' +
+            (multiDay ? '<span class="time-end">bis ' + escapeHtml(formatShortDate(app.end_date)) + '</span>' : '');
+    }
+    return '<span class="time-start">' + escapeHtml(app.start_time_view) + '</span>' +
+        '<span class="time-end">' + escapeHtml(app.end_time_view) + '</span>';
+}
+
+function openCustomTextEditor(item) {
+    var textarea = item.querySelector('textarea');
+    item.classList.add('is-editing');
+    textarea.classList.remove('hidden');
+    autoResizeTextarea(textarea);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+}
+
+function closeCustomTextEditor(item) {
+    var textarea = item.querySelector('textarea');
+    var text = textarea.value.trim();
+    item.classList.remove('is-editing');
+    item.classList.toggle('has-custom-text', text.length > 0);
+    item.querySelector('.appointment-custom-text').textContent = text;
+    textarea.classList.add('hidden');
+}
+
 function renderAppointments(appointments) {
     var main = $('.appointments-main');
 
@@ -134,41 +167,33 @@ function renderAppointments(appointments) {
             html += '<div class="date-group-header">' + escapeHtml(formatDateWithWeekday(dateKey)) + '</div>';
             lastDate = dateKey;
         }
-        var hasInfo = app.additional_info && app.additional_info.trim().length > 0;
+        var customText = (app.additional_info || '').trim();
         var hasDescription = app.information && app.information.trim().length > 0;
         var delay = Math.min(itemIndex * 0.03, 0.6);
-        html += '<div class="appointment-item" style="animation-delay:' + delay + 's">' +
-            '<input type="checkbox" id="appointment-' + escapeHtml(app.id) + '" name="appointment_id"' +
-            ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
-            '<label for="appointment-' + escapeHtml(app.id) + '" class="appointment-label">' +
-                '<span class="appointment-date">' +
-                    (app.all_day
-                        ? 'Ganztägig'
-                        : escapeHtml(app.start_time_view) + ' – ' + escapeHtml(app.end_time_view)) +
-                '</span>' +
-                '<span class="appointment-description">' + escapeHtml(app.title) + '</span>' +
-                '<button type="button" class="add-info-toggle' + (hasInfo ? ' hidden' : '') + '"' +
-                    ' data-action="show-textarea">' +
-                    '+ Eigener Text' +
-                '</button>' +
-            '</label>' +
-            (hasDescription
-                ? '<span class="appointment-info-text' + (hasInfo ? ' overridden' : '') + '" data-action="toggle-expand">' + escapeHtml(app.information) + '</span>'
-                : '') +
-            '<textarea name="additional_info_' + escapeHtml(app.id) + '"' +
-                ' class="' + (hasInfo ? '' : 'hidden') + '"' +
-                ' placeholder="Überschreibt die Beschreibung in der Ausgabe">' + escapeHtml(app.additional_info || '') + '</textarea>' +
+        var checkboxId = 'appointment-' + escapeHtml(app.id);
+        html += '<div class="appointment-item' + (customText ? ' has-custom-text' : '') + '" style="animation-delay:' + delay + 's">' +
+            '<input type="checkbox" id="' + checkboxId + '" name="appointment_id"' +
+                ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
+            '<label for="' + checkboxId + '" class="appointment-time">' + renderTimeColumn(app) + '</label>' +
+            '<div class="appointment-body">' +
+                '<label for="' + checkboxId + '" class="appointment-title">' + escapeHtml(app.title) + '</label>' +
+                (hasDescription
+                    ? '<p class="appointment-info-text" data-action="toggle-expand" title="Klicken zum Auf-/Zuklappen">' +
+                        escapeHtml(app.information) + '</p>'
+                    : '') +
+                '<p class="appointment-custom-text" data-action="edit-custom-text" title="Eigenen Text bearbeiten">' +
+                    escapeHtml(customText) + '</p>' +
+                '<textarea name="additional_info_' + escapeHtml(app.id) + '" class="hidden" rows="2"' +
+                    ' placeholder="Eigener Text – ersetzt die Beschreibung auf der Folie">' + escapeHtml(customText) + '</textarea>' +
+            '</div>' +
+            '<button type="button" class="custom-text-btn" data-action="edit-custom-text"' +
+                ' aria-label="Eigenen Text bearbeiten" title="Eigener Text">' + PENCIL_ICON + '</button>' +
             '</div>';
         itemIndex++;
     });
 
     html += '</div>';
     main.innerHTML = html;
-
-    // Auto-resize existing textareas
-    $$('textarea', main).forEach(function (textarea) {
-        setTimeout(function () { autoResizeTextarea(textarea); }, 50);
-    });
 
     checkAppointments();
 }
@@ -224,6 +249,9 @@ function updateSelectionCount() {
     var checked = $$('.appointment-checkbox:checked').length;
     var counter = $('.appointment-count');
     if (counter) counter.textContent = checked + ' von ' + total + ' ausgewählt';
+    $$('.appointment-checkbox').forEach(function (cb) {
+        cb.closest('.appointment-item').classList.toggle('is-deselected', !cb.checked);
+    });
 }
 
 function checkAppointments() {
@@ -415,13 +443,16 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // "+ Eigener Text" button
-        var infoBtn = target.closest('[data-action="show-textarea"]');
-        if (infoBtn) {
+        // Pencil button or custom text preview: edit the custom text
+        var editTrigger = target.closest('[data-action="edit-custom-text"]');
+        if (editTrigger) {
             e.preventDefault();
-            infoBtn.classList.add('hidden');
-            var ta = infoBtn.closest('.appointment-item').querySelector('textarea');
-            if (ta) { ta.classList.remove('hidden'); ta.focus(); }
+            var editItem = editTrigger.closest('.appointment-item');
+            if (editItem.classList.contains('is-editing')) {
+                closeCustomTextEditor(editItem);
+            } else {
+                openCustomTextEditor(editItem);
+            }
             return;
         }
 
@@ -439,23 +470,36 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Event delegation for textarea input (auto-resize + overridden state)
+    // Custom text editing: grow while typing, show the override state live, close on blur
     $('.appointments-main').addEventListener('input', function (e) {
         if (e.target.tagName === 'TEXTAREA') {
             autoResizeTextarea(e.target);
-            var infoText = e.target.closest('.appointment-item').querySelector('.appointment-info-text');
-            if (infoText) {
-                infoText.classList.toggle('overridden', e.target.value.trim().length > 0);
-            }
+            var editItem = e.target.closest('.appointment-item');
+            editItem.classList.toggle('has-custom-text', e.target.value.trim().length > 0);
         }
     });
 
-    // Calendar chips toggle (CSS collapse)
+    $('.appointments-main').addEventListener('focusout', function (e) {
+        if (e.target.tagName !== 'TEXTAREA') return;
+        var editItem = e.target.closest('.appointment-item');
+        // Clicking the pencil again toggles itself; do not close twice
+        if (e.relatedTarget && e.relatedTarget.closest('.appointment-item') === editItem &&
+            e.relatedTarget.matches('[data-action="edit-custom-text"]')) return;
+        closeCustomTextEditor(editItem);
+    });
+
+    $('.appointments-main').addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'TEXTAREA' && e.key === 'Escape') {
+            e.target.blur();
+        }
+    });
+
     // Transparency slider: show the value as percent
     $('#alpha').addEventListener('input', function () {
         $('#alphaValue').textContent = Math.round(this.value / 255 * 100) + '%';
     });
 
+    // Calendar chips toggle (CSS collapse)
     $('#calendars_toggle').addEventListener('click', function () {
         var wrap = $('#calendars_wrap');
         var isExpanded = this.getAttribute('aria-expanded') === 'true';
