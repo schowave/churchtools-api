@@ -11,7 +11,7 @@ The role of this file is to describe common mistakes and confusion points that a
 
 - Starlette >= 1.0 only accepts `templates.TemplateResponse(request, "name.html", context)`. The old form `TemplateResponse("name.html", {"request": request, ...})` crashes with `TypeError: unhashable type: 'dict'`.
 - Most route tests mock `templates`, so they do not catch template or rendering errors. `tests/test_template_rendering.py` renders real pages; extend it when adding pages.
-- Login uses server-side sessions (`app/services/sessions.py`, table `login_sessions`): the `session` cookie holds a random id, the ChurchTools token stays in the DB (only the sha256 of the id is stored). Never put the token itself into a cookie or a response.
+- Login uses server-side sessions (`app/services/sessions.py`, table `login_sessions`): the `session` cookie holds a random id, the ChurchTools token stays in the DB, Fernet-encrypted with a key derived from the session id (only the sha256 of the id is stored). Without the cookie the DB cannot decrypt a token, so any code that needs the token must have the session id. Never put the token itself into a cookie or a response.
 - `tests/conftest.py` also mocks the session store (session id == token) unless a test is marked `@pytest.mark.real_sessions`.
 - New Alembic migrations: `entrypoint.sh` stamps pre-alembic databases as `001`, never `head`, so later migrations still run.
 - Pages send a strict CSP (`script-src 'self'`, see `app/main.py`). No inline `<script>` blocks or `on*=` handlers in templates; `tests/test_template_rendering.py` enforces it. Put behaviour into the page's JS file.

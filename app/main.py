@@ -51,15 +51,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.crud import cleanup_orphaned_settings
-    from app.database import SessionLocal
     from app.services.sessions import purge_expired_sessions
 
-    db = SessionLocal()
-    try:
-        cleanup_orphaned_settings(db)
-    finally:
-        db.close()
     purge_expired_sessions()
 
     app.state.http_client = httpx2.AsyncClient(timeout=30.0)

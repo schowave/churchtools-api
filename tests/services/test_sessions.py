@@ -4,6 +4,7 @@ from datetime import timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from cryptography.fernet import InvalidToken
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -38,6 +39,50 @@ def test_session_roundtrip_stores_only_the_hash(session_db):
         stored = db.query(LoginSession).one()
     assert stored.id_hash != session_id
     assert session_id not in stored.id_hash
+
+
+def test_token_is_stored_encrypted_and_unreadable_without_the_session_id(session_db):
+    session_id = sessions.create_session("ct-login-token")
+    other_id = sessions.create_session("other-token")
+
+    with session_db() as db:
+        stored = db.get(LoginSession, sessions._hash(session_id)).login_token
+    assert "ct-login-token" not in stored
+    assert stored.startswith(sessions.FERNET_PREFIX)
+    # Another session's key cannot decrypt it
+    with pytest.raises(InvalidToken):
+        sessions._fernet(other_id).decrypt(stored.encode())
+
+
+def test_plain_token_from_before_encryption_is_encrypted_on_first_use(session_db):
+    session_id = "legacy-session-id"
+    with session_db() as db:
+        now = sessions._now()
+        db.add(
+            LoginSession(
+                id_hash=sessions._hash(session_id),
+                login_token="plain-ct-token",
+                created_at=now,
+                expires_at=now + timedelta(days=1),
+            )
+        )
+        db.commit()
+
+    assert sessions.get_session_token(session_id) == "plain-ct-token"
+    with session_db() as db:
+        stored = db.get(LoginSession, sessions._hash(session_id)).login_token
+    assert "plain-ct-token" not in stored
+    assert sessions.get_session_token(session_id) == "plain-ct-token"
+
+
+def test_tampered_token_is_rejected(session_db):
+    session_id = sessions.create_session("ct-login-token")
+    with session_db() as db:
+        row = db.get(LoginSession, sessions._hash(session_id))
+        row.login_token = sessions.FERNET_PREFIX + "garbage"
+        db.commit()
+
+    assert sessions.get_session_token(session_id) is None
 
 
 def test_unknown_session_returns_none(session_db):

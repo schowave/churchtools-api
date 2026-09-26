@@ -17,6 +17,7 @@ dependencies = [
     "babel==2.18.0",
     "reportlab==5.0.1",
     "structlog==26.1.0",
+    "cryptography==50.0.1",
 ]
 
 [project.optional-dependencies]
