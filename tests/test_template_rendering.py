@@ -63,22 +63,22 @@ def test_first_visit_login_succeeds_with_rendered_form_token():
     assert _form_token(response.text) == token
 
 
-def test_pages_show_installed_version():
-    login = client.get("/")
-    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])):
-        services = authed_client.get("/services")
-    for response in (login, services):
-        assert f'class="app-version" title="Installierte Version">v{settings.version}<' in response.text
+def test_version_is_shown_on_login_and_profile():
+    """Logged-in pages keep the version on the profile page instead of a floating badge."""
+    assert f'class="app-version" title="Installierte Version">v{settings.version}<' in client.get("/").text
+    with patch("app.api.auth.fetch_current_user", AsyncMock(side_effect=ValueError)):
+        profile = authed_client.get("/profile").text
+    assert f"v{settings.version}" in profile
 
 
-def _render_appointments(has_images: bool) -> str:
+def _render_appointments(has_images: bool, colors: ColorSettings | None = None) -> str:
     from app.database import get_db
 
     image = (b"\x89PNG\r\n\x1a\n", "x.png") if has_images else (None, None)
     app.dependency_overrides[get_db] = lambda: None
     with (
         patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])),
-        patch("app.api.appointments.load_color_settings", return_value=ColorSettings()),
+        patch("app.api.appointments.load_color_settings", return_value=colors or ColorSettings()),
         patch("app.api.appointments.load_logo", return_value=image),
         patch("app.api.appointments.load_background_image", return_value=image),
     ):
@@ -95,6 +95,18 @@ def test_appointments_page_shows_existing_images():
     html = _render_appointments(has_images=True)
     assert 'src="/logo"' in html
     assert 'src="/background"' in html
+
+
+def test_design_section_is_open_until_customised():
+    assert 'id="design_card" open' in _render_appointments(has_images=False)
+    assert 'id="design_card" open' not in _render_appointments(has_images=True)
+    customised = ColorSettings(background_color="#ffffff")
+    assert 'id="design_card" open' not in _render_appointments(has_images=False, colors=customised)
+
+
+def test_appointments_page_has_no_manual_load_button():
+    """The list reloads on every filter change; a separate load button would be redundant."""
+    assert 'id="fetch_btn"' not in _render_appointments(has_images=False)
 
 
 def test_pages_send_strict_content_security_policy():

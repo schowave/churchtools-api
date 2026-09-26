@@ -189,29 +189,35 @@ function closeCustomTextEditor(item) {
     textarea.classList.add('hidden');
 }
 
+// Loaded appointments by id, for the slide preview
+var appointmentsById = {};
+
 function renderAppointments(appointments) {
     var main = $('.appointments-main');
+    appointmentsById = {};
 
     if (!appointments || appointments.length === 0) {
         main.innerHTML =
             '<div class="empty-state">' +
-                '<p>Keine Termine vorhanden.</p>' +
-                '<p class="empty-state-hint">Bitte Datum und Kalender auswählen und "Termine laden" klicken.</p>' +
+                '<p>Keine Termine in diesem Zeitraum.</p>' +
+                '<p class="empty-state-hint">Wähle einen anderen Zeitraum oder weitere Kalender.</p>' +
             '</div>';
-        checkAppointments();
+        updateSelectionState();
         return;
     }
 
     var html = '<div class="appointments-actions">' +
-        '<span class="appointment-count">' + appointments.length + ' von ' + appointments.length + ' ausgewählt</span>' +
-        '<button type="button" id="selectAllAppointments" class="select-all-btn">Alle auswählen</button>' +
-        '<button type="button" id="deselectAllAppointments" class="deselect-all-btn">Alle abwählen</button>' +
+        '<label class="select-all">' +
+            '<input type="checkbox" id="select_all" checked>' +
+            '<span class="appointment-count"></span>' +
+        '</label>' +
         '</div>' +
         '<div class="appointments-container">';
 
     var lastDate = null;
     var itemIndex = 0;
     appointments.forEach(function (app) {
+        appointmentsById[app.id] = app;
         var dateKey = app.start_date_view;
         if (dateKey !== lastDate) {
             html += '<div class="date-group-header">' + escapeHtml(formatDateWithWeekday(dateKey)) + '</div>';
@@ -234,6 +240,7 @@ function renderAppointments(appointments) {
                 '<p class="appointment-custom-text" data-action="edit-custom-text" title="Eigenen Text bearbeiten">' +
                     escapeHtml(customText) + '</p>' +
                 '<textarea name="additional_info_' + escapeHtml(app.id) + '" class="hidden" rows="2"' +
+                    ' aria-label="Eigener Text für ' + escapeHtml(app.title) + '"' +
                     ' placeholder="Eigener Text – ersetzt die Beschreibung auf der Folie">' + escapeHtml(customText) + '</textarea>' +
             '</div>' +
             '<button type="button" class="custom-text-btn" data-action="edit-custom-text"' +
@@ -245,7 +252,28 @@ function renderAppointments(appointments) {
     html += '</div>';
     main.innerHTML = html;
 
-    checkAppointments();
+    updateSelectionState();
+}
+
+// Filters reload the list automatically. Changes arrive in bursts (a preset sets both dates),
+// so loads are debounced, and answers to superseded requests are dropped.
+var fetchTimer = null;
+var fetchSequence = 0;
+
+function scheduleFetch(delay) {
+    clearTimeout(fetchTimer);
+    fetchTimer = setTimeout(fetchAppointmentsAjax, delay === undefined ? 400 : delay);
+}
+
+function showListMessage(title, hint, withRetry) {
+    appointmentsById = {};
+    $('.appointments-main').innerHTML =
+        '<div class="empty-state">' +
+            '<p>' + escapeHtml(title) + '</p>' +
+            (hint ? '<p class="empty-state-hint">' + escapeHtml(hint) + '</p>' : '') +
+            (withRetry ? '<button type="button" class="retry-btn" data-action="retry">Erneut versuchen</button>' : '') +
+        '</div>';
+    updateSelectionState();
 }
 
 function fetchAppointmentsAjax() {
@@ -256,13 +284,19 @@ function fetchAppointmentsAjax() {
         calendarIds.push(cb.value);
     });
 
-    var fetchBtn = $('#fetch_btn');
-    showButtonSpinner(fetchBtn);
+    if (calendarIds.length === 0) {
+        fetchSequence++;
+        showListMessage('Kein Kalender ausgewählt.', 'Wähle unter „Kalender“ mindestens einen aus.', false);
+        return;
+    }
+
+    var sequence = ++fetchSequence;
     $('.appointments-main').innerHTML =
         '<div class="appointments-loading">' +
             '<span class="spinner-ring-inline spinner-ring-inline--dark"></span>' +
             '<span>Termine werden geladen…</span>' +
         '</div>';
+    setExportSummary('Termine werden geladen…');
 
     var params = new URLSearchParams();
     params.append('start_date', startDate);
@@ -277,74 +311,127 @@ function fetchAppointmentsAjax() {
                 window.location.href = '/';
                 return;
             }
-            if (!res.ok) throw new Error('Fehler beim Laden der Termine');
+            if (!res.ok) return responseError(res, 'Termine konnten nicht geladen werden').then(function (err) { throw err; });
             return res.json();
         })
         .then(function (data) {
-            if (!data) return;
+            if (!data || sequence !== fetchSequence) return;
             renderAppointments(data.appointments);
-            hideButtonSpinner(fetchBtn);
         })
         .catch(function (err) {
-            $('.appointments-main').innerHTML =
-                '<div class="empty-state">' +
-                    '<p>' + escapeHtml(err.message) + '</p>' +
-                '</div>';
-            hideButtonSpinner(fetchBtn);
+            if (sequence !== fetchSequence) return;
+            showListMessage('Termine konnten nicht geladen werden.', errorText(err), true);
         });
 }
 
-function updateSelectionCount() {
-    var total = $$('.appointment-checkbox').length;
-    var checked = $$('.appointment-checkbox:checked').length;
-    var counter = $('.appointment-count');
-    if (counter) counter.textContent = checked + ' von ' + total + ' ausgewählt';
-    $$('.appointment-checkbox').forEach(function (cb) {
-        cb.closest('.appointment-item').classList.toggle('is-deselected', !cb.checked);
-    });
+// --- Selection, export bar and preview ---
+
+function checkedAppointmentIds() {
+    var ids = [];
+    $$('.appointment-checkbox:checked').forEach(function (cb) { ids.push(cb.value); });
+    return ids;
 }
 
-function checkAppointments() {
-    var hasAppointments = $$('.appointment-checkbox').length > 0;
+function setExportSummary(text) {
+    $('#export_summary').textContent = text;
+}
 
-    $('#generate_pdf_btn').disabled = !hasAppointments;
-    $('#generate_jpeg_btn').disabled = !hasAppointments;
+function updateSelectionState() {
+    var boxes = $$('.appointment-checkbox');
+    var total = boxes.length;
+    var checked = checkedAppointmentIds().length;
 
-    var errorEl = $('#generate_error');
-    errorEl.style.display = hasAppointments ? 'none' : '';
+    boxes.forEach(function (cb) {
+        cb.closest('.appointment-item').classList.toggle('is-deselected', !cb.checked);
+    });
+
+    var counter = $('.appointment-count');
+    if (counter) counter.textContent = checked + ' von ' + total + ' ausgewählt';
+    var selectAll = $('#select_all');
+    if (selectAll) {
+        selectAll.checked = total > 0 && checked === total;
+        selectAll.indeterminate = checked > 0 && checked < total;
+        selectAll.setAttribute('aria-label', checked === total ? 'Alle abwählen' : 'Alle auswählen');
+    }
+
+    $('#generate_pdf_btn').disabled = checked === 0;
+    $('#generate_jpeg_btn').disabled = checked === 0;
+    if (total === 0) {
+        setExportSummary('Keine Termine zum Exportieren.');
+    } else if (checked === 0) {
+        setExportSummary('Wähle mindestens einen Termin aus.');
+    } else {
+        setExportSummary(checked === 1 ? '1 Termin wird exportiert' : checked + ' Termine werden exportiert');
+    }
+
+    updatePreview();
+}
+
+function hexToRgba(hex, alpha) {
+    var value = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((value >> 16) & 255) + ',' + ((value >> 8) & 255) + ',' + (value & 255) + ',' + (alpha / 255).toFixed(3) + ')';
+}
+
+// Mirrors _format_time_range in app/services/pdf/slides.py
+function slideTimeText(app) {
+    if (app.all_day) {
+        var multiDay = app.end_date.slice(0, 10) !== app.start_date.slice(0, 10);
+        return multiDay ? 'Ganztägig bis ' + formatShortDate(app.end_date) + app.end_date.slice(0, 4) : 'Ganztägig';
+    }
+    return app.start_time_view + ' - ' + app.end_time_view + ' Uhr';
+}
+
+function updatePreview() {
+    var background = $('#background_color').value;
+    var dateColor = $('#date_color').value;
+    var textColor = $('#description_color').value;
+    var alpha = parseInt($('#alpha').value, 10);
+
+    $('#slide_box').style.backgroundColor = hexToRgba(background, alpha);
+    $('#slide_date').style.color = dateColor;
+    $('#slide_time').style.color = textColor;
+    $('#slide_place').style.color = textColor;
+    $('#slide_info').style.color = textColor;
+    $('#swatch_background').style.background = background;
+    $('#swatch_date').style.background = dateColor;
+    $('#swatch_description').style.background = textColor;
+
+    var ids = checkedAppointmentIds();
+    var app = ids.length ? appointmentsById[ids[0]] : null;
+    if (!app) return; // keep the sample content
+
+    var textarea = $('textarea[name="additional_info_' + ids[0] + '"]');
+    var customText = textarea ? textarea.value.trim() : '';
+    $('#slide_date').textContent = formatDateWithWeekday(app.start_date_view);
+    $('#slide_time').textContent = slideTimeText(app);
+    $('#slide_place').textContent = app.meeting_at || '';
+    $('#slide_title').textContent = app.title;
+    $('#slide_info').textContent = customText || app.information || '';
 }
 
 function generateOutput(type) {
-    var appointmentIds = [];
-    $$('.appointment-checkbox:checked').forEach(function (cb) {
-        appointmentIds.push(cb.value);
-    });
-
+    var appointmentIds = checkedAppointmentIds();
     var errorEl = $('#generate_error');
-    if (appointmentIds.length === 0) {
-        errorEl.textContent = 'Bitte mindestens einen Termin auswählen.';
-        errorEl.style.display = '';
-        return;
-    }
-    errorEl.style.display = 'none';
+    errorEl.hidden = true;
+    if (appointmentIds.length === 0) return;
 
-    var additionalInfos = {};
-    appointmentIds.forEach(function (id) {
-        var textarea = $('textarea[name="additional_info_' + id + '"]');
-        if (textarea && textarea.value.trim()) {
-            additionalInfos[id] = textarea.value;
-        }
-    });
-
+    var startDate = $('#start_date').value;
+    var endDate = $('#end_date').value;
     var calendarIds = [];
     $$('.calendar-checkbox:checked').forEach(function (cb) {
         calendarIds.push(cb.value);
     });
 
+    var additionalInfos = {};
+    appointmentIds.forEach(function (id) {
+        var textarea = $('textarea[name="additional_info_' + id + '"]');
+        if (textarea) additionalInfos[id] = textarea.value;
+    });
+
     var payload = {
         type: type,
-        start_date: $('#start_date').value,
-        end_date: $('#end_date').value,
+        start_date: startDate,
+        end_date: endDate,
         calendar_ids: calendarIds,
         appointment_ids: appointmentIds,
         color_settings: {
@@ -397,17 +484,70 @@ function generateOutput(type) {
     })
     .catch(function (err) {
         console.error('Generate error:', err);
-        var errorEl = $('#generate_error');
         errorEl.textContent = errorText(err) || 'Unbekannter Fehler';
-        errorEl.style.display = '';
+        errorEl.hidden = false;
         hideButtonSpinner(btn);
+    });
+}
+
+// --- Image uploads (background, logo) ---
+
+function setupImageControls(kind, labels) {
+    var uploadBtn = $('#' + kind + '_upload_btn');
+    var input = $('#' + kind + '_upload');
+    var deleteBtn = $('#' + kind + '_delete');
+    var status = $('#' + kind + '_status');
+    var slideImg = $(kind === 'bg' ? '#slide_bg' : '#slide_logo');
+    var url = kind === 'bg' ? '/background' : '/logo';
+
+    function showState(hasImage) {
+        status.textContent = hasImage ? 'Hochgeladen' : labels.empty;
+        $('.btn-label', uploadBtn).textContent = hasImage ? 'Ersetzen' : 'Hochladen';
+        deleteBtn.hidden = !hasImage;
+        slideImg.hidden = !hasImage;
+        if (hasImage) slideImg.src = url + '?' + Date.now();
+        else slideImg.removeAttribute('src');
+    }
+
+    uploadBtn.addEventListener('click', function () { input.click(); });
+
+    input.addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var formData = new FormData();
+        formData.append('file', file);
+        showButtonSpinner(uploadBtn);
+        csrfFetch(url + '/upload', { method: 'POST', body: formData })
+            .then(function (res) {
+                if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
+                return res.json();
+            })
+            .then(function () {
+                hideButtonSpinner(uploadBtn);
+                showState(true);
+            })
+            .catch(function (err) {
+                hideButtonSpinner(uploadBtn);
+                alert(errorText(err));
+            });
+        this.value = '';
+    });
+
+    deleteBtn.addEventListener('click', function () {
+        csrfFetch(url, { method: 'DELETE' })
+            .then(function (res) {
+                if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
+                showState(false);
+            })
+            .catch(function (err) { alert(errorText(err)); });
     });
 }
 
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Flatpickr — German locale, display dd.mm.yyyy, store yyyy-mm-dd in hidden fields
+    // Flatpickr — German locale, display dd.mm.yyyy, store yyyy-mm-dd in hidden fields.
+    // Every date change reloads the list (debounced).
     window._fpStart = flatpickr('#start_date_display', {
         locale: 'de',
         dateFormat: 'Y-m-d',
@@ -416,6 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
         allowInput: true,
         onChange: function (selectedDates, dateStr) {
             $('#start_date').value = dateStr;
+            scheduleFetch();
         }
     });
 
@@ -427,6 +568,7 @@ document.addEventListener('DOMContentLoaded', function () {
         allowInput: true,
         onChange: function (selectedDates, dateStr) {
             $('#end_date').value = dateStr;
+            scheduleFetch();
         }
     });
 
@@ -444,33 +586,21 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#end_date').value = formatIso(thisWeek.end);
     }
 
-    // Date preset buttons
+    // Date preset buttons (setDateRange triggers onChange, which reloads)
     $('#today').addEventListener('click', function () {
         var today = new Date();
         setDateRange(today, today);
-        $('#start_date').value = formatIso(today);
-        $('#end_date').value = formatIso(today);
-        fetchAppointmentsAjax();
     });
 
     $('#this-week').addEventListener('click', function () {
         var thisWeek = calculateThisWeekDates();
         setDateRange(thisWeek.start, thisWeek.end);
-        $('#start_date').value = formatIso(thisWeek.start);
-        $('#end_date').value = formatIso(thisWeek.end);
-        fetchAppointmentsAjax();
     });
 
     $('#next-week').addEventListener('click', function () {
         var nextWeek = calculateNextWeekDates();
         setDateRange(nextWeek.start, nextWeek.end);
-        $('#start_date').value = formatIso(nextWeek.start);
-        $('#end_date').value = formatIso(nextWeek.end);
-        fetchAppointmentsAjax();
     });
-
-    // Fetch button
-    $('#fetch_btn').addEventListener('click', fetchAppointmentsAjax);
 
     // Generate buttons
     $('#generate_pdf_btn').addEventListener('click', function () { generateOutput('pdf'); });
@@ -478,16 +608,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event delegation for dynamic content on appointments-main
     $('.appointments-main').addEventListener('click', function (e) {
-        // Select all / deselect all
         var target = e.target;
-        if (target.id === 'selectAllAppointments' || target.closest('#selectAllAppointments')) {
-            $$('.appointment-checkbox').forEach(function (cb) { cb.checked = true; });
-            updateSelectionCount();
-            return;
-        }
-        if (target.id === 'deselectAllAppointments' || target.closest('#deselectAllAppointments')) {
-            $$('.appointment-checkbox').forEach(function (cb) { cb.checked = false; });
-            updateSelectionCount();
+
+        if (target.closest('[data-action="retry"]')) {
+            fetchAppointmentsAjax();
             return;
         }
 
@@ -513,8 +637,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Event delegation for checkbox changes
     $('.appointments-main').addEventListener('change', function (e) {
-        if (e.target.classList.contains('appointment-checkbox')) {
-            updateSelectionCount();
+        if (e.target.id === 'select_all') {
+            var selectAll = e.target.checked;
+            $$('.appointment-checkbox').forEach(function (cb) { cb.checked = selectAll; });
+            updateSelectionState();
+        } else if (e.target.classList.contains('appointment-checkbox')) {
+            updateSelectionState();
         }
     });
 
@@ -524,6 +652,7 @@ document.addEventListener('DOMContentLoaded', function () {
             autoResizeTextarea(e.target);
             var editItem = e.target.closest('.appointment-item');
             editItem.classList.toggle('has-custom-text', e.target.value.trim().length > 0);
+            updatePreview();
         }
     });
 
@@ -542,151 +671,39 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Transparency slider: show the value as percent
+    // Colors and opacity update the preview live
+    ['#background_color', '#date_color', '#description_color'].forEach(function (selector) {
+        $(selector).addEventListener('input', updatePreview);
+    });
     $('#alpha').addEventListener('input', function () {
         $('#alphaValue').textContent = Math.round(this.value / 255 * 100) + '%';
+        updatePreview();
     });
 
     // Calendar chips toggle (CSS collapse)
     $('#calendars_toggle').addEventListener('click', function () {
         var wrap = $('#calendars_wrap');
         var isExpanded = this.getAttribute('aria-expanded') === 'true';
-        if (isExpanded) {
-            wrap.classList.remove('is-open');
-            this.setAttribute('aria-expanded', 'false');
-        } else {
-            wrap.classList.add('is-open');
-            this.setAttribute('aria-expanded', 'true');
-        }
+        wrap.classList.toggle('is-open', !isExpanded);
+        this.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
     });
 
-    // Calendar chip counter (delegated)
+    // Calendar selection: update the counter and reload
     document.addEventListener('change', function (e) {
         if (e.target.classList.contains('calendar-checkbox')) {
             var total = $$('.calendar-checkbox').length;
             var checked = $$('.calendar-checkbox:checked').length;
             var info = $('.calendar-selection-info');
             if (info) info.textContent = checked + ' von ' + total;
+            scheduleFetch(700);
         }
     });
 
-    // Logo upload
-    $('#logo_upload_btn').addEventListener('click', function () {
-        $('#logo_upload').click();
-    });
+    setupImageControls('bg', { empty: 'Keins – weißer Hintergrund' });
+    setupImageControls('logo', { empty: 'Keins' });
 
-    $('#logo_upload').addEventListener('change', function () {
-        var file = this.files[0];
-        if (!file) return;
-        var formData = new FormData();
-        formData.append('file', file);
-        var btn = $('#logo_upload_btn');
-        showButtonSpinner(btn);
-        csrfFetch('/logo/upload', { method: 'POST', body: formData })
-            .then(function (res) {
-                if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
-                return res.json();
-            })
-            .then(function () {
-                $('#logo-img').src = '/logo?' + Date.now();
-                $('#logo-preview').style.display = '';
-                $('#logo_delete').style.display = '';
-                hideButtonSpinner(btn);
-                var label = $('.btn-label', btn);
-                label.textContent = 'Gespeichert!';
-                setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
-            })
-            .catch(function (err) {
-                alert(errorText(err));
-                hideButtonSpinner(btn);
-            });
-        this.value = '';
-    });
+    updatePreview();
 
-    // Logo delete
-    $('#logo_delete').addEventListener('click', function () {
-        csrfFetch('/logo', { method: 'DELETE' })
-            .then(function (res) {
-                if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
-                $('#logo-preview').style.display = 'none';
-                $('#logo_delete').style.display = 'none';
-            })
-            .catch(function (err) { alert(errorText(err)); });
-    });
-
-    // Background image upload
-    $('#bg_upload_btn').addEventListener('click', function () {
-        $('#bg_upload').click();
-    });
-
-    $('#bg_upload').addEventListener('change', function () {
-        var file = this.files[0];
-        if (!file) return;
-        var formData = new FormData();
-        formData.append('file', file);
-        var btn = $('#bg_upload_btn');
-        showButtonSpinner(btn);
-        csrfFetch('/background/upload', { method: 'POST', body: formData })
-            .then(function (res) {
-                if (!res.ok) return responseError(res, 'Upload fehlgeschlagen').then(function (err) { throw err; });
-                return res.json();
-            })
-            .then(function () {
-                $('#bg-img').src = '/background?' + Date.now();
-                $('#bg-preview').style.display = '';
-                $('#bg_delete').style.display = '';
-                hideButtonSpinner(btn);
-                var label = $('.btn-label', btn);
-                label.textContent = 'Gespeichert!';
-                setTimeout(function () { label.textContent = 'Hochladen'; }, 2000);
-            })
-            .catch(function (err) {
-                alert(errorText(err));
-                hideButtonSpinner(btn);
-            });
-        this.value = '';
-    });
-
-    // Background image delete
-    $('#bg_delete').addEventListener('click', function () {
-        csrfFetch('/background', { method: 'DELETE' })
-            .then(function (res) {
-                if (!res.ok) return responseError(res, 'Löschen fehlgeschlagen').then(function (err) { throw err; });
-                $('#bg-preview').style.display = 'none';
-                $('#bg_delete').style.display = 'none';
-            })
-            .catch(function (err) { alert(errorText(err)); });
-    });
-
-    // Color presets
-    var applyButton = document.getElementById('applyPreset');
-    var colorPresetsSelect = document.getElementById('color_presets');
-
-    var presets = {
-        'preset1': {
-            'date_color': '#c1540c',
-            'description_color': '#4e4e4e',
-            'background_color': '#ffffff',
-            'background_alpha': 128
-        }
-    };
-
-    if (applyButton) {
-        applyButton.addEventListener('click', function () {
-            var selectedPreset = colorPresetsSelect.value;
-            if (presets[selectedPreset]) {
-                document.getElementById('date_color').value = presets[selectedPreset].date_color;
-                document.getElementById('description_color').value = presets[selectedPreset].description_color;
-                document.getElementById('background_color').value = presets[selectedPreset].background_color;
-                document.getElementById('alpha').value = presets[selectedPreset].background_alpha;
-                document.getElementById('alphaValue').textContent = Math.round(presets[selectedPreset].background_alpha / 255 * 100) + '%';
-            }
-        });
-    }
-
-    // Initial button state
-    checkAppointments();
-
-    // Auto-fetch appointments on page load
-    fetchAppointmentsAjax();
+    // Initial load (replaces the loads scheduled by initializing the date pickers)
+    scheduleFetch(0);
 });

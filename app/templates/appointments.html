@@ -35,26 +35,28 @@
     <!-- Step 1: Date & Calendar Selection -->
     <div class="search-card">
         <div class="search-card-inner">
-            <!-- Date range -->
-            <div class="date-row">
-                <div class="date-field">
-                    <label for="start_date_display">Von</label>
-                    <input type="text" id="start_date_display" required placeholder="Startdatum">
-                    <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+            <div class="filter-row">
+                <!-- Date range -->
+                <div class="date-row">
+                    <div class="date-field">
+                        <label for="start_date_display">Von</label>
+                        <input type="text" id="start_date_display" required placeholder="Startdatum">
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+                    </div>
+                    <span class="date-separator" aria-hidden="true">–</span>
+                    <div class="date-field">
+                        <label for="end_date_display">Bis</label>
+                        <input type="text" id="end_date_display" required placeholder="Enddatum">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
+                    </div>
                 </div>
-                <span class="date-separator">–</span>
-                <div class="date-field">
-                    <label for="end_date_display">Bis</label>
-                    <input type="text" id="end_date_display" required placeholder="Enddatum">
-                    <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
-                </div>
-            </div>
 
-            <!-- Quick presets -->
-            <div class="date-presets">
-                <button type="button" id="today" class="preset-chip">Heute</button>
-                <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
-                <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                <!-- Quick presets -->
+                <div class="date-presets" role="group" aria-label="Zeitraum schnell wählen">
+                    <button type="button" id="today" class="preset-chip">Heute</button>
+                    <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
+                    <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                </div>
             </div>
 
             <!-- Calendar chips (collapsible) -->
@@ -77,12 +79,6 @@
                 </div>
                 </div>
             </div>
-
-            <!-- Fetch button -->
-            <button type="button" class="btn btn-fetch" id="fetch_btn">
-                <span class="btn-label">Termine laden</span>
-                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden…</span>
-            </button>
         </div>
     </div>
 
@@ -94,119 +90,128 @@
         </div>
     </div>
 
-    <!-- Step 3: Output settings (flat — no tabs) -->
-    <div class="settings-card">
-        <div class="settings-sections">
-            <!-- Colors -->
-            <div class="settings-section">
-                <h3 class="settings-section-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
-                    Farben
-                </h3>
-                <div class="color-grid">
-                    <div class="color-option">
-                        <label class="color-label" for="background_color">Hintergrund</label>
-                        <input type="color" id="background_color" name="background_color"
-                               value="{{ color_settings.background_color }}" class="color-input">
-                    </div>
-                    <div class="color-option">
-                        <label class="color-label" for="date_color">Datum</label>
-                        <input type="color" id="date_color" name="date_color"
-                               value="{{ color_settings.date_color }}" class="color-input">
-                    </div>
-                    <div class="color-option">
-                        <label class="color-label" for="description_color">Beschreibung</label>
-                        <input type="color" id="description_color" name="description_color"
-                               value="{{ color_settings.description_color }}" class="color-input">
-                    </div>
-                    <div class="color-option color-option--wide">
-                        <label class="color-label">Transparenz</label>
-                        <div class="transparency-container">
-                            <input type="range" id="alpha" name="alpha" class="transparency-slider"
-                                   min="0" max="255" step="1" value="{{ color_settings.background_alpha }}">
-                            <span id="alphaValue" class="transparency-value">{{ ((color_settings.background_alpha / 255 * 100) | round | int) }}%</span>
+    <!-- Step 3: Slide design with live preview -->
+    <details class="design-card" id="design_card"{% if design_open %} open{% endif %}>
+        <summary class="design-summary">
+            <span class="design-summary-text">
+                <span class="design-summary-title">Folien-Design</span>
+                <span class="design-summary-hint">Farben, Hintergrundbild und Logo</span>
+            </span>
+            <span class="design-swatches" aria-hidden="true">
+                <span class="design-swatch" id="swatch_background" style="background:{{ color_settings.background_color }}"></span>
+                <span class="design-swatch" id="swatch_date" style="background:{{ color_settings.date_color }}"></span>
+                <span class="design-swatch" id="swatch_description" style="background:{{ color_settings.description_color }}"></span>
+            </span>
+            <svg class="design-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+
+        <div class="design-body">
+            <figure class="slide-preview-wrap">
+                <div class="slide-preview" id="slide_preview" role="img" aria-label="Vorschau einer Folie">
+                    <img class="slide-bg" id="slide_bg" alt=""{% if has_background_image %} src="/background"{% else %} hidden{% endif %}>
+                    <div class="slide-box" id="slide_box">
+                        <div class="slide-left">
+                            <div class="slide-date" id="slide_date">Sonntag, 04.10.2026</div>
+                            <div class="slide-meta" id="slide_time">10:00 - 11:30 Uhr</div>
+                            <div class="slide-meta" id="slide_place"></div>
+                        </div>
+                        <div class="slide-right">
+                            <div class="slide-title" id="slide_title">Beispieltermin</div>
+                            <div class="slide-info" id="slide_info"></div>
                         </div>
                     </div>
+                    <img class="slide-logo" id="slide_logo" alt=""{% if has_logo %} src="/logo"{% else %} hidden{% endif %}>
                 </div>
-            </div>
+                <figcaption class="slide-preview-note" id="slide_note">Vorschau mit dem ersten ausgewählten Termin. Das PDF kann in Details abweichen.</figcaption>
+            </figure>
 
-            <!-- Images -->
-            <div class="settings-section">
-                <h3 class="settings-section-title">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Bilder
-                </h3>
-                <div class="images-grid">
-                    <div class="image-section">
-                        <h4 class="image-section-title">Hintergrundbild</h4>
-                        <div id="bg-preview" class="image-preview" {% if not has_background_image %}style="display:none;"{% endif %}>
-                            <img id="bg-img" {% if has_background_image %}src="/background" {% endif %}alt="Hintergrundbild">
+            <div class="design-controls">
+                <fieldset class="design-group">
+                    <legend class="design-group-title">Farben</legend>
+                    <div class="color-grid">
+                        <div class="color-option">
+                            <label class="color-label" for="background_color">Kasten</label>
+                            <input type="color" id="background_color" name="background_color"
+                                   value="{{ color_settings.background_color }}" class="color-input">
+                        </div>
+                        <div class="color-option">
+                            <label class="color-label" for="date_color">Datum</label>
+                            <input type="color" id="date_color" name="date_color"
+                                   value="{{ color_settings.date_color }}" class="color-input">
+                        </div>
+                        <div class="color-option">
+                            <label class="color-label" for="description_color">Text</label>
+                            <input type="color" id="description_color" name="description_color"
+                                   value="{{ color_settings.description_color }}" class="color-input">
+                        </div>
+                    </div>
+                    <label class="color-label" for="alpha">Deckkraft des Kastens</label>
+                    <div class="transparency-container">
+                        <input type="range" id="alpha" name="alpha" class="transparency-slider"
+                               min="0" max="255" step="1" value="{{ color_settings.background_alpha }}">
+                        <span id="alphaValue" class="transparency-value">{{ ((color_settings.background_alpha / 255 * 100) | round | int) }}%</span>
+                    </div>
+                </fieldset>
+
+                <fieldset class="design-group">
+                    <legend class="design-group-title">Bilder</legend>
+                    <div class="image-row">
+                        <div class="image-row-text">
+                            <span class="image-row-title">Hintergrundbild</span>
+                            <span class="image-row-status" id="bg_status">{% if has_background_image %}Hochgeladen{% else %}Keins – weißer Hintergrund{% endif %}</span>
                         </div>
                         <div class="image-actions">
                             <button type="button" id="bg_upload_btn" class="btn-upload">
-                                <span class="btn-label">Hochladen</span>
+                                <span class="btn-label">{% if has_background_image %}Ersetzen{% else %}Hochladen{% endif %}</span>
                                 <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
                             </button>
-                            <input type="file" id="bg_upload" accept="image/png,image/jpeg" style="display: none;">
-                            <button type="button" id="bg_delete" class="btn-delete-img"
-                                    {% if not has_background_image %}style="display:none;"{% endif %}>
-                                Löschen
-                            </button>
+                            <input type="file" id="bg_upload" accept="image/png,image/jpeg" hidden>
+                            <button type="button" id="bg_delete" class="btn-delete-img" aria-label="Hintergrundbild löschen"{% if not has_background_image %} hidden{% endif %}>Löschen</button>
                         </div>
                     </div>
-                    <div class="image-section">
-                        <h4 class="image-section-title">Logo</h4>
-                        <div id="logo-preview" class="image-preview" {% if not has_logo %}style="display:none;"{% endif %}>
-                            <img id="logo-img" {% if has_logo %}src="/logo" {% endif %}alt="Logo">
+                    <div class="image-row">
+                        <div class="image-row-text">
+                            <span class="image-row-title">Logo</span>
+                            <span class="image-row-status" id="logo_status">{% if has_logo %}Hochgeladen{% else %}Keins{% endif %}</span>
                         </div>
                         <div class="image-actions">
                             <button type="button" id="logo_upload_btn" class="btn-upload">
-                                <span class="btn-label">Hochladen</span>
+                                <span class="btn-label">{% if has_logo %}Ersetzen{% else %}Hochladen{% endif %}</span>
                                 <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
                             </button>
-                            <input type="file" id="logo_upload" accept="image/png,image/jpeg" style="display: none;">
-                            <button type="button" id="logo_delete" class="btn-delete-img"
-                                    {% if not has_logo %}style="display:none;"{% endif %}>
-                                Löschen
-                            </button>
+                            <input type="file" id="logo_upload" accept="image/png,image/jpeg" hidden>
+                            <button type="button" id="logo_delete" class="btn-delete-img" aria-label="Logo löschen"{% if not has_logo %} hidden{% endif %}>Löschen</button>
                         </div>
                     </div>
-                </div>
+                    <p class="image-hint">PNG oder JPEG, max. 10 MB. Wird sofort gespeichert.</p>
+                </fieldset>
             </div>
         </div>
-    </div>
-
-    <!-- Hidden presets -->
-    <div style="display: none;">
-        <select id="color_presets" name="color_presets">
-            <option value="preset1">Herbst '23</option>
-        </select>
-        <button type="button" id="applyPreset">OK</button>
-    </div>
+    </details>
 </div>
 <!-- Sticky bottom bar — always visible export -->
 <div class="bottom-bar" id="bottom_bar">
     <div class="bottom-bar-inner">
-        <button type="button" class="btn btn-generate" id="generate_pdf_btn" disabled>
-            <span class="btn-label">
-                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                PDF
-            </span>
-            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span></span>
-        </button>
-        <button type="button" class="btn btn-generate btn-generate--secondary" id="generate_jpeg_btn" disabled>
-            <span class="btn-label">
-                <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                JPEG
-            </span>
-            <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
-        </button>
+        <p class="bottom-bar-summary" id="export_summary" aria-live="polite">Termine werden geladen…</p>
+        <div class="bottom-bar-actions">
+            <button type="button" class="btn btn-generate" id="generate_pdf_btn" disabled>
+                <span class="btn-label">
+                    <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    PDF
+                </span>
+                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Wird erstellt…</span>
+            </button>
+            <button type="button" class="btn btn-generate btn-generate--secondary" id="generate_jpeg_btn" disabled>
+                <span class="btn-label">
+                    <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    JPEG
+                </span>
+                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline spinner-ring-inline--dark"></span></span>
+            </button>
+        </div>
     </div>
-    <div id="generate_error" class="bottom-bar-error" style="display: none;">
-        Bitte zuerst Termine laden.
-    </div>
+    <div id="generate_error" class="bottom-bar-error" role="alert" hidden></div>
 </div>
 
-<footer class="app-version" title="Installierte Version">v{{ version }}</footer>
 </body>
 </html>

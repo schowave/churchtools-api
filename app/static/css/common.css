@@ -49,6 +49,11 @@
 }
 
 /* Base styles */
+/* The hidden attribute must win over display rules of component classes */
+[hidden] {
+    display: none !important;
+}
+
 html {
     font-size: var(--font-size-base);
     box-sizing: border-box;
