@@ -2,7 +2,15 @@ import unittest
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.dates import export_timestamp, get_date_range_from_form, parse_iso_datetime
+import pytest
+
+from app.dates import (
+    MAX_RANGE_DAYS,
+    export_timestamp,
+    get_date_range_from_form,
+    parse_iso_datetime,
+    validate_date_range,
+)
 
 
 class TestDates(unittest.TestCase):
@@ -75,3 +83,24 @@ def test_parse_iso_datetime_date_only_is_local_midnight(monkeypatch):
 def test_export_timestamp_uses_configured_timezone():
     utc_now = datetime(2026, 9, 27, 8, 0, 0, tzinfo=UTC)
     assert export_timestamp(utc_now, tz=ZoneInfo("Europe/Berlin")) == "2026-09-27-10-00-00"
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        ("2026-01-01", "2027-01-03"),  # 367 days
+        ("2026-02-01", "2026-01-31"),
+        ("2026-01-01T00:00:00", "2026-01-31"),
+        ("20260101", "2026-01-31"),
+        ("", "2026-01-31"),
+    ],
+)
+def test_validate_date_range_rejects(start, end):
+    with pytest.raises(ValueError):
+        validate_date_range(start, end)
+
+
+def test_validate_date_range_accepts_up_to_max_days():
+    assert MAX_RANGE_DAYS == 366
+    validate_date_range("2026-01-01", "2027-01-02")
+    validate_date_range("2026-09-27", "2026-09-27")

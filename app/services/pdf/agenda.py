@@ -4,11 +4,12 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from app.dates import parse_iso_datetime
 from app.schemas import AgendaItem
 from app.services.pdf.fonts import register_fonts
+from app.services.pdf.markup import text_paragraph
 
 
 def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[AgendaItem]) -> bytes:
@@ -41,15 +42,15 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
     date_str = start_dt.strftime("%d.%m.%Y")
 
     elements = []
-    elements.append(Paragraph(f"Agenda — {event_name}", title_style))
-    elements.append(Paragraph(date_str, subtitle_style))
+    elements.append(text_paragraph(f"Agenda — {event_name}", title_style))
+    elements.append(text_paragraph(date_str, subtitle_style))
 
     table_data = [["Zeit", "Titel", "Dauer", "Verantwortlich", "Notiz"]]
     row_styles = []
 
     for item in agenda_items:
         if item.type == "header":
-            table_data.append([Paragraph(item.title, section_style), "", "", "", ""])
+            table_data.append([text_paragraph(item.title, section_style), "", "", "", ""])
             row_idx = len(table_data) - 1
             row_styles.append(("SPAN", (0, row_idx), (4, row_idx)))
             row_styles.append(("BACKGROUND", (0, row_idx), (4, row_idx), colors.HexColor("#F0F3ED")))
@@ -68,11 +69,11 @@ def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[Agen
 
         table_data.append(
             [
-                Paragraph(time_str, cell_style),
-                Paragraph(title.replace("\n", "<br/>"), cell_style),
-                Paragraph(item.duration_display, cell_style),
-                Paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
-                Paragraph(item.note or "", cell_style),
+                text_paragraph(time_str, cell_style),
+                text_paragraph(title, cell_style),
+                text_paragraph(item.duration_display, cell_style),
+                text_paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
+                text_paragraph(item.note or "", cell_style),
             ]
         )
 

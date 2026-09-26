@@ -30,7 +30,7 @@ from app.services.churchtools_client import (
 from app.services.jpeg_generator import handle_jpeg_generation
 from app.services.pdf.slides import create_pdf
 from app.text import normalize_newlines
-from app.web import get_http_client
+from app.web import check_range_query, get_http_client
 
 logger = structlog.get_logger()
 
@@ -73,6 +73,7 @@ async def api_appointments(
     login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
+    check_range_query(start_date, end_date, calendar_ids)
 
     calendar_ids_int = [int(cid) for cid in calendar_ids if cid.isdigit()]
     if not calendar_ids_int:
@@ -116,11 +117,24 @@ async def api_generate(
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
-    color_settings = body.color_settings
+    # Fetch first: only texts for appointments this user can load from ChurchTools get stored
+    calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]
+    try:
+        raw_appointments = await fetch_appointments(
+            login_token, body.start_date, body.end_date, calendar_ids_int, client
+        )
+    except AuthenticationError:
+        return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
-    # Save additional infos to DB
+    appointments = [parse_appointment(raw) for raw in raw_appointments]
+    known_ids = {app.id for app in appointments}
+
+    # There is one shared style; a client-supplied name would create extra settings rows
+    color_settings = body.color_settings.model_copy(update={"name": DEFAULT_SETTING_NAME})
     appointment_info_list = [
-        (app_id, normalize_newlines(body.additional_infos.get(app_id, ""))) for app_id in body.appointment_ids
+        (app_id, normalize_newlines(body.additional_infos.get(app_id, "")))
+        for app_id in body.appointment_ids
+        if app_id in known_ids
     ]
 
     def save_and_load_images() -> tuple[bytes | None, bytes | None]:
@@ -134,17 +148,6 @@ async def api_generate(
     bg_data, logo_data = await run_in_threadpool(save_and_load_images)
     background_image_stream = BytesIO(bg_data) if bg_data else None
     logo_stream = BytesIO(logo_data) if logo_data else None
-
-    # Fetch appointments from ChurchTools API
-    calendar_ids_int = [int(cid) for cid in body.calendar_ids if cid.isdigit()]
-    try:
-        raw_appointments = await fetch_appointments(
-            login_token, body.start_date, body.end_date, calendar_ids_int, client
-        )
-    except AuthenticationError:
-        return JSONResponse({"error": "not_authenticated"}, status_code=401)
-
-    appointments = [parse_appointment(raw) for raw in raw_appointments]
 
     # Assign additional info from request body
     for appointment in appointments:

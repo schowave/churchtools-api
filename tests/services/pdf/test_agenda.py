@@ -1,3 +1,4 @@
+from app.config import APP_DIR
 from app.schemas import AgendaItem
 from app.services.pdf.agenda import create_agenda_pdf
 
@@ -49,3 +50,18 @@ def test_create_agenda_pdf_empty_items():
     result = create_agenda_pdf("Gottesdienst", "2026-03-22T09:00:00Z", [])
     assert isinstance(result, bytes)
     assert result[:5] == b"%PDF-"
+
+
+def test_create_agenda_pdf_treats_churchtools_text_as_plain_text():
+    # ChurchTools texts must not be parsed as ReportLab markup: <img> would embed local files or fetch URLs
+    image = APP_DIR.parent / "docs" / "images" / "start.png"
+    injected = f'<img src="{image}" width="100" height="60"/>'
+    items = [
+        AgendaItem(position=0, type="header", title=injected),
+        AgendaItem(position=1, title="Lobpreis & Gebet <3", note=injected, responsible_names=[injected]),
+    ]
+
+    result = create_agenda_pdf(injected, "2026-03-22T09:00:00Z", items)
+
+    assert result[:5] == b"%PDF-"
+    assert b"/Subtype /Image" not in result

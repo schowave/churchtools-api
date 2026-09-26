@@ -12,7 +12,7 @@ from app.api.appointments import api_generate, appointments_page
 from app.config import settings
 from app.database import get_db
 from app.main import app
-from app.schemas import ColorSettings, GenerateRequest
+from app.schemas import MAX_ADDITIONAL_INFO_LENGTH, MAX_CALENDARS, ColorSettings, GenerateRequest
 from app.services.churchtools_client import AuthenticationError
 from app.web import get_http_client
 
@@ -436,3 +436,60 @@ def test_generate_ignores_client_supplied_profile(client):
     assert response.status_code == 200
     assert load_logo.call_args[0][1] == "default"
     assert load_bg.call_args[0][1] == "default"
+
+
+def test_generate_stores_texts_only_for_loaded_appointments(client):
+    # Texts for ids ChurchTools did not return (other calendars, made-up ids) must not reach the DB
+    body = {
+        **GENERATE_BODY,
+        "type": "pdf",
+        "appointment_ids": ["1_101_2023-01-15T10:00:00Z", "99_1_2023-01-15T10:00:00Z"],
+        "additional_infos": {"1_101_2023-01-15T10:00:00Z": "Mine", "99_1_2023-01-15T10:00:00Z": "Injected"},
+        "color_settings": {"name": "someone-else"},
+    }
+    with (
+        patch("app.api.appointments.fetch_appointments", AsyncMock(return_value=SAMPLE_APPOINTMENT_DATA)),
+        patch("app.api.appointments.create_pdf", return_value=b"%PDF"),
+        patch("app.api.appointments.save_additional_infos") as save_infos,
+        patch("app.api.appointments.save_color_settings") as save_colors,
+        patch("app.api.appointments.load_logo", return_value=(None, None)),
+        patch("app.api.appointments.load_background_image", return_value=(None, None)),
+    ):
+        response = client.post("/api/generate", json=body, headers={"X-CSRF-Token": "t"})
+
+    assert response.status_code == 200
+    assert save_infos.call_args[0][1] == [("1_101_2023-01-15T10:00:00Z", "Mine")]
+    assert save_colors.call_args[0][1].name == "default"
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"start_date": "2026-01-01", "end_date": "2027-06-01"},
+        {"start_date": "2026-10-04", "end_date": "2026-09-27"},
+        {"start_date": "27.09.2026"},
+        {"calendar_ids": [str(n) for n in range(MAX_CALENDARS + 1)]},
+        {"additional_infos": {"1_1": "x" * (MAX_ADDITIONAL_INFO_LENGTH + 1)}},
+    ],
+)
+def test_generate_rejects_oversized_requests(client, overrides):
+    with patch("app.api.appointments.fetch_appointments", AsyncMock(return_value=[])) as fetch:
+        response = client.post("/api/generate", json={**GENERATE_BODY, **overrides}, headers={"X-CSRF-Token": "t"})
+
+    assert response.status_code == 422
+    fetch.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"start_date": "2020-01-01", "end_date": "2026-01-01", "calendar_ids": "1"},
+        {"start_date": "2026-01-01", "end_date": "2026-01-07", "calendar_ids": [str(n) for n in range(101)]},
+    ],
+)
+def test_api_appointments_rejects_oversized_queries(client, params):
+    with patch("app.api.appointments.fetch_appointments", AsyncMock(return_value=[])) as fetch:
+        response = client.get("/api/appointments", params=params)
+
+    assert response.status_code == 422
+    fetch.assert_not_called()

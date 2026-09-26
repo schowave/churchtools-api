@@ -233,7 +233,7 @@ function renderAppointments(appointments) {
                     : '') +
                 '<p class="appointment-custom-text" data-action="edit-custom-text" title="Eigenen Text bearbeiten">' +
                     escapeHtml(customText) + '</p>' +
-                '<textarea name="additional_info_' + escapeHtml(app.id) + '" class="hidden" rows="2"' +
+                '<textarea name="additional_info_' + escapeHtml(app.id) + '" class="hidden" rows="2" maxlength="2000"' +
                     ' placeholder="Eigener Text – ersetzt die Beschreibung auf der Folie">' + escapeHtml(customText) + '</textarea>' +
             '</div>' +
             '<button type="button" class="custom-text-btn" data-action="edit-custom-text"' +

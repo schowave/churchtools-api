@@ -1,9 +1,12 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.api.events import api_agenda_pdf, api_event_agenda, api_event_services_pdf, api_events
+from app.main import app
 from app.schemas import AgendaItem, EventService, EventSummary
+from app.web import get_http_client
 
 
 @pytest.mark.asyncio
@@ -172,3 +175,18 @@ async def test_api_event_services_pdf(mock_fetch_events, mock_create_pdf, config
     assert isinstance(response, StreamingResponse)
     assert response.media_type == "application/pdf"
     assert mock_create_pdf.call_args[0][0] == "GD"
+
+
+@pytest.mark.parametrize("path", ["/api/events", "/api/events/1/services/pdf"])
+def test_events_reject_too_long_date_range(path):
+    params = {"start_date": "2020-01-01", "end_date": "2026-01-01", "calendar_ids": "1"}
+    app.dependency_overrides[get_http_client] = lambda: AsyncMock()
+    try:
+        with patch("app.api.events.fetch_events", AsyncMock(return_value=[])) as fetch:
+            response = TestClient(app, cookies={"session": "tok"}).get(path, params=params)
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    assert "366 Tage" in response.json()["detail"]
+    fetch.assert_not_called()

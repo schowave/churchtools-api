@@ -4,11 +4,12 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Spacer, Table, TableStyle
 
 from app.dates import parse_iso_datetime
 from app.schemas import EventSummary
 from app.services.pdf.fonts import register_fonts
+from app.services.pdf.markup import text_paragraph
 
 
 def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
@@ -30,17 +31,17 @@ def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
     )
 
     elements = []
-    elements.append(Paragraph(f"Dienstplan — {date_range}", title_style))
+    elements.append(text_paragraph(f"Dienstplan — {date_range}", title_style))
     elements.append(Spacer(1, 6))
 
     for event in events:
         start_dt = parse_iso_datetime(event.start_date)
         event_label = f"{start_dt.strftime('%d.%m.%Y %H:%M')} — {event.name}"
-        elements.append(Paragraph(event_label, event_header_style))
+        elements.append(text_paragraph(event_label, event_header_style))
         elements.append(Spacer(1, 4))
 
         if not event.services:
-            elements.append(Paragraph("Keine Dienste eingetragen", cell_style))
+            elements.append(text_paragraph("Keine Dienste eingetragen", cell_style))
             elements.append(Spacer(1, 10))
             continue
 
@@ -50,9 +51,9 @@ def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
             status_str = "Ja" if svc.is_accepted else "?"
             table_data.append(
                 [
-                    Paragraph(svc.name, cell_style),
-                    Paragraph(person, cell_style),
-                    Paragraph(status_str, cell_style),
+                    text_paragraph(svc.name, cell_style),
+                    text_paragraph(person, cell_style),
+                    text_paragraph(status_str, cell_style),
                 ]
             )
 

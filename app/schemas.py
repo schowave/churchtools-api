@@ -1,11 +1,19 @@
 import re
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, computed_field, field_validator
+from pydantic import BaseModel, Field, StringConstraints, computed_field, field_validator, model_validator
 
-from app.dates import parse_iso_datetime
+from app.dates import parse_iso_datetime, validate_date_range
 
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+# Request size limits: each calendar id costs one ChurchTools request, and every stored text is a DB row
+MAX_CALENDARS = 100
+MAX_APPOINTMENTS = 1000
+MAX_ID_LENGTH = 100
+MAX_ADDITIONAL_INFO_LENGTH = 2000
+
+ShortId = Annotated[str, StringConstraints(max_length=MAX_ID_LENGTH)]
 
 
 class ErrorResponse(BaseModel):
@@ -69,10 +77,12 @@ class GenerateRequest(BaseModel):
     type: Literal["pdf", "jpeg"]
     start_date: str
     end_date: str
-    calendar_ids: list[str]
-    appointment_ids: list[str]
+    calendar_ids: list[ShortId] = Field(max_length=MAX_CALENDARS)
+    appointment_ids: list[ShortId] = Field(max_length=MAX_APPOINTMENTS)
     color_settings: ColorSettings
-    additional_infos: dict[str, str] = {}
+    additional_infos: dict[ShortId, Annotated[str, StringConstraints(max_length=MAX_ADDITIONAL_INFO_LENGTH)]] = Field(
+        default={}, max_length=MAX_APPOINTMENTS
+    )
 
     @field_validator("appointment_ids")
     @classmethod
@@ -80,6 +90,11 @@ class GenerateRequest(BaseModel):
         if not v:
             raise ValueError("At least one appointment must be selected")
         return v
+
+    @model_validator(mode="after")
+    def _check_date_range(self) -> GenerateRequest:
+        validate_date_range(self.start_date, self.end_date)
+        return self
 
 
 class EventService(BaseModel):

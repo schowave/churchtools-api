@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 
 class LoginRateLimiter:
-    """In-memory sliding-window limit on failed logins per client key (IP).
+    """In-memory sliding-window limit on failed logins per key (username or client IP).
 
     State lives in the process, which fits the single-worker deployment. Behind a
     reverse proxy without forwarded headers every client shares the proxy's IP.

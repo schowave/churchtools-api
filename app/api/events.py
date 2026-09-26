@@ -18,7 +18,7 @@ from app.services.churchtools_client import (
 )
 from app.services.pdf.agenda import create_agenda_pdf
 from app.services.pdf.services import create_services_pdf
-from app.web import get_http_client
+from app.web import check_range_query, get_http_client
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -60,6 +60,7 @@ async def api_events(
     login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
+    check_range_query(start_date, end_date, calendar_ids)
 
     try:
         events = await fetch_events(login_token, start_date, end_date, calendar_ids, client)
@@ -131,6 +132,7 @@ async def api_event_services_pdf(
     login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
+    check_range_query(start_date, end_date, calendar_ids)
 
     try:
         events = await fetch_events(login_token, start_date, end_date, calendar_ids, client)

@@ -19,11 +19,19 @@ from app.web import get_http_client, templates
 logger = structlog.get_logger()
 router = APIRouter()
 
+# Failed logins are counted per username and per client IP. A success only clears the username's
+# count: clearing the IP too would let anyone with an account reset the limit between guesses.
 login_rate_limiter = LoginRateLimiter()
+# Looser, since a whole congregation may share one IP (church WiFi, proxy without forwarded headers)
+ip_rate_limiter = LoginRateLimiter(max_failures=20)
 
 
 def _client_key(request: Request) -> str:
     return request.client.host if request.client else "unknown"
+
+
+def _username_key(username: str) -> str:
+    return username.strip().casefold()
 
 
 def _login_error(request: Request, message: str, status_code: int = 200) -> Response:
@@ -51,7 +59,8 @@ async def login(
     client: httpx2.AsyncClient = Depends(get_http_client),
 ) -> Response:
     client_key = _client_key(request)
-    retry_after = login_rate_limiter.retry_after(client_key)
+    username_key = _username_key(username)
+    retry_after = max(login_rate_limiter.retry_after(username_key), ip_rate_limiter.retry_after(client_key))
     if retry_after:
         minutes = max(1, round(retry_after / 60))
         response = _login_error(
@@ -67,10 +76,11 @@ async def login(
     try:
         response = await client.post(f"{settings.churchtools_base_url}/api/login", json=data)
         if response.status_code != 200:
-            login_rate_limiter.record_failure(client_key)
+            login_rate_limiter.record_failure(username_key)
+            ip_rate_limiter.record_failure(client_key)
             return _login_error(request, "Benutzername oder Passwort ungültig.")
 
-        login_rate_limiter.record_success(client_key)
+        login_rate_limiter.record_success(username_key)
         person_id = response.json()["data"]["personId"]
         # Use session cookies from the login response to retrieve the long-lived login token.
         # The OpenAPI spec documents Authorization header auth for this endpoint,
