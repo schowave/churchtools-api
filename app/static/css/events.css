@@ -768,26 +768,136 @@
         padding: var(--spacing-sm) var(--spacing-md);
     }
 
+    /* Calendar badge moves below the title so long names do not squeeze or overflow the header */
+    .event-card-header {
+        flex-wrap: wrap;
+    }
+
+    .event-card-calendar {
+        order: 3;
+        flex-shrink: 1;
+        min-width: 0;
+        margin-left: calc(16px + var(--spacing-sm)); /* align with the title, past the chevron */
+        overflow-wrap: anywhere;
+    }
+
     .event-card-body {
         padding: var(--spacing-sm) var(--spacing-md);
     }
 
-    .agenda-table {
-        font-size: 0.8125rem;
+    /* Tables become stacked rows on phones: no columns get clipped or hidden */
+    .agenda-table,
+    .agenda-table tbody,
+    .services-table,
+    .services-table tbody {
+        display: block;
+        width: 100%;
     }
 
-    .agenda-table th,
+    .agenda-table thead,
+    .services-table thead {
+        display: none;
+    }
+
+    /* Agenda row: time | title | duration, then responsible and note under the title */
+    .agenda-table tr {
+        display: grid;
+        grid-template-columns: 3.25em minmax(0, 1fr) auto;
+        column-gap: var(--spacing-sm);
+        padding: var(--spacing-xs) 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 0.875rem;
+    }
+
+    .agenda-table tr:last-child {
+        border-bottom: none;
+    }
+
     .agenda-table td {
-        padding: var(--spacing-2xs) var(--spacing-2xs);
+        padding: 0;
+        border: none;
+        overflow-wrap: anywhere;
     }
 
-    /* Make services table horizontally scrollable */
-    .services-table-wrapper {
-        overflow-x: auto;
+    .agenda-table td:empty {
+        display: none;
     }
 
-    .services-table {
-        min-width: 500px;
+    .agenda-table td:nth-child(1) { grid-column: 1; }
+    .agenda-table td:nth-child(2) { grid-column: 2; }
+    .agenda-table td:nth-child(3) { grid-column: 3; color: var(--text-muted); }
+
+    .agenda-table td:nth-child(4),
+    .agenda-table td:nth-child(5) {
+        grid-column: 2 / -1;
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+    }
+
+    .agenda-table td[colspan] {
+        grid-column: 1 / -1;
+    }
+
+    .agenda-table tr.agenda-header-row {
+        padding: 0;
+        border-bottom: none;
+    }
+
+    .agenda-header-row td {
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    /* Services row: service and person stacked, status on the right */
+    .services-table tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "service status"
+            "person status";
+        column-gap: var(--spacing-sm);
+        align-items: center;
+        padding: var(--spacing-sm) var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .services-table td {
+        padding: 0;
+        border: none;
+        overflow-wrap: anywhere;
+    }
+
+    .services-table td:first-child:empty {
+        display: none;
+    }
+
+    .services-table td:nth-child(2) {
+        grid-area: service;
+        font-size: 0.8125rem;
+        color: var(--text-muted);
+    }
+
+    .services-table td:nth-child(3) { grid-area: person; }
+    .services-table td:nth-child(4) { grid-area: status; }
+
+    .services-table td[colspan] {
+        grid-column: 1 / -1;
+        grid-row: auto;
+    }
+
+    .services-table tr.services-event-header,
+    .services-table tr.services-export-row {
+        display: block;
+        padding: 0;
+    }
+
+    .services-table .services-event-header td {
+        display: block;
+        padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+    }
+
+    .services-table .services-export-row td {
+        display: block;
+        padding: var(--spacing-sm) var(--spacing-md);
     }
 
     .events-list {
