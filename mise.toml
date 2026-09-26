@@ -1,6 +1,8 @@
 [tools]
 python = "3.12"
 uv = "0.11"
+trivy = "0.74.0"
+"pipx:pip-audit" = "2.10.1"
 
 [env]
 _.python.venv = { path = ".venv", create = true }
@@ -11,7 +13,7 @@ run = "uv pip install -e '.[dev]'"
 
 [tasks.lock]
 description = "Regenerate requirements.txt (pinned runtime deps for the Docker image)"
-run = "uv pip compile pyproject.toml --python-version 3.12 --upgrade -o requirements.txt"
+run = "uv pip compile pyproject.toml --python-version 3.12 --upgrade --generate-hashes -o requirements.txt"
 
 [tasks.migrate]
 description = "Run database migrations"
@@ -37,6 +39,14 @@ run = ["ruff check .", "ruff format --check ."]
 [tasks.format]
 description = "Auto-fix code style (ruff)"
 run = ["ruff check --fix .", "ruff format ."]
+
+[tasks.audit]
+description = "Check pinned runtime dependencies for known vulnerabilities"
+run = "pip-audit -r requirements.txt --require-hashes --disable-pip --progress-spinner off"
+
+[tasks.scan]
+description = "Scan the locally built image for fixable HIGH/CRITICAL vulnerabilities"
+run = "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress ${IMAGE:-churchtools-local}"
 
 [tasks.preview]
 description = "Render a sample PDF for layout testing"

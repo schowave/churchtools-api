@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
+import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -14,6 +15,7 @@ from app.logging_config import configure_logging
 from app.middleware.csrf import CSRFMiddleware
 
 configure_logging(settings.log_format)
+logger = structlog.get_logger()
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -65,8 +67,11 @@ async def not_found_handler(request: Request, exc):
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_handler(request: Request, exc):
-    return JSONResponse({"error": "validation_error", "detail": str(exc)}, status_code=422)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    # Only field location and message: str(exc) echoes the request input and server file paths.
+    detail = [{"loc": list(err.get("loc", ())), "msg": err.get("msg", "")} for err in exc.errors()]
+    logger.info("request_validation_failed", path=request.url.path, errors=detail)
+    return JSONResponse({"error": "validation_error", "detail": detail}, status_code=422)
 
 
 # Include routes

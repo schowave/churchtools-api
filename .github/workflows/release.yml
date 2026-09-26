@@ -42,11 +42,34 @@ jobs:
     - name: Run tests
       run: mise run cov
 
+    - name: Audit dependencies
+      run: mise run audit
+
     - name: Update version in pyproject.toml
       run: |
         sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.VERSION }}\"/" pyproject.toml
         echo "Updated pyproject.toml to version ${{ steps.version.outputs.VERSION }}"
         grep '^version' pyproject.toml
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    # Build and scan before anything is tagged or published.
+    - name: Build image for scan
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        platforms: linux/amd64
+        push: false
+        load: true
+        tags: churchtools-api:release-candidate
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Scan image
+      run: mise run scan
+      env:
+        IMAGE: churchtools-api:release-candidate
 
     - name: Create git tag
       run: |
@@ -57,16 +80,13 @@ jobs:
         git tag "v${{ steps.version.outputs.VERSION }}"
         git push origin main "v${{ steps.version.outputs.VERSION }}"
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v4
-
     - name: Log in to Docker Hub
       uses: docker/login-action@v4
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push multi-arch image
+    - name: Push image
       uses: docker/build-push-action@v7
       with:
         context: .
@@ -76,7 +96,6 @@ jobs:
           schowave/churchtools:${{ steps.version.outputs.VERSION }}
           schowave/churchtools:latest
         cache-from: type=gha
-        cache-to: type=gha,mode=max
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v3

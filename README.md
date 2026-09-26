@@ -116,8 +116,12 @@ Tooling is managed with [mise](https://mise.jdx.dev/) (`mise.toml`): it pins Pyt
 | `mise run cov` | Run test suite with coverage report |
 | `mise run lint` | Check code style (ruff) |
 | `mise run format` | Auto-fix code style |
+| `mise run audit` | Check pinned runtime dependencies for known vulnerabilities (pip-audit) |
+| `mise run scan` | Scan the locally built image for fixable HIGH/CRITICAL vulnerabilities (trivy) |
+| `mise run login` | Log in via browser against the running app and save the session to `.auth/` for scripted checks |
+| `mise run login-clear` | Delete the saved session (contains your ChurchTools login token) |
 | `mise run preview` | Render a sample slide PDF to `app/saved_files/preview.pdf` |
-| `mise run lock` | Regenerate `requirements.txt` (pinned runtime deps for the Docker image) |
+| `mise run lock` | Regenerate `requirements.txt` (pinned, hashed runtime deps for the Docker image) |
 | `mise run build` | Build container image locally (podman) |
 | `mise run run-docker` | Build and run the container locally with `./data` as volume |
 
@@ -125,4 +129,4 @@ Local JPEG export needs poppler (`brew install poppler` / `apt install poppler-u
 
 Dependencies are declared in `pyproject.toml`. After changing them, run `mise run lock` so the Docker image picks up the new pins.
 
-CI runs lint and tests on every push to `main` and on pull requests.
+CI runs lint, tests, the dependency audit, and the image scan on every push to `main` and on pull requests.

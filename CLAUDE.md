@@ -3,7 +3,8 @@ The role of this file is to describe common mistakes and confusion points that a
 ## Tooling
 
 - Tools and tasks live in `mise.toml` (no Makefile). Use `mise run test`, `mise run lint`, `mise run format`. The venv is `.venv`, auto-activated by mise.
-- `requirements.txt` is generated (`mise run lock`) and holds only runtime deps for the Docker image. Declare dependencies in `pyproject.toml`, never edit `requirements.txt` by hand.
+- `requirements.txt` is generated (`mise run lock`) and holds only runtime deps for the Docker image, with hashes (pip verifies them in the Docker build). Declare dependencies in `pyproject.toml`, never edit `requirements.txt` by hand.
+- The release workflow builds and scans (trivy) the image before tagging and pushing. Keep that order: Watchtower deploys whatever lands on Docker Hub as `latest`.
 - ruff >= 0.16 also formats Python code blocks in Markdown files, so `mise run lint` can fail on `.md` changes.
 
 ## Known pitfalls
