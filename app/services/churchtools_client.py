@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import List
 
 import httpx
 import structlog
@@ -60,14 +59,14 @@ async def _fetch_calendar_appointments(
         raise AuthenticationError("Login token is invalid or expired")
 
     if response.status_code != 200:
-        logger.warning(f"Failed to fetch appointments for calendar {calendar_id}: HTTP {response.status_code}")
+        logger.warning("fetch_appointments_failed", calendar_id=calendar_id, status=response.status_code)
         return []
 
     return [(calendar_id, _extract_appointment(item)) for item in response.json()["data"]]
 
 
 async def fetch_appointments(
-    login_token: str, start_date: str, end_date: str, calendar_ids: List[int], client: httpx.AsyncClient
+    login_token: str, start_date: str, end_date: str, calendar_ids: list[int], client: httpx.AsyncClient
 ):
     headers = _auth_headers(login_token)
     query_params = {
@@ -141,7 +140,7 @@ async def _fetch_service_names(login_token: str, client: httpx.AsyncClient) -> d
     if response.status_code in (401, 403):
         raise AuthenticationError("Login token is invalid or expired")
     if response.status_code != 200:
-        logger.warning(f"Failed to fetch services: HTTP {response.status_code}")
+        logger.warning("fetch_services_failed", status=response.status_code)
         return {}
     return {svc["id"]: svc.get("name", "") for svc in response.json().get("data", [])}
 

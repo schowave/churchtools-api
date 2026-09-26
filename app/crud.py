@@ -27,7 +27,7 @@ def get_additional_infos(db: Session, appointment_ids: list[str]) -> dict[str, s
         results = db.query(Appointment).filter(Appointment.id.in_(appointment_ids)).all()
         return {appointment.id: appointment.additional_info for appointment in results}
     except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
+        logger.error("database_error", operation="get_additional_infos", error=str(e))
         return {}
 
 
@@ -69,80 +69,68 @@ def load_color_settings(db: Session, setting_name: str) -> ColorSettings:
         else:
             return ColorSettings(name=setting_name)
     except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
+        logger.error("database_error", operation="load_color_settings", error=str(e))
         return ColorSettings(name=setting_name)
 
 
-def save_logo(db: Session, setting_name: str, logo_data: bytes, filename: str) -> None:
+def _save_image(db: Session, model, data_attr: str, filename_attr: str, setting_name: str, data: bytes, filename: str):
     try:
-        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
-        if logo:
-            logo.logo_data = logo_data
-            logo.logo_filename = filename
-        else:
-            db.add(LogoSetting(setting_name=setting_name, logo_data=logo_data, logo_filename=filename))
+        row = db.query(model).filter(model.setting_name == setting_name).first()
+        if row is None:
+            row = model(setting_name=setting_name)
+            db.add(row)
+        setattr(row, data_attr, data)
+        setattr(row, filename_attr, filename)
         db.commit()
     except SQLAlchemyError:
         db.rollback()
         raise
+
+
+def _load_image(db: Session, model, data_attr: str, filename_attr: str, setting_name: str):
+    try:
+        row = db.query(model).filter(model.setting_name == setting_name).first()
+        if row:
+            return getattr(row, data_attr), getattr(row, filename_attr)
+        return None, None
+    except SQLAlchemyError as e:
+        logger.error("database_error", operation="load_image", table=model.__tablename__, error=str(e))
+        return None, None
+
+
+def _delete_image(db: Session, model, setting_name: str) -> None:
+    try:
+        row = db.query(model).filter(model.setting_name == setting_name).first()
+        if row:
+            db.delete(row)
+            db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+
+def save_logo(db: Session, setting_name: str, logo_data: bytes, filename: str) -> None:
+    _save_image(db, LogoSetting, "logo_data", "logo_filename", setting_name, logo_data, filename)
 
 
 def load_logo(db: Session, setting_name: str) -> tuple[bytes | None, str | None]:
-    try:
-        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
-        if logo:
-            return logo.logo_data, logo.logo_filename
-        return None, None
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
-        return None, None
+    return _load_image(db, LogoSetting, "logo_data", "logo_filename", setting_name)
 
 
 def delete_logo(db: Session, setting_name: str) -> None:
-    try:
-        logo = db.query(LogoSetting).filter(LogoSetting.setting_name == setting_name).first()
-        if logo:
-            db.delete(logo)
-            db.commit()
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    _delete_image(db, LogoSetting, setting_name)
 
 
 def save_background_image(db: Session, setting_name: str, image_data: bytes, filename: str) -> None:
-    try:
-        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
-        if bg:
-            bg.image_data = image_data
-            bg.image_filename = filename
-        else:
-            db.add(BackgroundImageSetting(setting_name=setting_name, image_data=image_data, image_filename=filename))
-        db.commit()
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    _save_image(db, BackgroundImageSetting, "image_data", "image_filename", setting_name, image_data, filename)
 
 
 def load_background_image(db: Session, setting_name: str) -> tuple[bytes | None, str | None]:
-    try:
-        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
-        if bg:
-            return bg.image_data, bg.image_filename
-        return None, None
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
-        return None, None
+    return _load_image(db, BackgroundImageSetting, "image_data", "image_filename", setting_name)
 
 
 def delete_background_image(db: Session, setting_name: str) -> None:
-    try:
-        bg = db.query(BackgroundImageSetting).filter(BackgroundImageSetting.setting_name == setting_name).first()
-        if bg:
-            db.delete(bg)
-            db.commit()
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    _delete_image(db, BackgroundImageSetting, setting_name)
 
 
 def list_profiles(db: Session) -> list[str]:

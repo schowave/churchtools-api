@@ -66,6 +66,12 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
+    - name: Smoke test image
+      run: mise run smoke
+      env:
+        IMAGE: churchtools-api:release-candidate
+        CONTAINER_ENGINE: docker
+
     - name: Scan image
       run: mise run scan
       env:

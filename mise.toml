@@ -1,5 +1,5 @@
 [tools]
-python = "3.12"
+python = "3.14"
 uv = "0.11"
 trivy = "0.74.0"
 "pipx:pip-audit" = "2.10.1"
@@ -13,7 +13,7 @@ run = "uv pip install -e '.[dev]'"
 
 [tasks.lock]
 description = "Regenerate requirements.txt (pinned runtime deps for the Docker image)"
-run = "uv pip compile pyproject.toml --python-version 3.12 --upgrade --generate-hashes -o requirements.txt"
+run = "uv pip compile pyproject.toml --python-version 3.14 --upgrade --generate-hashes -o requirements.txt"
 
 [tasks.migrate]
 description = "Run database migrations"
@@ -47,6 +47,10 @@ run = "pip-audit -r requirements.txt --require-hashes --disable-pip --progress-s
 [tasks.scan]
 description = "Scan the locally built image for fixable HIGH/CRITICAL vulnerabilities"
 run = "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress ${IMAGE:-churchtools-local}"
+
+[tasks.smoke]
+description = "Start the built image and check health, login page and static files"
+run = "scripts/smoke_test.sh"
 
 [tasks.preview]
 description = "Render a sample PDF for layout testing"

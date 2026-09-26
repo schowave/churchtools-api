@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Literal
+from typing import Literal
 
 from pydantic import BaseModel, computed_field, field_validator
 
@@ -69,15 +69,15 @@ class GenerateRequest(BaseModel):
     type: Literal["pdf", "jpeg"]
     start_date: str
     end_date: str
-    calendar_ids: List[str]
-    appointment_ids: List[str]
+    calendar_ids: list[str]
+    appointment_ids: list[str]
     color_settings: ColorSettings
-    additional_infos: Dict[str, str] = {}
+    additional_infos: dict[str, str] = {}
     profile: str = "default"
 
     @field_validator("appointment_ids")
     @classmethod
-    def validate_appointment_ids(cls, v: List[str]) -> List[str]:
+    def validate_appointment_ids(cls, v: list[str]) -> list[str]:
         if not v:
             raise ValueError("At least one appointment must be selected")
         return v

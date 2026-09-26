@@ -14,3 +14,7 @@ The role of this file is to describe common mistakes and confusion points that a
 - ChurchTools does not reject invalid login tokens: `/api/whoami` (and likely other endpoints) answers with HTTP 200 as the anonymous user (`id: -1`). A cookie being present, or a ChurchTools call succeeding, proves nothing. Protected routes must use `get_valid_login_token` / `_require_auth` from `app/services/auth.py`, which checks `id > 0`.
 - `tests/conftest.py` has an autouse fixture that treats every login token as valid. Tests for the real validation opt out with `@pytest.mark.real_token_validation`.
 - Uploaded images are validated with Pillow (PNG/JPEG only) and served with a content type sniffed from the bytes. Never derive the content type from the stored filename.
+- The Termin-Folien, Agenda and Dienstplan pages share `render_calendar_page` in `app/api/calendar_pages.py`. Tests that mock `fetch_calendars`, `get_date_range_from_form` or `templates` for these pages must patch `app.api.calendar_pages.*`, not the route modules.
+- PDF/JPEG generation is CPU-bound (JPEG shells out to pdftoppm): call it via `run_in_threadpool`, never directly in an async route, or the whole server stalls during exports.
+- Log with structlog events and fields (`logger.info("pdf_created", appointments=n)`), not f-strings.
+- The runtime image has no pip (removed in the Dockerfile; trivy flagged its vendored packages). Install-time steps belong in the builder stage.

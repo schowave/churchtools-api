@@ -488,7 +488,7 @@ class TestDrawEventOverflow(unittest.TestCase):
                 box_right = box_x + box_w
 
                 # Check each text string's right edge using real font metrics
-                for text_x, text_y, text in text_calls:
+                for text_x, _text_y, text in text_calls:
                     text_width = pdfmetrics.stringWidth(text, self.font_name, 25)
                     text_right = text_x + text_width
                     self.assertLessEqual(

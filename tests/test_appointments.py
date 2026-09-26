@@ -15,7 +15,7 @@ from app.services.jpeg_generator import handle_jpeg_generation
 @pytest.fixture
 def templates_mock():
     templates_mock = MagicMock(spec=Jinja2Templates)
-    with patch("app.api.appointments.templates", templates_mock):
+    with patch("app.api.calendar_pages.templates", templates_mock):
         yield templates_mock
 
 
@@ -252,8 +252,8 @@ def test_handle_jpeg_generation(mock_convert):
 @pytest.mark.asyncio
 @patch("app.api.appointments.load_background_image", return_value=(None, None))
 @patch("app.api.appointments.load_logo", return_value=(None, None))
-@patch("app.api.appointments.fetch_calendars")
-@patch("app.api.appointments.get_date_range_from_form")
+@patch("app.api.calendar_pages.fetch_calendars")
+@patch("app.api.calendar_pages.get_date_range_from_form")
 @patch("app.api.appointments.load_color_settings")
 async def test_appointments_page_with_token(
     mock_load_color,
@@ -306,7 +306,7 @@ async def test_appointments_page_with_token(
 
 
 @pytest.mark.asyncio
-@patch("app.api.appointments.fetch_calendars")
+@patch("app.api.calendar_pages.fetch_calendars")
 async def test_appointments_page_without_token(mock_fetch):
     # Mock request without login_token
     request_mock = MagicMock(spec=Request)

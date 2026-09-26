@@ -17,5 +17,5 @@ def handle_jpeg_generation(pdf_bytes: bytes) -> bytes:
             image.save(jpeg_stream, "JPEG")
             zip_file.writestr(f"page_{i + 1}.jpg", jpeg_stream.getvalue())
 
-    logger.info(f"JPEG images generated: {len(images)} pages")
+    logger.info("jpeg_generated", pages=len(images))
     return zip_buffer.getvalue()

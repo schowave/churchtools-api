@@ -41,7 +41,7 @@ def test_overview_page_renders():
 
 def test_services_page_renders():
     calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
-    with patch("app.api.events.fetch_calendars", AsyncMock(return_value=calendars)):
+    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
         response = authed_client.get("/services")
     assert response.status_code == 200
 

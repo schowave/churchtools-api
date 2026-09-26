@@ -65,7 +65,7 @@ def _register_fonts():
             try:
                 pdfmetrics.registerFont(TTFont(font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
             except Exception as e:
-                logger.error(f"Error registering font {font_name}: {e}")
+                logger.error("font_registration_failed", font=font_name, error=str(e))
                 font_name = FALLBACK_FONT
 
         bold_font_name = font_name + "-Bold"
@@ -77,16 +77,16 @@ def _register_fonts():
                 else:
                     pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}-Bold.ttf")))
             except Exception as e:
-                logger.error(f"Error registering bold font {bold_font_name}: {e}")
+                logger.error("font_registration_failed", font=bold_font_name, error=str(e))
                 bold_font_name = FALLBACK_FONT_BOLD
                 if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
                     try:
                         pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, str(_FONTS_DIR / "helvetica-bold.ttf")))
                     except Exception as e2:
-                        logger.error(f"Error registering font {FALLBACK_FONT_BOLD}: {e2}")
+                        logger.error("font_registration_failed", font=FALLBACK_FONT_BOLD, error=str(e2))
                         bold_font_name = FALLBACK_FONT
     except Exception as e:
-        logger.error(f"General error in font registration: {e}")
+        logger.error("font_registration_failed", error=str(e))
         font_name = FALLBACK_FONT
         bold_font_name = FALLBACK_FONT_BOLD
 
@@ -114,7 +114,7 @@ def draw_background_image(canvas, image_stream, page_width, page_height):
 
         canvas.drawImage(image, x_position, y_position, width=scaled_width, height=scaled_height, mask="auto")
     except Exception as e:
-        logger.error(f"Error drawing background image: {e}")
+        logger.error("draw_background_failed", error=str(e))
 
 
 def draw_logo(canvas, logo_stream, page_width, page_height):
@@ -141,7 +141,7 @@ def draw_logo(canvas, logo_stream, page_width, page_height):
 
         canvas.drawImage(logo, x, y, width=scaled_width, height=scaled_height, mask="auto")
     except Exception as e:
-        logger.error(f"Error drawing logo: {e}")
+        logger.error("draw_logo_failed", error=str(e))
 
 
 def create_transparent_image(width, height, background_color, alpha):
@@ -173,7 +173,7 @@ def setup_new_page(canvas_obj, image_stream, logo_stream=None):
             draw_background_image(canvas_obj, image_stream, *landscape(PAGE_SIZE))
         draw_logo(canvas_obj, logo_stream, *landscape(PAGE_SIZE))
     except Exception as e:
-        logger.error(f"Error setting up a new page: {e}")
+        logger.error("setup_page_failed", error=str(e))
     return new_y_position
 
 
@@ -371,7 +371,7 @@ def create_pdf(
             draw_background_image(c, image_stream, *landscape(PAGE_SIZE))
         draw_logo(c, logo_stream, *landscape(PAGE_SIZE))
     except Exception as e:
-        logger.error(f"Error drawing background image: {e}")
+        logger.error("draw_background_failed", error=str(e))
 
     y_position = PAGE_HEIGHT - TOP_MARGIN
     is_first_on_page = True
@@ -393,7 +393,7 @@ def create_pdf(
         )
 
     c.save()
-    logger.info(f"PDF successfully created with {len(appointments)} appointments")
+    logger.info("pdf_created", appointments=len(appointments))
     return buffer.getvalue()
 
 

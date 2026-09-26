@@ -1,15 +1,15 @@
-from datetime import datetime
+from collections.abc import Callable
 from io import BytesIO
-from typing import List, Optional
 
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.api.calendar_pages import render_calendar_page
 from app.crud import (
     delete_background_image,
     delete_logo,
@@ -24,13 +24,12 @@ from app.crud import (
 )
 from app.database import DEFAULT_SETTING_NAME, get_db
 from app.dependencies import get_http_client
-from app.schemas import ColorSettings, GenerateRequest
-from app.services.auth import get_valid_login_token, redirect_to_login
-from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
+from app.schemas import GenerateRequest
+from app.services.auth import get_valid_login_token
+from app.services.churchtools_client import AuthenticationError, fetch_appointments, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
 from app.services.pdf_generator import create_pdf
-from app.shared import templates
-from app.utils import get_date_range_from_form, normalize_newlines
+from app.utils import export_timestamp, normalize_newlines
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 MAX_IMAGE_PIXELS = 40_000_000  # guards against decompression bombs
@@ -56,7 +55,7 @@ async def _read_image_upload(file: UploadFile) -> bytes:
             width, height = image.size
             image.verify()
     except Exception:
-        raise HTTPException(status_code=400, detail="Nur PNG- oder JPEG-Bilder erlaubt")
+        raise HTTPException(status_code=400, detail="Nur PNG- oder JPEG-Bilder erlaubt") from None
     if image_format not in IMAGE_FORMATS:
         raise HTTPException(status_code=400, detail="Nur PNG- oder JPEG-Bilder erlaubt")
     if width * height > MAX_IMAGE_PIXELS:
@@ -81,79 +80,26 @@ logger = structlog.get_logger()
 router = APIRouter()
 
 
-def _build_template_context(
-    calendars: list,
-    selected_calendar_ids: list,
-    start_date: str,
-    end_date: str,
-    color_settings: ColorSettings,
-    has_logo: bool = False,
-    has_background_image: bool = False,
-    **extra,
-) -> dict:
-    """Build the common template context dict for appointments.html."""
-    context = {
-        "calendars": calendars,
-        "selected_calendar_ids": selected_calendar_ids,
-        "start_date": start_date,
-        "end_date": end_date,
-        "base_url": settings.churchtools_base,
-        "color_settings": color_settings,
-        "has_logo": has_logo,
-        "has_background_image": has_background_image,
-        "version": settings.version,
-    }
-    context.update(extra)
-    return context
-
-
 @router.get("/appointments")
 async def appointments_page(
     request: Request,
     db: Session = Depends(get_db),
     client: httpx.AsyncClient = Depends(get_http_client),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    calendar_ids: Optional[List[str]] = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
+    calendar_ids: list[str] | None = Query(None),
 ) -> Response:
-    login_token = await get_valid_login_token(request, client)
-    if not login_token:
-        return redirect_to_login()
+    def styling_context() -> dict:
+        logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
+        bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
+        return {
+            "color_settings": load_color_settings(db, DEFAULT_SETTING_NAME),
+            "has_logo": logo_data is not None,
+            "has_background_image": bg_data is not None,
+        }
 
-    if not start_date or not end_date:
-        start_date_default, end_date_default = get_date_range_from_form()
-        start_date = start_date or start_date_default
-        end_date = end_date or end_date_default
-
-    try:
-        calendars = await fetch_calendars(login_token, client)
-    except AuthenticationError:
-        return redirect_to_login()
-
-    # Use provided calendar_ids or preselect all
-    if calendar_ids:
-        selected_calendar_ids = calendar_ids
-    else:
-        selected_calendar_ids = [str(calendar["id"]) for calendar in calendars]
-
-    color_settings = load_color_settings(db, DEFAULT_SETTING_NAME)
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
-    has_logo = logo_data is not None
-    bg_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
-    has_background_image = bg_data is not None
-
-    return templates.TemplateResponse(
-        request,
-        "appointments.html",
-        _build_template_context(
-            calendars,
-            selected_calendar_ids,
-            start_date,
-            end_date,
-            color_settings,
-            has_logo=has_logo,
-            has_background_image=has_background_image,
-        ),
+    return await render_calendar_page(
+        request, client, "appointments.html", start_date, end_date, calendar_ids, styling_context
     )
 
 
@@ -164,7 +110,7 @@ async def api_appointments(
     client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
-    calendar_ids: List[str] = Query(...),
+    calendar_ids: list[str] = Query(...),
 ) -> JSONResponse:
     """JSON endpoint for async appointment loading."""
     login_token = await get_valid_login_token(request, client)
@@ -247,10 +193,11 @@ async def api_generate(
     id_order = {app_id: idx for idx, app_id in enumerate(body.appointment_ids)}
     selected_appointments.sort(key=lambda app: id_order.get(app.id, 0))
 
-    logger.info(f"Generating {body.type}: {len(selected_appointments)} of {len(appointments)} appointments")
+    logger.info("generating_output", type=body.type, selected=len(selected_appointments), available=len(appointments))
 
-    # Generate PDF
-    pdf_bytes = create_pdf(
+    # PDF/JPEG rendering is CPU-bound (and pdftoppm for JPEG): keep it off the event loop
+    pdf_bytes = await run_in_threadpool(
+        create_pdf,
         selected_appointments,
         color_settings.date_color,
         color_settings.background_color,
@@ -260,10 +207,10 @@ async def api_generate(
         logo_stream,
     )
 
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    timestamp = export_timestamp()
 
     if body.type == "jpeg":
-        zip_bytes = handle_jpeg_generation(pdf_bytes)
+        zip_bytes = await run_in_threadpool(handle_jpeg_generation, pdf_bytes)
         return StreamingResponse(
             BytesIO(zip_bytes),
             media_type="application/zip",
@@ -277,6 +224,27 @@ async def api_generate(
     )
 
 
+async def _upload_image(request, file, client, save: Callable[[bytes, str], None]) -> JSONResponse:
+    await _require_auth(request, client)
+    content = await _read_image_upload(file)
+    save(content, file.filename)
+    return JSONResponse({"status": "ok", "filename": file.filename})
+
+
+async def _serve_image(request, client, load: Callable[[], tuple], missing_detail: str) -> Response:
+    await _require_auth(request, client)
+    data, _ = load()
+    if not data:
+        raise HTTPException(status_code=404, detail=missing_detail)
+    return _image_response(data, missing_detail)
+
+
+async def _remove_image(request, client, delete: Callable[[], None]) -> JSONResponse:
+    await _require_auth(request, client)
+    delete()
+    return JSONResponse({"status": "ok"})
+
+
 @router.post("/logo/upload")
 async def upload_logo(
     request: Request,
@@ -285,10 +253,9 @@ async def upload_logo(
     client: httpx.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """Upload a logo image and store it in the database."""
-    await _require_auth(request, client)
-    content = await _read_image_upload(file)
-    save_logo(db, DEFAULT_SETTING_NAME, content, file.filename)
-    return JSONResponse({"status": "ok", "filename": file.filename})
+    return await _upload_image(
+        request, file, client, lambda data, name: save_logo(db, DEFAULT_SETTING_NAME, data, name)
+    )
 
 
 @router.get("/logo")
@@ -296,11 +263,7 @@ async def get_logo(
     request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
 ) -> Response:
     """Serve the stored logo image for preview."""
-    await _require_auth(request, client)
-    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
-    if not logo_data:
-        raise HTTPException(status_code=404, detail="Kein Logo gespeichert")
-    return _image_response(logo_data, "Kein Logo gespeichert")
+    return await _serve_image(request, client, lambda: load_logo(db, DEFAULT_SETTING_NAME), "Kein Logo gespeichert")
 
 
 @router.delete("/logo")
@@ -308,9 +271,7 @@ async def remove_logo(
     request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
 ) -> JSONResponse:
     """Delete the stored logo."""
-    await _require_auth(request, client)
-    delete_logo(db, DEFAULT_SETTING_NAME)
-    return JSONResponse({"status": "ok"})
+    return await _remove_image(request, client, lambda: delete_logo(db, DEFAULT_SETTING_NAME))
 
 
 @router.post("/background/upload")
@@ -321,10 +282,9 @@ async def upload_background(
     client: httpx.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """Upload a background image and store it in the database."""
-    await _require_auth(request, client)
-    content = await _read_image_upload(file)
-    save_background_image(db, DEFAULT_SETTING_NAME, content, file.filename)
-    return JSONResponse({"status": "ok", "filename": file.filename})
+    return await _upload_image(
+        request, file, client, lambda data, name: save_background_image(db, DEFAULT_SETTING_NAME, data, name)
+    )
 
 
 @router.get("/background")
@@ -332,11 +292,9 @@ async def get_background(
     request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
 ) -> Response:
     """Serve the stored background image for preview."""
-    await _require_auth(request, client)
-    image_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
-    if not image_data:
-        raise HTTPException(status_code=404, detail="Kein Hintergrundbild gespeichert")
-    return _image_response(image_data, "Kein Hintergrundbild gespeichert")
+    return await _serve_image(
+        request, client, lambda: load_background_image(db, DEFAULT_SETTING_NAME), "Kein Hintergrundbild gespeichert"
+    )
 
 
 @router.delete("/background")
@@ -344,6 +302,4 @@ async def remove_background(
     request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
 ) -> JSONResponse:
     """Delete the stored background image."""
-    await _require_auth(request, client)
-    delete_background_image(db, DEFAULT_SETTING_NAME)
-    return JSONResponse({"status": "ok"})
+    return await _remove_image(request, client, lambda: delete_background_image(db, DEFAULT_SETTING_NAME))

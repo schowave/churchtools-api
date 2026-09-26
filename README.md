@@ -2,7 +2,7 @@
 
 [![Test and Build](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml/badge.svg)](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml)
 [![Docker Image](https://img.shields.io/docker/v/schowave/churchtools?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/schowave/churchtools)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/schowave/churchtools-api)](LICENSE)
 
 A web application for creating styled announcement slides from [ChurchTools](https://www.church.tools/) calendar events — exported as PDF or JPEG for use in church services.
@@ -117,6 +117,7 @@ Tooling is managed with [mise](https://mise.jdx.dev/) (`mise.toml`): it pins Pyt
 | `mise run lint` | Check code style (ruff) |
 | `mise run format` | Auto-fix code style |
 | `mise run audit` | Check pinned runtime dependencies for known vulnerabilities (pip-audit) |
+| `mise run smoke` | Start the built image and check health, login page and static files |
 | `mise run scan` | Scan the locally built image for fixable HIGH/CRITICAL vulnerabilities (trivy) |
 | `mise run login` | Log in via browser against the running app and save the session to `.auth/` for scripted checks |
 | `mise run login-clear` | Delete the saved session (contains your ChurchTools login token) |

@@ -1,6 +1,5 @@
 import tomllib
 from pathlib import Path
-from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, model_validator
@@ -31,10 +30,10 @@ class Settings(BaseSettings):
     version: str = _read_version()
     timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
     log_format: str = "console"  # "console" or "json"
-    timezone: Optional[ZoneInfo] = Field(default=None, exclude=True)
+    timezone: ZoneInfo | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
-    def _set_computed_defaults(self) -> "Settings":
+    def _set_computed_defaults(self) -> Settings:
         if not self.churchtools_base_url and self.churchtools_base:
             self.churchtools_base_url = f"https://{self.churchtools_base}"
         try:

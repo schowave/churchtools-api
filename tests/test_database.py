@@ -143,7 +143,7 @@ class TestDatabase(unittest.TestCase):
             # Check that error was handled and empty dict returned
             self.assertEqual(result, {})
             mock_logger.error.assert_called_once()
-            self.assertIn("Database error", mock_logger.error.call_args[0][0])
+            self.assertEqual("database_error", mock_logger.error.call_args[0][0])
 
     def test_load_color_settings_error_handling(self):
         # Test error handling in load_color_settings
@@ -160,7 +160,7 @@ class TestDatabase(unittest.TestCase):
             self.assertEqual(result.name, "test")
             self.assertEqual(result.background_color, "#d3d3d3")
             mock_logger.error.assert_called_once()
-            self.assertIn("Database error", mock_logger.error.call_args[0][0])
+            self.assertEqual("database_error", mock_logger.error.call_args[0][0])
 
 
 if __name__ == "__main__":

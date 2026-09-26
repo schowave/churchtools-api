@@ -51,7 +51,9 @@ class TestSettings(unittest.TestCase):
 
     @patch.dict("os.environ", {"CHURCHTOOLS_BASE": "test.church.tools", "TIMEZONE": "Invalid/Zone"}, clear=False)
     def test_invalid_timezone_raises(self):
+        from pydantic import ValidationError
+
         from app.config import Settings
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ValidationError):
             Settings()

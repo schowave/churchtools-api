@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS builder
+FROM python:3.14-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Final stage
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Install runtime dependencies only
 RUN apt-get update && \
@@ -35,8 +35,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages and scripts from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+# pip is not needed at runtime; removing it drops its vendored dependencies from the image
+RUN python -m pip uninstall -y pip
 
 # Copy custom fonts and rebuild font cache
 COPY fonts/ /usr/share/fonts/custom/

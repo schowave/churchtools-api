@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta, timezone
-from typing import Optional, Tuple
+from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
-def parse_iso_datetime(dt_str: str, tz: Optional[ZoneInfo] = None) -> datetime:
+def parse_iso_datetime(dt_str: str, tz: ZoneInfo | None = None) -> datetime:
     """Converts an ISO datetime string to a timezone-aware datetime."""
     if tz is None:
         from app.config import settings
@@ -12,7 +11,7 @@ def parse_iso_datetime(dt_str: str, tz: Optional[ZoneInfo] = None) -> datetime:
 
     if dt_str.endswith("Z"):
         dt = datetime.fromisoformat(dt_str.rstrip("Z"))
-        utc_dt = dt.replace(tzinfo=timezone.utc)
+        utc_dt = dt.replace(tzinfo=UTC)
     else:
         utc_dt = datetime.fromisoformat(dt_str)
 
@@ -23,7 +22,7 @@ def parse_iso_datetime(dt_str: str, tz: Optional[ZoneInfo] = None) -> datetime:
     return utc_dt.astimezone(tz)
 
 
-def get_date_range_from_form(start_date: Optional[str] = None, end_date: Optional[str] = None) -> Tuple[str, str]:
+def get_date_range_from_form(start_date: str | None = None, end_date: str | None = None) -> tuple[str, str]:
     """
     Calculates a date range based on the provided values or uses default values.
     """
@@ -55,3 +54,12 @@ def normalize_newlines(text: str) -> str:
     text = text.replace("\u2028", "\n")  # Line Separator
     text = text.replace("\u2029", "\n")  # Paragraph Separator
     return text
+
+
+def export_timestamp(now: datetime | None = None, tz: ZoneInfo | None = None) -> str:
+    """Timestamp for export filenames in the configured timezone (the container runs in UTC)."""
+    if tz is None:
+        from app.config import settings
+
+        tz = settings.timezone
+    return (now or datetime.now(tz)).astimezone(tz).strftime("%Y-%m-%d-%H-%M-%S")

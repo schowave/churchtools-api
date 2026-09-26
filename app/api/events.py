@@ -1,24 +1,21 @@
-from datetime import datetime
 from io import BytesIO
-from typing import List, Optional
 
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from app.config import settings
+from app.api.calendar_pages import render_calendar_page
 from app.dependencies import get_http_client
-from app.services.auth import get_valid_login_token, redirect_to_login
+from app.services.auth import get_valid_login_token
 from app.services.churchtools_client import (
     AuthenticationError,
     fetch_agenda,
-    fetch_calendars,
     fetch_events,
 )
 from app.services.pdf_generator import create_agenda_pdf, create_services_pdf
-from app.shared import templates
-from app.utils import get_date_range_from_form
+from app.utils import export_timestamp
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -28,84 +25,24 @@ router = APIRouter()
 async def agenda_page(
     request: Request,
     client: httpx.AsyncClient = Depends(get_http_client),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    calendar_ids: Optional[List[str]] = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
+    calendar_ids: list[str] | None = Query(None),
 ) -> Response:
     """Agenda page — shows worship service rundowns."""
-    login_token = await get_valid_login_token(request, client)
-    if not login_token:
-        return redirect_to_login()
-
-    if not start_date or not end_date:
-        start_date_default, end_date_default = get_date_range_from_form()
-        start_date = start_date or start_date_default
-        end_date = end_date or end_date_default
-
-    try:
-        calendars = await fetch_calendars(login_token, client)
-    except AuthenticationError:
-        return redirect_to_login()
-
-    if calendar_ids:
-        selected_calendar_ids = calendar_ids
-    else:
-        selected_calendar_ids = [str(cal["id"]) for cal in calendars]
-
-    return templates.TemplateResponse(
-        request,
-        "agenda.html",
-        {
-            "calendars": calendars,
-            "selected_calendar_ids": selected_calendar_ids,
-            "start_date": start_date,
-            "end_date": end_date,
-            "base_url": settings.churchtools_base,
-            "version": settings.version,
-        },
-    )
+    return await render_calendar_page(request, client, "agenda.html", start_date, end_date, calendar_ids)
 
 
 @router.get("/services")
 async def services_page(
     request: Request,
     client: httpx.AsyncClient = Depends(get_http_client),
-    start_date: Optional[str] = Query(None),
-    end_date: Optional[str] = Query(None),
-    calendar_ids: Optional[List[str]] = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
+    calendar_ids: list[str] | None = Query(None),
 ) -> Response:
     """Dienstplan page — shows who does what per event."""
-    login_token = await get_valid_login_token(request, client)
-    if not login_token:
-        return redirect_to_login()
-
-    if not start_date or not end_date:
-        start_date_default, end_date_default = get_date_range_from_form()
-        start_date = start_date or start_date_default
-        end_date = end_date or end_date_default
-
-    try:
-        calendars = await fetch_calendars(login_token, client)
-    except AuthenticationError:
-        return redirect_to_login()
-
-    if calendar_ids:
-        selected_calendar_ids = calendar_ids
-    else:
-        selected_calendar_ids = [str(cal["id"]) for cal in calendars]
-
-    return templates.TemplateResponse(
-        request,
-        "services.html",
-        {
-            "calendars": calendars,
-            "selected_calendar_ids": selected_calendar_ids,
-            "start_date": start_date,
-            "end_date": end_date,
-            "base_url": settings.churchtools_base,
-            "version": settings.version,
-        },
-    )
+    return await render_calendar_page(request, client, "services.html", start_date, end_date, calendar_ids)
 
 
 @router.get("/api/events")
@@ -114,7 +51,7 @@ async def api_events(
     client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
-    calendar_ids: List[str] = Query(...),
+    calendar_ids: list[str] = Query(...),
 ) -> JSONResponse:
     """JSON endpoint returning events with their service assignments."""
     login_token = await get_valid_login_token(request, client)
@@ -166,8 +103,8 @@ async def api_agenda_pdf(
     except AuthenticationError:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
-    pdf_bytes = create_agenda_pdf(event_name, event_start, items)
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    pdf_bytes = await run_in_threadpool(create_agenda_pdf, event_name, event_start, items)
+    timestamp = export_timestamp()
 
     return StreamingResponse(
         BytesIO(pdf_bytes),
@@ -185,7 +122,7 @@ async def api_event_services_pdf(
     client: httpx.AsyncClient = Depends(get_http_client),
     start_date: str = Query(...),
     end_date: str = Query(...),
-    calendar_ids: List[str] = Query(...),
+    calendar_ids: list[str] = Query(...),
 ) -> Response:
     """Generate and download a services PDF for a single event."""
     login_token = await get_valid_login_token(request, client)
@@ -202,8 +139,8 @@ async def api_event_services_pdf(
     if not event:
         return JSONResponse({"error": "Event nicht gefunden"}, status_code=404)
 
-    pdf_bytes = create_services_pdf(event_name, [event])
-    timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    pdf_bytes = await run_in_threadpool(create_services_pdf, event_name, [event])
+    timestamp = export_timestamp()
 
     return StreamingResponse(
         BytesIO(pdf_bytes),

@@ -348,15 +348,6 @@ async def test_fetch_agenda_auth_error(config_mock):
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture
-def templates_mock():
-    from fastapi.templating import Jinja2Templates
-
-    mock = MagicMock(spec=Jinja2Templates)
-    with patch("app.api.events.templates", mock):
-        yield mock
-
-
 @pytest.mark.asyncio
 @patch("app.api.events.fetch_events")
 async def test_api_events_success(mock_fetch, config_mock):
