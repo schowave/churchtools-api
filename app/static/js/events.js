@@ -37,11 +37,16 @@ function hideButtonSpinner(btn) {
     if (spinner) spinner.style.display = 'none';
 }
 
+// Escapes for both text content and quoted attribute values.
+// (textContent/innerHTML would leave quotes intact and allow attribute injection.)
 function escapeHtml(text) {
-    if (!text) return '';
-    var div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function formatIso(date) {

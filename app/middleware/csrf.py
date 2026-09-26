@@ -16,12 +16,11 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         if request.method in ("GET", "HEAD", "OPTIONS"):
             # Reuse existing token so templates can read it from the incoming cookie.
             # Only generate a new one if no cookie exists yet.
-            if not request.cookies.get(COOKIE_NAME):
-                token = secrets.token_urlsafe(32)
-                # Inject into request scope so templates see it via request.cookies
-                request._cookies[COOKIE_NAME] = token
-            else:
-                token = request.cookies[COOKIE_NAME]
+            token = request.cookies.get(COOKIE_NAME) or secrets.token_urlsafe(32)
+            # Expose the token to templates as request.state.csrf_token. request.state lives in the
+            # ASGI scope and is shared with the endpoint's Request object; mutating request.cookies
+            # here would not be, so a first visit would render an empty token.
+            request.state.csrf_token = token
 
             response = await call_next(request)
             response.set_cookie(
@@ -39,6 +38,8 @@ class CSRFMiddleware(BaseHTTPMiddleware):
         cookie_token = request.cookies.get(COOKIE_NAME)
         if not cookie_token:
             return JSONResponse({"error": "CSRF token missing"}, status_code=403)
+        # Templates rendered in response to a POST (e.g. failed login) need the token too.
+        request.state.csrf_token = cookie_token
 
         header_token = request.headers.get("X-CSRF-Token")
         if header_token and secrets.compare_digest(header_token, cookie_token):

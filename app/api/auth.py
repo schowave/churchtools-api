@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
 from app.dependencies import get_http_client
+from app.services.auth import get_valid_login_token, redirect_to_login
 from app.shared import templates
 
 router = APIRouter()
@@ -91,10 +92,9 @@ async def logout(request: Request, client: httpx.AsyncClient = Depends(get_http_
 
 
 @router.get("/overview")
-async def overview(request: Request) -> Response:
-    login_token = request.cookies.get(settings.cookie_login_token)
-    if not login_token:
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+async def overview(request: Request, client: httpx.AsyncClient = Depends(get_http_client)) -> Response:
+    if not await get_valid_login_token(request, client):
+        return redirect_to_login()
 
     return templates.TemplateResponse(
         request, "overview.html", {"base_url": settings.churchtools_base, "version": settings.version}

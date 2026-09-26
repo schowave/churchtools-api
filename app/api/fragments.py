@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.crud import get_additional_infos
 from app.database import get_db
 from app.dependencies import get_http_client
+from app.services.auth import get_valid_login_token
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, parse_appointment
 from app.shared import templates
 
@@ -23,7 +23,7 @@ async def fragment_appointments(
     calendar_ids: list[str] = Query(default=[]),
     client=Depends(get_http_client),
 ):
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return HTMLResponse("<p>Nicht angemeldet</p>", status_code=401)
 

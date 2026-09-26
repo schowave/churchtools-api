@@ -5,11 +5,11 @@ from typing import List, Optional
 import httpx
 import structlog
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
-from starlette import status
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from app.config import settings
 from app.dependencies import get_http_client
+from app.services.auth import get_valid_login_token, redirect_to_login
 from app.services.churchtools_client import (
     AuthenticationError,
     fetch_agenda,
@@ -33,9 +33,9 @@ async def agenda_page(
     calendar_ids: Optional[List[str]] = Query(None),
 ) -> Response:
     """Agenda page — shows worship service rundowns."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        return redirect_to_login()
 
     if not start_date or not end_date:
         start_date_default, end_date_default = get_date_range_from_form()
@@ -45,9 +45,7 @@ async def agenda_page(
     try:
         calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=settings.cookie_login_token)
-        return response
+        return redirect_to_login()
 
     if calendar_ids:
         selected_calendar_ids = calendar_ids
@@ -77,9 +75,9 @@ async def services_page(
     calendar_ids: Optional[List[str]] = Query(None),
 ) -> Response:
     """Dienstplan page — shows who does what per event."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        return redirect_to_login()
 
     if not start_date or not end_date:
         start_date_default, end_date_default = get_date_range_from_form()
@@ -89,9 +87,7 @@ async def services_page(
     try:
         calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=settings.cookie_login_token)
-        return response
+        return redirect_to_login()
 
     if calendar_ids:
         selected_calendar_ids = calendar_ids
@@ -121,7 +117,7 @@ async def api_events(
     calendar_ids: List[str] = Query(...),
 ) -> JSONResponse:
     """JSON endpoint returning events with their service assignments."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -140,7 +136,7 @@ async def api_event_agenda(
     client: httpx.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """JSON endpoint returning the agenda for a single event."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -161,7 +157,7 @@ async def api_agenda_pdf(
     client: httpx.AsyncClient = Depends(get_http_client),
 ) -> Response:
     """Generate and download an agenda PDF for a single event."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -192,7 +188,7 @@ async def api_event_services_pdf(
     calendar_ids: List[str] = Query(...),
 ) -> Response:
     """Generate and download a services PDF for a single event."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 

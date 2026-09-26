@@ -4,8 +4,9 @@ from typing import List, Optional
 
 import httpx
 import structlog
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
-from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi.responses import JSONResponse, Response, StreamingResponse
+from PIL import Image
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -24,6 +25,7 @@ from app.crud import (
 from app.database import DEFAULT_SETTING_NAME, get_db
 from app.dependencies import get_http_client
 from app.schemas import ColorSettings, GenerateRequest
+from app.services.auth import get_valid_login_token, redirect_to_login
 from app.services.churchtools_client import AuthenticationError, fetch_appointments, fetch_calendars, parse_appointment
 from app.services.jpeg_generator import handle_jpeg_generation
 from app.services.pdf_generator import create_pdf
@@ -31,12 +33,47 @@ from app.shared import templates
 from app.utils import get_date_range_from_form, normalize_newlines
 
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+MAX_IMAGE_PIXELS = 40_000_000  # guards against decompression bombs
+IMAGE_FORMATS = {"PNG", "JPEG"}
 
 
-def _require_auth(request: Request) -> None:
-    """Raise 401 if no login token is present."""
-    if not request.cookies.get(settings.cookie_login_token):
+async def _require_auth(request: Request, client: httpx.AsyncClient) -> None:
+    """Raise 401 unless ChurchTools accepts the login token."""
+    if not await get_valid_login_token(request, client):
         raise HTTPException(status_code=401, detail="Nicht angemeldet")
+
+
+async def _read_image_upload(file: UploadFile) -> bytes:
+    """Read an uploaded file and reject anything that is not a sane PNG or JPEG."""
+    content = await file.read(MAX_UPLOAD_SIZE + 1)
+    if len(content) > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="Datei zu groß (max. 10 MB)")
+    if not content:
+        raise HTTPException(status_code=400, detail="Leere Datei")
+    try:
+        with Image.open(BytesIO(content)) as image:
+            image_format = image.format
+            width, height = image.size
+            image.verify()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Nur PNG- oder JPEG-Bilder erlaubt")
+    if image_format not in IMAGE_FORMATS:
+        raise HTTPException(status_code=400, detail="Nur PNG- oder JPEG-Bilder erlaubt")
+    if width * height > MAX_IMAGE_PIXELS:
+        raise HTTPException(status_code=413, detail="Bild zu groß (max. 40 Megapixel)")
+    return content
+
+
+def _image_response(data: bytes, not_found_detail: str) -> Response:
+    """Serve stored image bytes with a content type derived from the data, never from the filename."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        media_type = "image/png"
+    elif data.startswith(b"\xff\xd8\xff"):
+        media_type = "image/jpeg"
+    else:
+        # Legacy uploads (e.g. SVG) from before upload validation are not served.
+        raise HTTPException(status_code=404, detail=not_found_detail)
+    return Response(content=data, media_type=media_type, headers={"Content-Security-Policy": "default-src 'none'"})
 
 
 logger = structlog.get_logger()
@@ -79,9 +116,9 @@ async def appointments_page(
     end_date: Optional[str] = Query(None),
     calendar_ids: Optional[List[str]] = Query(None),
 ) -> Response:
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
-        return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+        return redirect_to_login()
 
     if not start_date or not end_date:
         start_date_default, end_date_default = get_date_range_from_form()
@@ -91,9 +128,7 @@ async def appointments_page(
     try:
         calendars = await fetch_calendars(login_token, client)
     except AuthenticationError:
-        response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie(key=settings.cookie_login_token)
-        return response
+        return redirect_to_login()
 
     # Use provided calendar_ids or preselect all
     if calendar_ids:
@@ -132,7 +167,7 @@ async def api_appointments(
     calendar_ids: List[str] = Query(...),
 ) -> JSONResponse:
     """JSON endpoint for async appointment loading."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -165,7 +200,7 @@ async def api_generate(
     client: httpx.AsyncClient = Depends(get_http_client),
 ) -> Response:
     """JSON endpoint for PDF/JPEG generation."""
-    login_token = request.cookies.get(settings.cookie_login_token)
+    login_token = await get_valid_login_token(request, client)
     if not login_token:
         return JSONResponse({"error": "not_authenticated"}, status_code=401)
 
@@ -243,72 +278,72 @@ async def api_generate(
 
 
 @router.post("/logo/upload")
-async def upload_logo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)) -> JSONResponse:
+async def upload_logo(
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
+) -> JSONResponse:
     """Upload a logo image and store it in the database."""
-    _require_auth(request)
-    content = await file.read(MAX_UPLOAD_SIZE + 1)
-    if len(content) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=413, detail="Datei zu groß (max. 10 MB)")
-    if not content:
-        raise HTTPException(status_code=400, detail="Leere Datei")
+    await _require_auth(request, client)
+    content = await _read_image_upload(file)
     save_logo(db, DEFAULT_SETTING_NAME, content, file.filename)
     return JSONResponse({"status": "ok", "filename": file.filename})
 
 
 @router.get("/logo")
-async def get_logo(db: Session = Depends(get_db)) -> Response:
+async def get_logo(
+    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+) -> Response:
     """Serve the stored logo image for preview."""
-    logo_data, logo_filename = load_logo(db, DEFAULT_SETTING_NAME)
+    await _require_auth(request, client)
+    logo_data, _ = load_logo(db, DEFAULT_SETTING_NAME)
     if not logo_data:
         raise HTTPException(status_code=404, detail="Kein Logo gespeichert")
-
-    ext = (logo_filename.rsplit(".", 1)[-1] if "." in logo_filename else "png").lower()
-    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml"}
-    media_type = media_types.get(ext, "image/png")
-
-    return Response(content=logo_data, media_type=media_type)
+    return _image_response(logo_data, "Kein Logo gespeichert")
 
 
 @router.delete("/logo")
-async def remove_logo(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
+async def remove_logo(
+    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+) -> JSONResponse:
     """Delete the stored logo."""
-    _require_auth(request)
+    await _require_auth(request, client)
     delete_logo(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})
 
 
 @router.post("/background/upload")
 async def upload_background(
-    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    client: httpx.AsyncClient = Depends(get_http_client),
 ) -> JSONResponse:
     """Upload a background image and store it in the database."""
-    _require_auth(request)
-    content = await file.read(MAX_UPLOAD_SIZE + 1)
-    if len(content) > MAX_UPLOAD_SIZE:
-        raise HTTPException(status_code=413, detail="Datei zu groß (max. 10 MB)")
-    if not content:
-        raise HTTPException(status_code=400, detail="Leere Datei")
+    await _require_auth(request, client)
+    content = await _read_image_upload(file)
     save_background_image(db, DEFAULT_SETTING_NAME, content, file.filename)
     return JSONResponse({"status": "ok", "filename": file.filename})
 
 
 @router.get("/background")
-async def get_background(db: Session = Depends(get_db)) -> Response:
+async def get_background(
+    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+) -> Response:
     """Serve the stored background image for preview."""
-    image_data, image_filename = load_background_image(db, DEFAULT_SETTING_NAME)
+    await _require_auth(request, client)
+    image_data, _ = load_background_image(db, DEFAULT_SETTING_NAME)
     if not image_data:
         raise HTTPException(status_code=404, detail="Kein Hintergrundbild gespeichert")
-
-    ext = (image_filename.rsplit(".", 1)[-1] if "." in image_filename else "png").lower()
-    media_types = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "svg": "image/svg+xml"}
-    media_type = media_types.get(ext, "image/png")
-
-    return Response(content=image_data, media_type=media_type)
+    return _image_response(image_data, "Kein Hintergrundbild gespeichert")
 
 
 @router.delete("/background")
-async def remove_background(request: Request, db: Session = Depends(get_db)) -> JSONResponse:
+async def remove_background(
+    request: Request, db: Session = Depends(get_db), client: httpx.AsyncClient = Depends(get_http_client)
+) -> JSONResponse:
     """Delete the stored background image."""
-    _require_auth(request)
+    await _require_auth(request, client)
     delete_background_image(db, DEFAULT_SETTING_NAME)
     return JSONResponse({"status": "ok"})

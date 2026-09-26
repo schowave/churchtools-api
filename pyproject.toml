@@ -32,6 +32,9 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = [
+    "real_token_validation: do not mock ChurchTools login token validation",
+]
 filterwarnings = [
     "ignore:the load_module\\(\\) method is deprecated:DeprecationWarning",
 ]
