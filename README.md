@@ -8,13 +8,15 @@
 A web application for creating styled announcement slides from [ChurchTools](https://www.church.tools/) calendar events — exported as PDF or JPEG for use in church services.
 
 <p align="center">
-  <img src="images/start.png" alt="Startseite" width="300">
+  <img src="images/start.png" alt="Startseite" width="220">
+  <img src="images/termin-folien.png" alt="Termin-Folien" width="220">
 </p>
 <p align="center">
-  <img src="images/kalenderauswahl.png" alt="Kalenderauswahl" width="300">
+  <img src="images/agenda.png" alt="Agenda" width="220">
+  <img src="images/dienstplan.png" alt="Dienstplan" width="220">
 </p>
 <p align="center">
-  <img src="images/termin-folien.png" alt="Termin-Folien" width="300">
+  <img src="images/folie.jpg" alt="Beispiel-Folie" width="600">
 </p>
 
 ## Features
