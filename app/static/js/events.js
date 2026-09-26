@@ -437,6 +437,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // flatpickr hides the labelled input and shows a generated one; give that one the label
+    [[window._fpStart, 'Von'], [window._fpEnd, 'Bis']].forEach(function (entry) {
+        if (entry[0] && entry[0].altInput) entry[0].altInput.setAttribute('aria-label', entry[1]);
+    });
+
     // Initialize from hidden ISO values
     var startIso = $('#start_date').value;
     var endIso = $('#end_date').value;

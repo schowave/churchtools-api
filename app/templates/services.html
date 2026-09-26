@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👥</text></svg>">
     <title>Dienstplan</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +22,7 @@
 </head>
 <body>
 {% with active="services" %}{% include "_nav.html" %}{% endwith %}
-<div class="container">
+<main class="container">
     <!-- Header -->
     <div class="page-header">
         <h1>Dienstplan</h1>
@@ -70,7 +70,7 @@
             <span>Events werden geladen&hellip;</span>
         </div>
     </div>
-</div>
+</main>
 
 </body>
 </html>

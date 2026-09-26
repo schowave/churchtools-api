@@ -2,22 +2,25 @@
 /* Fonts loaded via <link> in HTML for non-blocking rendering */
 
 :root {
-    /* Color palette — soft sage */
-    --primary-color: #5E8B5A;
-    --primary-hover: #4A7347;
+    /* Color palette — soft sage. Text colors meet WCAG AA (4.5:1) on white, the page
+       background and the light tints; check contrast before changing them. */
+    --primary-color: #4A7547;
+    --primary-hover: #3C5F3A;
     --primary-light: #E8EDE5;
     --primary-subtle: #F0F3ED;
-    --secondary-color: #C67B4A;
-    --secondary-hover: #A8653A;
-    --success-color: #5E8B5A;
-    --success-hover: #4A7347;
+    --secondary-color: #A5582A;
+    --secondary-hover: #87461F;
+    --success-color: #4A7547;
+    --success-hover: #3C5F3A;
     --danger-color: #B54A3A;
     --danger-hover: #963D2F;
     --light-bg: #F4F5F0;
     --container-bg: #FFFFFF;
     --text-color: #2C3325;
-    --text-muted: #7A8272;
-    --border-color: #D8DDD0;
+    --text-muted: #646C5D;
+    --border-color: #D8DDD0; /* decorative: cards, dividers */
+    --input-border: #8C9482; /* form controls need 3:1 against white */
+    --warning-color: #8F5E12;
     --shadow-color: rgba(44, 51, 37, 0.08);
 
     /* Spacing */
@@ -34,8 +37,8 @@
     --container-radius: 16px;
     --box-shadow: 0 1px 3px rgba(44, 51, 37, 0.05), 0 4px 14px rgba(44, 51, 37, 0.04);
     --box-shadow-lg: 0 4px 20px rgba(44, 51, 37, 0.08), 0 10px 40px rgba(44, 51, 37, 0.04);
-    --box-shadow-hover: 0 4px 18px rgba(94, 139, 90, 0.25);
-    --focus-ring: 0 0 0 3px rgba(94, 139, 90, 0.25);
+    --box-shadow-hover: 0 4px 18px rgba(74, 117, 71, 0.25);
+    --focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--primary-color);
 
     /* Typography */
     --font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -150,7 +153,7 @@ select {
     width: 100%;
     padding: 0.7rem 0.85rem;
     margin-top: var(--spacing-xs);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--input-border);
     border-radius: var(--border-radius);
     font-family: var(--font-family);
     font-size: 1rem;
@@ -294,7 +297,7 @@ input[type="submit"]:active {
 
 .alert-success { background-color: var(--success-color); }
 .alert-error { background-color: var(--danger-color); }
-.alert-warning { background-color: #D4953A; }
+.alert-warning { background-color: var(--warning-color); }
 
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-8px); }

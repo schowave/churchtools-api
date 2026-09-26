@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
     <title>Profil</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,7 @@
 </head>
 <body>
 {% with active="profile" %}{% include "_nav.html" %}{% endwith %}
-<div class="container profile page-enter">
+<main class="container profile page-enter">
     <h1>Profil</h1>
 
     {% if user %}
@@ -43,6 +43,6 @@
         <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
         <button type="submit" class="btn btn--danger">Abmelden</button>
     </form>
-</div>
+</main>
 </body>
 </html>

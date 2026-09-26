@@ -230,9 +230,10 @@ function renderAppointments(appointments) {
         html += '<div class="appointment-item' + (customText ? ' has-custom-text' : '') + '" style="animation-delay:' + delay + 's">' +
             '<input type="checkbox" id="' + checkboxId + '" name="appointment_id"' +
                 ' value="' + escapeHtml(app.id) + '" class="appointment-checkbox" checked>' +
-            '<label for="' + checkboxId + '" class="appointment-time">' + renderTimeColumn(app) + '</label>' +
+            '<span class="appointment-time" data-action="toggle-select" aria-hidden="true">' + renderTimeColumn(app) + '</span>' +
             '<div class="appointment-body">' +
-                '<label for="' + checkboxId + '" class="appointment-title">' + escapeHtml(app.title) + '</label>' +
+                '<label for="' + checkboxId + '" class="appointment-title">' + escapeHtml(app.title) +
+                    '<span class="sr-only">, ' + escapeHtml(slideTimeText(app)) + '</span></label>' +
                 (hasDescription
                     ? '<p class="appointment-info-text" data-action="toggle-expand" title="Klicken zum Auf-/Zuklappen">' +
                         escapeHtml(app.information) + '</p>'
@@ -546,6 +547,14 @@ function setupImageControls(kind, labels) {
     });
 }
 
+// flatpickr hides the labelled input and shows a generated one; give that one the label
+function labelDateInputs() {
+    [['_fpStart', 'Von'], ['_fpEnd', 'Bis']].forEach(function (entry) {
+        var picker = window[entry[0]];
+        if (picker && picker.altInput) picker.altInput.setAttribute('aria-label', entry[1]);
+    });
+}
+
 // --- Initialization ---
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -574,6 +583,8 @@ document.addEventListener('DOMContentLoaded', function () {
             scheduleFetch();
         }
     });
+
+    labelDateInputs();
 
     // Initialize from hidden ISO values
     var startIso = $('#start_date').value;
@@ -628,6 +639,15 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 openCustomTextEditor(editItem);
             }
+            return;
+        }
+
+        // The time column selects like the title label does
+        var timeColumn = target.closest('[data-action="toggle-select"]');
+        if (timeColumn) {
+            var checkbox = timeColumn.closest('.appointment-item').querySelector('.appointment-checkbox');
+            checkbox.checked = !checkbox.checked;
+            updateSelectionState();
             return;
         }
 
