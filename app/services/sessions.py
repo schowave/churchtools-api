@@ -42,7 +42,7 @@ def _now() -> datetime:
     return datetime.now(UTC).replace(tzinfo=None)
 
 
-def create_session(login_token: str) -> str:
+def create_session(login_token: str, display_name: str | None = None) -> str:
     """Store the token and return a new random session id for the cookie."""
     session_id = secrets.token_urlsafe(32)
     now = _now()
@@ -53,6 +53,7 @@ def create_session(login_token: str) -> str:
                 login_token=_encrypt(session_id, login_token),
                 created_at=now,
                 expires_at=now + SESSION_LIFETIME,
+                display_name=display_name,
             )
         )
         db.commit()
@@ -86,6 +87,20 @@ def get_session_expiry(session_id: str) -> datetime | None:
     with database.SessionLocal() as db:
         row = db.get(LoginSession, _hash(session_id))
         return row.expires_at if row else None
+
+
+def get_session_display_name(session_id: str) -> str | None:
+    with database.SessionLocal() as db:
+        row = db.get(LoginSession, _hash(session_id))
+        return row.display_name if row else None
+
+
+def set_session_display_name(session_id: str, display_name: str) -> None:
+    with database.SessionLocal() as db:
+        row = db.get(LoginSession, _hash(session_id))
+        if row and row.display_name != display_name:
+            row.display_name = display_name
+            db.commit()
 
 
 def delete_session(session_id: str) -> None:

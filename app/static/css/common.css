@@ -482,6 +482,19 @@ input[type="submit"]:active {
     border-color: var(--primary-color);
 }
 
+.app-nav .app-nav-profile.has-initials {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: white;
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.app-nav .app-nav-profile.has-initials[aria-current="page"] {
+    box-shadow: 0 0 0 2px var(--light-bg), 0 0 0 4px var(--primary-color);
+}
+
 /* Mobile menu: hidden on wide screens, where the links are shown inline */
 .app-nav-menu {
     display: none;
@@ -536,42 +549,4 @@ input[type="submit"]:active {
     .app-nav { padding: var(--spacing-xs) 0; gap: var(--spacing-sm); }
     .app-nav-links { display: none; }
     .app-nav-menu { display: block; }
-}
-
-/* ─── Profile page ──────────────────────────── */
-.container.profile {
-    max-width: 480px;
-    text-align: left;
-}
-
-.profile-name {
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 500;
-    margin: 0 0 var(--spacing-lg);
-}
-
-.profile-details {
-    display: grid;
-    grid-template-columns: max-content 1fr;
-    gap: var(--spacing-sm) var(--spacing-lg);
-    margin: 0 0 var(--spacing-lg);
-}
-
-.profile-details dt {
-    color: var(--text-muted);
-    font-size: 0.875rem;
-}
-
-.profile-details dd {
-    margin: 0;
-    overflow-wrap: anywhere;
-}
-
-.profile-details a {
-    color: var(--primary-color);
-}
-
-.profile-logout .btn {
-    margin-top: 0;
 }

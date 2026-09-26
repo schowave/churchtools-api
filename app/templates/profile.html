@@ -10,39 +10,68 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="/static/vendor/css/normalize.css?v={{ version }}">
     <link rel="stylesheet" href="/static/css/common.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/calendar-search.css?v={{ version }}">
+    <link rel="stylesheet" href="/static/css/profile.css?v={{ version }}">
 </head>
 <body>
 {% with active="profile" %}{% include "_nav.html" %}{% endwith %}
-<main class="container profile page-enter">
-    <h1>Profil</h1>
+<main class="container">
+    <div class="page-header">
+        <h1>Profil</h1>
+        <p class="subtitle">{{ base_url }}</p>
+    </div>
 
-    {% if user %}
-    <p class="profile-name">{{ user.full_name or "Unbekannter Name" }}</p>
-    {% else %}
-    <div class="alert alert-error">Deine Daten konnten nicht geladen werden. ChurchTools ist gerade nicht erreichbar.</div>
-    {% endif %}
-
-    <dl class="profile-details">
+    <section class="profile-card profile-identity" aria-labelledby="identity-title">
+        <h2 class="sr-only" id="identity-title">Du</h2>
         {% if user %}
-        <dt>E-Mail</dt>
-        <dd>{{ user.email or "–" }}</dd>
-        <dt>Person-ID</dt>
-        <dd>{{ user.id }}</dd>
+        <span class="profile-avatar" aria-hidden="true">{{ (user.full_name or user.email) | initials or "?" }}</span>
+        <div class="profile-identity-text">
+            <p class="profile-name">{{ user.full_name or "Unbekannter Name" }}</p>
+            {% if user.email %}{% set email_parts = user.email.split("@", 1) %}
+            <p class="profile-email">{{ email_parts[0] }}{% if email_parts | length > 1 %}<wbr>@{{ email_parts[1] }}{% endif %}</p>{% endif %}
+            <p class="profile-id">ChurchTools-ID {{ user.id }}</p>
+        </div>
+        {% else %}
+        <span class="profile-avatar profile-avatar--empty" aria-hidden="true">?</span>
+        <div class="profile-identity-text">
+            <p class="profile-name">Deine Daten konnten gerade nicht geladen werden</p>
+            <p class="profile-email">ChurchTools antwortet nicht. Abmelden funktioniert trotzdem.</p>
+        </div>
         {% endif %}
-        <dt>ChurchTools</dt>
-        <dd><a href="{{ churchtools_url }}" target="_blank" rel="noopener">{{ base_url }}</a></dd>
-        {% if session_expires %}
-        <dt>Angemeldet bis</dt>
-        <dd>{{ session_expires }}</dd>
-        {% endif %}
-        <dt>App-Version</dt>
-        <dd>v{{ version }}</dd>
-    </dl>
+    </section>
 
-    <form action="/logout" method="post" class="profile-logout">
-        <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
-        <button type="submit" class="btn btn--danger">Abmelden</button>
-    </form>
+    <section class="profile-card" aria-labelledby="session-title">
+        <h2 class="profile-card-title" id="session-title">Anmeldung</h2>
+        <dl class="profile-details">
+            <dt>Angemeldet bei</dt>
+            <dd>
+                {{ base_url }}
+                <a class="profile-link" href="{{ churchtools_url }}" target="_blank" rel="noopener">In ChurchTools öffnen<span aria-hidden="true"> ↗</span><span class="sr-only"> (neues Fenster)</span></a>
+            </dd>
+            {% if session_expires %}
+            <dt>Gültig bis</dt>
+            <dd>
+                {{ session_expires }}
+                <span class="profile-hint">Danach musst du dich neu anmelden (Anmeldungen gelten {{ session_lifetime_days }} Tage).</span>
+            </dd>
+            {% endif %}
+        </dl>
+        <form action="/logout" method="post" class="profile-logout">
+            <input type="hidden" name="_csrf_token" value="{{ request.state.csrf_token }}">
+            <button type="submit" class="btn-logout-outline">Abmelden</button>
+            <span class="profile-hint">Meldet dich auf diesem Gerät ab.</span>
+        </form>
+    </section>
+
+    <section class="profile-card" aria-labelledby="about-title">
+        <h2 class="profile-card-title" id="about-title">Über die App</h2>
+        <dl class="profile-details">
+            <dt>Version</dt>
+            <dd>v{{ version }}</dd>
+            <dt>Verbunden mit</dt>
+            <dd>{{ base_url }}</dd>
+        </dl>
+    </section>
 </main>
 </body>
 </html>

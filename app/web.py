@@ -9,6 +9,18 @@ from app.schemas import MAX_CALENDARS
 templates = Jinja2Templates(directory=APP_DIR / "templates")
 
 
+def initials(name: str | None) -> str:
+    """Initials for the navigation: first letters of the first and last word ("Erika Muster" -> "EM")."""
+    words = (name or "").split()
+    if not words:
+        return ""
+    letters = words[0][0] + (words[-1][0] if len(words) > 1 else "")
+    return letters.upper()
+
+
+templates.env.filters["initials"] = initials
+
+
 def get_http_client(request: Request) -> httpx2.AsyncClient:
     return request.app.state.http_client
 

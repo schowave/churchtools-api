@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.auth import login, login_page, logout, overview
+from app.schemas import CurrentUser
 
 
 @pytest.fixture
@@ -93,8 +94,8 @@ async def test_login_success(config_mock):
         json={"password": "testpass", "rememberMe": True, "username": "testuser"},
     )
 
-    # Check that client.get was called with correct parameters
-    client.get.assert_called_once_with(
+    # Check that client.get was called with correct parameters (the name lookup for the navigation follows)
+    client.get.assert_any_call(
         f"{config_mock['CHURCHTOOLS_BASE_URL']}/api/persons/123/logintoken", cookies=login_response.cookies
     )
 
@@ -114,6 +115,46 @@ async def test_login_success(config_mock):
     # Autouse fixture maps the session id to the token; the real store is covered in test_sessions.py
     assert b"session=test_token" in cookie_header[1]
     assert b"HttpOnly" in cookie_header[1]
+
+
+@pytest.mark.asyncio
+async def test_login_stores_display_name_for_navigation(config_mock):
+    client = AsyncMock()
+    login_response = MagicMock(status_code=200, cookies={})
+    login_response.json.return_value = {"data": {"personId": 7}}
+    client.post.return_value = login_response
+    token_response = MagicMock(status_code=200)
+    token_response.json.return_value = {"data": "token"}
+    client.get.return_value = token_response
+    user = CurrentUser(id=7, first_name="Erika", last_name="Muster")
+
+    with (
+        patch("app.api.auth.fetch_current_user", AsyncMock(return_value=user)),
+        patch("app.api.auth.sessions.create_session", return_value="sid") as create_session,
+    ):
+        await login(MagicMock(spec=Request), username="u", password="p", client=client)
+
+    create_session.assert_called_once_with("token", "Erika Muster")
+
+
+@pytest.mark.asyncio
+async def test_login_succeeds_without_display_name(config_mock):
+    client = AsyncMock()
+    login_response = MagicMock(status_code=200, cookies={})
+    login_response.json.return_value = {"data": {"personId": 7}}
+    client.post.return_value = login_response
+    token_response = MagicMock(status_code=200)
+    token_response.json.return_value = {"data": "token"}
+    client.get.return_value = token_response
+
+    with (
+        patch("app.api.auth.fetch_current_user", AsyncMock(side_effect=httpx2.ConnectError("down"))),
+        patch("app.api.auth.sessions.create_session", return_value="sid") as create_session,
+    ):
+        result = await login(MagicMock(spec=Request), username="u", password="p", client=client)
+
+    assert result.status_code == 303
+    create_session.assert_called_once_with("token", None)
 
 
 @pytest.mark.asyncio

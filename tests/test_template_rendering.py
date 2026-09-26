@@ -149,5 +149,15 @@ def test_logged_in_pages_show_main_navigation():
         assert html.count(f'href="{path}" aria-current="page"') == 2, path
 
 
+def test_navigation_shows_initials_of_the_logged_in_person():
+    with (
+        patch("app.services.sessions.get_session_display_name", return_value="Erika Muster"),
+        patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])),
+    ):
+        html = authed_client.get("/services").text
+    assert 'class="app-nav-profile has-initials"' in html
+    assert '<span aria-hidden="true">EM</span>' in html
+
+
 def test_login_page_has_no_navigation():
     assert 'aria-label="Hauptmenü"' not in client.get("/").text

@@ -57,6 +57,15 @@ async def login_page(request: Request) -> Response:
     return templates.TemplateResponse(request, "login.html", context)
 
 
+async def _fetch_display_name(login_token: str, client: httpx2.AsyncClient) -> str | None:
+    """Name for the navigation initials; login must not fail because of it."""
+    try:
+        return (await fetch_current_user(login_token, client)).full_name or None
+    except (AuthenticationError, httpx2.HTTPError, ValueError, KeyError, TypeError) as exc:
+        logger.info("login_display_name_unavailable", error=type(exc).__name__)
+        return None
+
+
 @router.post("/")
 async def login(
     request: Request,
@@ -107,9 +116,11 @@ async def login(
         logger.warning("login_unexpected_response", error=type(exc).__name__)
         return _login_error(request, "Unerwartete Antwort von ChurchTools. Anmeldung nicht möglich.", status_code=502)
 
+    display_name = await _fetch_display_name(login_token, client)
     redirect = RedirectResponse(url=START_PAGE, status_code=status.HTTP_303_SEE_OTHER)
     # The browser only gets a random session id; the token stays on the server
-    set_session_cookie(redirect, request, await run_in_threadpool(sessions.create_session, login_token))
+    session_id = await run_in_threadpool(sessions.create_session, login_token, display_name)
+    set_session_cookie(redirect, request, session_id)
     return redirect
 
 
@@ -156,6 +167,10 @@ async def profile(request: Request, client: httpx2.AsyncClient = Depends(get_htt
         user = None
 
     session_id = request.cookies.get(settings.cookie_session)
+    if user and user.full_name:
+        # Keeps the navigation initials current (and fills them for sessions from before they existed)
+        await run_in_threadpool(sessions.set_session_display_name, session_id, user.full_name)
+        request.state.display_name = user.full_name
     expires_at = await run_in_threadpool(sessions.get_session_expiry, session_id)
     expires_local = expires_at.replace(tzinfo=UTC).astimezone(settings.timezone) if expires_at else None
 
@@ -165,5 +180,6 @@ async def profile(request: Request, client: httpx2.AsyncClient = Depends(get_htt
         "version": settings.version,
         "user": user,
         "session_expires": expires_local.strftime("%d.%m.%Y, %H:%M Uhr") if expires_local else None,
+        "session_lifetime_days": sessions.SESSION_LIFETIME.days,
     }
     return templates.TemplateResponse(request, "profile.html", context)

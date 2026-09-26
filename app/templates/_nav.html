@@ -18,7 +18,8 @@
             {% endfor %}
         </div>
     </details>
-    <a href="/profile" class="app-nav-profile" aria-label="Profil"{% if active == "profile" %} aria-current="page"{% endif %}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    {% set nav_initials = request.state.display_name | initials if request.state.display_name else "" %}
+    <a href="/profile" class="app-nav-profile{% if nav_initials %} has-initials{% endif %}" aria-label="Profil{% if request.state.display_name %} von {{ request.state.display_name }}{% endif %}"{% if active == "profile" %} aria-current="page"{% endif %}>
+        {% if nav_initials %}<span aria-hidden="true">{{ nav_initials }}</span>{% else %}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>{% endif %}
     </a>
 </nav>

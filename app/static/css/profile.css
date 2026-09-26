@@ -1,0 +1,198 @@
+/* profile.css — Profile page (layout and page header come from calendar-search.css) */
+
+.profile-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--container-radius);
+    box-shadow: var(--box-shadow);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    text-align: left;
+}
+
+.profile-card-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 var(--spacing-md);
+}
+
+/* Identity */
+.profile-identity {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.profile-avatar {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+    background: var(--primary-color);
+}
+
+.profile-avatar--empty {
+    color: var(--text-muted);
+    background: var(--primary-light);
+}
+
+.profile-identity-text {
+    min-width: 0;
+}
+
+.profile-identity-text p {
+    margin: 0;
+    overflow-wrap: break-word; /* the e-mail breaks before the "@" first (<wbr> in the template) */
+}
+
+.profile-name {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.profile-email {
+    color: var(--text-color);
+}
+
+.profile-id {
+    margin-top: var(--spacing-2xs) !important;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+/* Details */
+.profile-details {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--spacing-sm) var(--spacing-lg);
+    margin: 0;
+}
+
+.profile-details dt {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    padding-top: 1px;
+}
+
+.profile-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.profile-link {
+    display: inline-block;
+    margin-left: var(--spacing-sm);
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.profile-link:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: 4px;
+}
+
+.profile-hint {
+    display: block;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+/* Logout */
+.profile-logout {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs) var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--primary-light);
+}
+
+.btn-logout-outline {
+    width: auto;
+    margin: 0;
+    padding: 0.55em 1.2em;
+    font-family: var(--font-family);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--danger-color);
+    background: white;
+    border: 1px solid var(--danger-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color var(--transition-speed) var(--transition-ease),
+                color var(--transition-speed) var(--transition-ease);
+}
+
+.btn-logout-outline:hover {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-logout-outline:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.profile-logout .profile-hint {
+    display: inline;
+}
+
+@media (max-width: 600px) {
+    /* Same page padding as the calendar pages */
+    .container {
+        padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+    }
+
+    .page-header {
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .page-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .profile-card {
+        padding: var(--spacing-md);
+    }
+
+    .profile-identity {
+        gap: var(--spacing-md);
+    }
+
+    .profile-avatar {
+        width: 52px;
+        height: 52px;
+        font-size: 1.25rem;
+    }
+
+    .profile-details {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .profile-details dd {
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .profile-link {
+        display: block;
+        margin: 2px 0 0;
+    }
+
+    .btn-logout-outline {
+        width: 100%;
+    }
+}

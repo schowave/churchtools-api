@@ -70,6 +70,8 @@ async def get_valid_login_token(request: Request, client: httpx2.AsyncClient) ->
         # Token was revoked in ChurchTools: the session is useless
         await run_in_threadpool(sessions.delete_session, session_id)
         return None
+    # For the initials in the navigation (_nav.html)
+    request.state.display_name = await run_in_threadpool(sessions.get_session_display_name, session_id)
     return login_token
 
 

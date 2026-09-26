@@ -30,9 +30,11 @@ def _in_memory_sessions(request):
         return
     with (
         patch("app.services.sessions.get_session_token", side_effect=lambda session_id: session_id),
-        patch("app.services.sessions.create_session", side_effect=lambda login_token: login_token),
+        patch("app.services.sessions.create_session", side_effect=lambda login_token, display_name=None: login_token),
         patch("app.services.sessions.delete_session"),
         patch("app.services.sessions.get_session_expiry", return_value=None),
+        patch("app.services.sessions.get_session_display_name", return_value=None),
+        patch("app.services.sessions.set_session_display_name"),
         patch("app.services.sessions.purge_expired_sessions"),
     ):
         yield

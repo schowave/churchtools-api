@@ -198,3 +198,15 @@ def test_session_expiry(session_db):
     assert expiry is not None
     assert expiry - sessions._now() > sessions.SESSION_LIFETIME - timedelta(minutes=1)
     assert sessions.get_session_expiry("unknown") is None
+
+
+def test_session_display_name(session_db):
+    session_id = sessions.create_session("ct-login-token", display_name="Erika Muster")
+    assert sessions.get_session_display_name(session_id) == "Erika Muster"
+
+    sessions.set_session_display_name(session_id, "Erika Beispiel")
+    assert sessions.get_session_display_name(session_id) == "Erika Beispiel"
+
+    without_name = sessions.create_session("other-token")
+    assert sessions.get_session_display_name(without_name) is None
+    assert sessions.get_session_display_name("unknown") is None

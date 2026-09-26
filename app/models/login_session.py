@@ -12,3 +12,5 @@ class LoginSession(Base):
     login_token = Column(Text, nullable=False)
     created_at = Column(DateTime, nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)
+    # For the initials in the navigation; filled at login or on the profile page
+    display_name = Column(String(200), nullable=True)
