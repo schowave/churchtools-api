@@ -46,6 +46,25 @@ async def fetch_current_user(login_token: str, client: httpx2.AsyncClient) -> Cu
     )
 
 
+async def fetch_person_group_ids(login_token: str, person_id: int, client: httpx2.AsyncClient) -> set[int]:
+    """Ids of the groups a person is an active member of. Empty if ChurchTools refuses the lookup."""
+    url = f"{settings.churchtools_base_url}/api/persons/{person_id}/groups"
+    response = await client.get(url, headers=_auth_headers(login_token))
+    if response.status_code != 200:
+        logger.warning("fetch_person_groups_failed", status=response.status_code)
+        return set()
+
+    group_ids = set()
+    for membership in response.json().get("data", []):
+        if membership.get("groupMemberStatus", "active") != "active":
+            continue  # e.g. a pending membership request
+        group = membership.get("group") or {}
+        group_id = group.get("domainIdentifier") or group.get("id") or membership.get("groupId")
+        if group_id is not None and str(group_id).isdigit():
+            group_ids.add(int(group_id))
+    return group_ids
+
+
 async def fetch_calendars(login_token: str, client: httpx2.AsyncClient):
     url = f"{settings.churchtools_base_url}/api/calendars"
 

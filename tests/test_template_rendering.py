@@ -63,9 +63,9 @@ def test_first_visit_login_succeeds_with_rendered_form_token():
     assert _form_token(response.text) == token
 
 
-def test_version_is_shown_on_login_and_profile():
-    """Logged-in pages keep the version on the profile page instead of a floating badge."""
-    assert f'class="app-version" title="Installierte Version">v{settings.version}<' in client.get("/").text
+def test_version_is_only_shown_to_logged_in_users():
+    assert f"v{settings.version}" not in client.get("/").text
+    assert "version" not in client.get("/health").json()
     with patch("app.api.auth.fetch_current_user", AsyncMock(side_effect=ValueError)):
         profile = authed_client.get("/profile").text
     assert f"v{settings.version}" in profile
@@ -124,6 +124,25 @@ def test_pages_send_strict_content_security_policy():
     assert directives["script-src"] == "'self'"
     assert directives["object-src"] == "'none'"
     assert directives["frame-ancestors"] == "'none'"
+
+
+def test_no_third_party_font_requests():
+    """Fonts are self-hosted: loading them from Google sends visitors' IP addresses to Google (GDPR)."""
+    from pathlib import Path
+
+    for template in Path("app/templates").rglob("*.html"):
+        html = template.read_text()
+        assert "fonts.googleapis.com" not in html and "fonts.gstatic.com" not in html, template
+    csp = client.get("/").headers["content-security-policy"]
+    directives = dict(d.strip().split(" ", 1) for d in csp.split(";") if d.strip())
+    assert directives["font-src"] == "'self'"
+    assert client.get("/static/fonts/dm-sans-latin.woff2").status_code == 200
+
+
+def test_pages_disable_unused_browser_features():
+    headers = client.get("/").headers
+    assert "camera=()" in headers["permissions-policy"]
+    assert headers["cross-origin-opener-policy"] == "same-origin"
 
 
 def test_templates_contain_no_inline_scripts():

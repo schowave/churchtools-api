@@ -58,8 +58,19 @@ mise run run
 | `TIMEZONE` | No | `Europe/Berlin` | Timezone for date display (any valid IANA timezone) |
 | `LOG_FORMAT` | No | `console` | Log output format: `console` (human-readable) or `json` |
 | `FORWARDED_ALLOW_IPS` | No | `127.0.0.1` | Addresses of reverse proxies whose `X-Forwarded-*` headers are trusted (read by uvicorn). See [Behind a reverse proxy](#behind-a-reverse-proxy) |
+| `ALLOWED_GROUP_IDS` | No | — | Comma-separated ChurchTools group ids; only active members may use the app. See [Restricting access](#restricting-access) |
+| `ALLOWED_PERSON_IDS` | No | — | Comma-separated ChurchTools person ids that may use the app (in addition to the groups) |
 
 Colors, logo and background image are shared by everyone who logs in: there is one set of settings per installation, and each export saves the colors used.
+
+### Restricting access
+
+Without `ALLOWED_GROUP_IDS` and `ALLOWED_PERSON_IDS`, everyone with a login for your ChurchTools instance can use the app and change the shared design. To limit that, set one or both:
+
+- `ALLOWED_GROUP_IDS=12` lets active members of group 12 in (a pending membership request does not count). The id is in the group's URL in ChurchTools, e.g. `.../groups/12/dashboard`.
+- `ALLOWED_PERSON_IDS=7,42` lets these people in. Each user sees their id on the profile page ("ChurchTools-ID").
+
+People without access get a clear message at login; sessions of people who lose access end within five minutes.
 
 ## Deployment
 

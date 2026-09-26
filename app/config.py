@@ -18,6 +18,11 @@ def _read_version() -> str:
         return "0.0.0"
 
 
+def parse_ids(value: str) -> set[int]:
+    """Comma-separated ids ("7, 42") as a set; blanks are ignored, anything else raises ValueError."""
+    return {int(part) for part in value.replace(";", ",").split(",") if part.strip()}
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -33,6 +38,10 @@ class Settings(BaseSettings):
     version: str = _read_version()
     timezone_name: str = Field(default="Europe/Berlin", validation_alias="TIMEZONE")
     log_format: str = "console"  # "console" or "json"
+    # Optional access restriction, comma-separated ChurchTools ids. Both empty: every ChurchTools login may use
+    # the app. Otherwise a person needs to be listed or be an active member of one of the groups.
+    allowed_person_ids: str = ""
+    allowed_group_ids: str = ""
     timezone: ZoneInfo | None = Field(default=None, exclude=True)
 
     @model_validator(mode="after")
@@ -43,6 +52,12 @@ class Settings(BaseSettings):
             object.__setattr__(self, "timezone", ZoneInfo(self.timezone_name))
         except (ZoneInfoNotFoundError, KeyError) as e:
             raise ValueError(f"Invalid timezone: {self.timezone_name}") from e
+        # Fail at startup, not on every request, when an id list has a typo
+        for name in ("allowed_person_ids", "allowed_group_ids"):
+            try:
+                parse_ids(getattr(self, name))
+            except ValueError as e:
+                raise ValueError(f"{name.upper()} must be comma-separated numbers, got {getattr(self, name)!r}") from e
         return self
 
 

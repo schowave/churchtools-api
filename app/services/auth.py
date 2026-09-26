@@ -2,12 +2,16 @@ import hashlib
 import time
 
 import httpx2
+import structlog
 from fastapi import HTTPException, Request, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, Response
 
-from app.config import settings
+from app.config import parse_ids, settings
 from app.services import sessions
+from app.services.churchtools_client import fetch_person_group_ids
+
+logger = structlog.get_logger()
 
 # Cookie name used before server-side sessions; it held the raw ChurchTools token.
 LEGACY_TOKEN_COOKIE = "login_token"
@@ -45,12 +49,28 @@ async def validate_login_token(login_token: str, client: httpx2.AsyncClient) -> 
     person_id = response.json().get("data", {}).get("id", -1)
     if not isinstance(person_id, int) or person_id <= 0:
         return False
+    if not await has_app_access(person_id, login_token, client):
+        return False
 
     for cached_key, cached_expiry in list(_valid_token_cache.items()):
         if cached_expiry <= now:
             del _valid_token_cache[cached_key]
     _valid_token_cache[key] = now + TOKEN_CACHE_TTL_SECONDS
     return True
+
+
+async def has_app_access(person_id: int, login_token: str, client: httpx2.AsyncClient) -> bool:
+    """Apply ALLOWED_PERSON_IDS / ALLOWED_GROUP_IDS; without either every ChurchTools login has access."""
+    allowed_persons = parse_ids(settings.allowed_person_ids)
+    allowed_groups = parse_ids(settings.allowed_group_ids)
+    if not allowed_persons and not allowed_groups:
+        return True
+    if person_id in allowed_persons:
+        return True
+    if allowed_groups and await fetch_person_group_ids(login_token, person_id, client) & allowed_groups:
+        return True
+    logger.info("app_access_denied", person_id=person_id)
+    return False
 
 
 def forget_login_token(login_token: str) -> None:

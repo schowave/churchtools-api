@@ -57,3 +57,23 @@ class TestSettings(unittest.TestCase):
 
         with self.assertRaises(ValidationError):
             Settings()
+
+
+class TestAccessRestrictionSettings(unittest.TestCase):
+    @patch.dict("os.environ", {"ALLOWED_GROUP_IDS": "12, 15", "ALLOWED_PERSON_IDS": ""}, clear=False)
+    def test_id_lists_are_parsed(self):
+        from app.config import Settings, parse_ids
+
+        s = Settings()
+        assert parse_ids(s.allowed_group_ids) == {12, 15}
+        assert parse_ids(s.allowed_person_ids) == set()
+
+    @patch.dict("os.environ", {"ALLOWED_GROUP_IDS": "Mitarbeiter"}, clear=False)
+    def test_typo_fails_at_startup(self):
+        from pydantic import ValidationError
+
+        from app.config import Settings
+
+        with self.assertRaises(ValidationError) as ctx:
+            Settings()
+        assert "ALLOWED_GROUP_IDS" in str(ctx.exception)

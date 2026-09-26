@@ -10,4 +10,5 @@ def test_health_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert "version" in data
+    # The version would tell attackers which known issues apply
+    assert "version" not in data

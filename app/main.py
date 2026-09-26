@@ -18,13 +18,13 @@ configure_logging(settings.log_format)
 logger = structlog.get_logger()
 
 
-# No inline scripts or eval; styles allow inline style attributes and Google Fonts.
+# No inline scripts or eval; styles allow inline style attributes. Fonts are self-hosted.
 CONTENT_SECURITY_POLICY = "; ".join(
     [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline'",
+        "font-src 'self'",
         "img-src 'self' data: blob:",
         "connect-src 'self'",
         "object-src 'none'",
@@ -41,6 +41,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # The app needs none of these browser features
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
         # Browsers ignore HSTS over plain HTTP; the scheme is https behind a trusted proxy (FORWARDED_ALLOW_IPS)
         if request.url.scheme == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

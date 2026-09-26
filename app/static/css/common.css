@@ -313,23 +313,6 @@ input[type="submit"]:active {
     animation: pageEnter 0.5s var(--transition-ease) both;
 }
 
-/* Installed version, pinned bottom right so it is visible without scrolling */
-.app-version {
-    position: fixed;
-    right: var(--spacing-sm);
-    bottom: calc(var(--spacing-sm) + env(safe-area-inset-bottom));
-    z-index: 300; /* above the export bar */
-    padding: 2px 10px;
-    font-size: 0.75rem;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.03em;
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid var(--border-color);
-    border-radius: 999px;
-    pointer-events: none;
-}
-
 /* Utility classes */
 .hidden { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }

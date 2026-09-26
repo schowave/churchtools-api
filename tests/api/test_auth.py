@@ -158,6 +158,28 @@ async def test_login_succeeds_without_display_name(config_mock):
 
 
 @pytest.mark.asyncio
+async def test_login_refused_for_person_without_app_access(templates_mock, config_mock):
+    client = AsyncMock()
+    login_response = MagicMock(status_code=200, cookies={})
+    login_response.json.return_value = {"data": {"personId": 7}}
+    client.post.return_value = login_response
+    token_response = MagicMock(status_code=200)
+    token_response.json.return_value = {"data": "token"}
+    client.get.return_value = token_response
+
+    with (
+        patch("app.services.auth.validate_login_token", AsyncMock(return_value=False)),
+        patch("app.api.auth.sessions.create_session") as create_session,
+    ):
+        await login(MagicMock(spec=Request), username="u", password="p", client=client)
+
+    create_session.assert_not_called()
+    context = templates_mock.TemplateResponse.call_args[0][2]
+    assert "keinen Zugriff" in context["error"]
+    assert templates_mock.TemplateResponse.call_args[1]["status_code"] == 403
+
+
+@pytest.mark.asyncio
 async def test_login_failure(templates_mock, config_mock):
     # Mock request
     request_mock = MagicMock(spec=Request)

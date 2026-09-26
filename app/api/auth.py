@@ -7,6 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
+from app.services import auth as auth_service
 from app.services import sessions
 from app.services.auth import (
     clear_session_cookies,
@@ -124,6 +125,18 @@ async def login(
         # Not JSON or not the expected shape (e.g. an HTML error page, or a login step we do not support)
         logger.warning("login_unexpected_response", error=type(exc).__name__)
         return _login_error(request, "Unerwartete Antwort von ChurchTools. Anmeldung nicht möglich.", status_code=502)
+
+    # The fresh token is valid, so a rejection here means ALLOWED_PERSON_IDS / ALLOWED_GROUP_IDS exclude the person
+    try:
+        has_access = await auth_service.validate_login_token(login_token, client)
+    except httpx2.HTTPError:
+        has_access = False
+    if not has_access:
+        return _login_error(
+            request,
+            "Dein ChurchTools-Konto hat keinen Zugriff auf diese App. Bitte wende dich an die Person, die sie betreut.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
 
     display_name = await _fetch_display_name(login_token, client)
     redirect = RedirectResponse(url=START_PAGE, status_code=status.HTTP_303_SEE_OTHER)
