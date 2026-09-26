@@ -156,6 +156,9 @@
                 <fieldset class="design-group">
                     <legend class="design-group-title">Bilder</legend>
                     <div class="image-row">
+                        <div class="image-thumb image-thumb--bg">
+                            <img id="bg_thumb" alt="Hintergrundbild"{% if has_background_image %} src="/background"{% else %} hidden{% endif %}>
+                        </div>
                         <div class="image-row-text">
                             <span class="image-row-title">Hintergrundbild</span>
                             <span class="image-row-status" id="bg_status">{% if has_background_image %}Hochgeladen{% else %}Keins – weißer Hintergrund{% endif %}</span>
@@ -170,6 +173,9 @@
                         </div>
                     </div>
                     <div class="image-row">
+                        <div class="image-thumb image-thumb--logo">
+                            <img id="logo_thumb" alt="Logo"{% if has_logo %} src="/logo"{% else %} hidden{% endif %}>
+                        </div>
                         <div class="image-row-text">
                             <span class="image-row-title">Logo</span>
                             <span class="image-row-status" id="logo_status">{% if has_logo %}Hochgeladen{% else %}Keins{% endif %}</span>

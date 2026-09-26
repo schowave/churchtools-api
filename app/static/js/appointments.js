@@ -497,16 +497,19 @@ function setupImageControls(kind, labels) {
     var input = $('#' + kind + '_upload');
     var deleteBtn = $('#' + kind + '_delete');
     var status = $('#' + kind + '_status');
-    var slideImg = $(kind === 'bg' ? '#slide_bg' : '#slide_logo');
+    var images = [$(kind === 'bg' ? '#slide_bg' : '#slide_logo'), $('#' + kind + '_thumb')];
     var url = kind === 'bg' ? '/background' : '/logo';
 
     function showState(hasImage) {
         status.textContent = hasImage ? 'Hochgeladen' : labels.empty;
         $('.btn-label', uploadBtn).textContent = hasImage ? 'Ersetzen' : 'Hochladen';
         deleteBtn.hidden = !hasImage;
-        slideImg.hidden = !hasImage;
-        if (hasImage) slideImg.src = url + '?' + Date.now();
-        else slideImg.removeAttribute('src');
+        var src = url + '?' + Date.now();
+        images.forEach(function (img) {
+            img.hidden = !hasImage;
+            if (hasImage) img.src = src;
+            else img.removeAttribute('src');
+        });
     }
 
     uploadBtn.addEventListener('click', function () { input.click(); });

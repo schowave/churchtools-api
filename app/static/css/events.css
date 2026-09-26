@@ -455,11 +455,6 @@
         padding: 0.4em 0.75em;
     }
 
-    .btn-fetch {
-        padding: 1em 1.25em;
-        font-size: 1rem;
-        min-height: 50px;
-    }
 
     .event-card-header {
         padding: var(--spacing-sm) var(--spacing-md);

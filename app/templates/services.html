@@ -32,38 +32,34 @@
     <!-- Step 1: Date & Calendar Selection -->
     <div class="search-card">
         <div class="search-card-inner">
-            <!-- Date range -->
-            <div class="date-row">
-                <div class="date-field">
-                    <label for="start_date_display">Von</label>
-                    <input type="text" id="start_date_display" required placeholder="Startdatum">
-                    <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+            <div class="filter-row">
+                <!-- Date range -->
+                <div class="date-row">
+                    <div class="date-field">
+                        <label for="start_date_display">Von</label>
+                        <input type="text" id="start_date_display" required placeholder="Startdatum">
+                        <input type="hidden" id="start_date" name="start_date" value="{{ start_date }}">
+                    </div>
+                    <span class="date-separator" aria-hidden="true">&ndash;</span>
+                    <div class="date-field">
+                        <label for="end_date_display">Bis</label>
+                        <input type="text" id="end_date_display" required placeholder="Enddatum">
+                        <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
+                    </div>
                 </div>
-                <span class="date-separator">&ndash;</span>
-                <div class="date-field">
-                    <label for="end_date_display">Bis</label>
-                    <input type="text" id="end_date_display" required placeholder="Enddatum">
-                    <input type="hidden" id="end_date" name="end_date" value="{{ end_date }}">
-                </div>
-            </div>
 
-            <!-- Quick presets -->
-            <div class="date-presets">
-                <button type="button" id="today" class="preset-chip">Heute</button>
-                <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
-                <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                <!-- Quick presets -->
+                <div class="date-presets" role="group" aria-label="Zeitraum schnell wählen">
+                    <button type="button" id="today" class="preset-chip">Heute</button>
+                    <button type="button" id="this-week" class="preset-chip">Diese Woche</button>
+                    <button type="button" id="next-week" class="preset-chip">Nächste Woche</button>
+                </div>
             </div>
 
             <!-- All calendars selected (hidden) -->
             {% for calendar in calendars %}
             <input type="hidden" name="calendar_ids" value="{{ calendar['id'] }}" class="calendar-checkbox">
             {% endfor %}
-
-            <!-- Fetch button -->
-            <button type="button" class="btn btn-fetch" id="fetch_btn">
-                <span class="btn-label">Laden</span>
-                <span class="btn-spinner" style="display:none;"><span class="spinner-ring-inline"></span> Laden&hellip;</span>
-            </button>
         </div>
     </div>
 

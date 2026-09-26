@@ -7,29 +7,6 @@
     min-height: 80px;
 }
 
-/* ─── Filter row: dates and presets side by side on wide screens ─── */
-.filter-row {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--spacing-md);
-}
-
-.filter-row .date-row {
-    flex: 1 1 auto;
-}
-
-.filter-row .date-presets {
-    flex: 0 0 auto;
-    flex-wrap: nowrap;
-    padding-bottom: 2px;
-}
-
-.preset-chip:focus-visible,
-.chips-toggle:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-}
-
 /* ─── Appointments actions ──────────────────── */
 .appointments-actions {
     margin-bottom: var(--spacing-sm);
@@ -68,25 +45,6 @@
     font-size: 0.9375rem;
     color: var(--text-muted);
     font-weight: 500;
-}
-
-.retry-btn {
-    margin-top: var(--spacing-md);
-    padding: 0.5em 1.1em;
-    font-family: var(--font-family);
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--primary-color);
-    background: white;
-    border: 1px solid var(--primary-color);
-    border-radius: 100px;
-    cursor: pointer;
-    width: auto;
-}
-
-.retry-btn:hover {
-    background: var(--primary-color);
-    color: white;
 }
 
 /* ─── Appointments container ────────────────── */
@@ -414,7 +372,7 @@ textarea.hidden {
 
 .design-body {
     display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     gap: var(--spacing-lg);
     padding: 0 var(--spacing-lg) var(--spacing-lg);
     border-top: 1px solid var(--border-color);
@@ -597,19 +555,56 @@ textarea.hidden {
     color: var(--text-muted);
 }
 
+/* Thumbnail left; title and buttons stacked next to it, so nothing overlaps in the narrow column */
 .image-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas:
+        "thumb text"
+        "thumb actions";
+    column-gap: var(--spacing-md);
+    row-gap: var(--spacing-2xs);
     align-items: center;
-    gap: var(--spacing-sm);
     padding: var(--spacing-sm) 0;
     border-bottom: 1px solid var(--primary-light);
 }
 
+.image-thumb {
+    grid-area: thumb;
+    width: 76px;
+    aspect-ratio: 16 / 9;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px dashed var(--border-color);
+    background: var(--primary-subtle);
+}
+
+.image-thumb:has(img:not([hidden])) {
+    border-style: solid;
+    background: white;
+}
+
+.image-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.image-thumb--bg img {
+    object-fit: cover;
+}
+
+.image-thumb--logo img {
+    object-fit: contain;
+    padding: 4px;
+}
+
 .image-row-text {
+    grid-area: text;
     display: flex;
     flex-direction: column;
-    margin-right: auto;
     min-width: 0;
+    align-self: end;
 }
 
 .image-row-title {
@@ -623,9 +618,11 @@ textarea.hidden {
 }
 
 .image-actions {
+    grid-area: actions;
     display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-2xs);
-    flex-shrink: 0;
+    align-self: start;
 }
 
 .btn-upload,
@@ -932,13 +929,6 @@ body {
 
     .chip-text {
         padding: 0.4em 0.75em;
-    }
-
-    /* Dates and presets stack */
-    .filter-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: var(--spacing-sm);
     }
 
     /* Appointment items */
