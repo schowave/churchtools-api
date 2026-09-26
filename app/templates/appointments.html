@@ -23,10 +23,8 @@
 {% with active="appointments" %}{% include "_nav.html" %}{% endwith %}
 <main class="container">
     <!-- Header -->
-    <div class="page-header">
-        <h1>Termin-Folien</h1>
-        <p class="subtitle">{{ base_url }}</p>
-    </div>
+    <!-- The navigation marks the page; the heading is for screen readers -->
+    <h1 class="sr-only">Termin-Folien</h1>
 
     {% if error %}
     <div class="alert alert-error">{{ error }}</div>

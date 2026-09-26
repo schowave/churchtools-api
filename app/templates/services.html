@@ -24,10 +24,8 @@
 {% with active="services" %}{% include "_nav.html" %}{% endwith %}
 <main class="container">
     <!-- Header -->
-    <div class="page-header">
-        <h1>Dienstplan</h1>
-        <p class="subtitle">{{ base_url }}</p>
-    </div>
+    <!-- The navigation marks the page; the heading is for screen readers -->
+    <h1 class="sr-only">Dienstplan</h1>
 
     <!-- Step 1: Date & Calendar Selection -->
     <div class="search-card">

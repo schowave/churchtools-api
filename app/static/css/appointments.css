@@ -869,14 +869,6 @@ body {
         padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
     }
 
-    .page-header {
-        margin-bottom: var(--spacing-lg);
-    }
-
-    .page-header h1 {
-        font-size: 1.7rem;
-    }
-
     .search-card-inner {
         padding: var(--spacing-md);
         gap: var(--spacing-sm);
@@ -1018,9 +1010,6 @@ body {
         padding: var(--spacing-sm);
     }
 
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
 }
 
 /* ─── Safari overrides ──────────────────────── */
