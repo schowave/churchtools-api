@@ -10,10 +10,10 @@ from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
 from app.database import Base
-from app.dependencies import get_http_client
 from app.main import app
 from app.models import LoginSession
 from app.services import sessions
+from app.web import get_http_client
 
 pytestmark = pytest.mark.real_sessions
 

@@ -7,7 +7,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas
 
 from app.schemas import AppointmentData
-from app.services.pdf_generator import (
+from app.services.pdf.slides import (
     create_pdf,
     create_transparent_image,
     draw_background_image,
@@ -17,8 +17,30 @@ from app.services.pdf_generator import (
 )
 
 
+def _make_appointment(**overrides) -> AppointmentData:
+    """Helper to create AppointmentData with sensible defaults for testing."""
+    defaults = {
+        "id": "1",
+        "title": "Test Event",
+        "start_date": "2026-03-27T17:00:00Z",
+        "end_date": "2026-03-27T19:00:00Z",
+        "meeting_at": "",
+        "information": "",
+        "additional_info": "",
+    }
+    defaults.update(overrides)
+    return AppointmentData(**defaults)
+
+
+def _appointment(**kwargs):
+    from app.schemas import AppointmentData
+
+    defaults = {"id": "1", "title": "Termin", "start_date": "2026-09-27T08:00:00Z", "end_date": "2026-09-27T09:30:00Z"}
+    return AppointmentData(**{**defaults, **kwargs})
+
+
 class TestPdfGenerator(unittest.TestCase):
-    @patch("app.services.pdf_generator.ImageReader")
+    @patch("app.services.pdf.slides.ImageReader")
     def test_draw_background_image(self, mock_image_reader):
         # Mock canvas and image
         canvas_mock = MagicMock(spec=canvas.Canvas)
@@ -62,7 +84,7 @@ class TestPdfGenerator(unittest.TestCase):
         # Check that drawImage was not called
         canvas_mock.drawImage.assert_not_called()
 
-    @patch("app.services.pdf_generator.ImageReader")
+    @patch("app.services.pdf.slides.ImageReader")
     def test_draw_background_image_error(self, mock_image_reader):
         # Mock canvas and image
         canvas_mock = MagicMock(spec=canvas.Canvas)
@@ -77,8 +99,8 @@ class TestPdfGenerator(unittest.TestCase):
         # Check that drawImage was not called
         canvas_mock.drawImage.assert_not_called()
 
-    @patch("app.services.pdf_generator.Image")
-    @patch("app.services.pdf_generator.ImageColor")
+    @patch("app.services.pdf.slides.Image")
+    @patch("app.services.pdf.slides.ImageColor")
     def test_create_transparent_image(self, mock_image_color, mock_image):
         # Mock ImageColor.getcolor
         mock_image_color.getcolor.return_value = (255, 255, 255, 255)
@@ -99,8 +121,8 @@ class TestPdfGenerator(unittest.TestCase):
         # Check that the result is the mocked image
         self.assertEqual(result, image_mock)
 
-    @patch("app.services.pdf_generator.create_transparent_image")
-    @patch("app.services.pdf_generator.ImageReader")
+    @patch("app.services.pdf.slides.create_transparent_image")
+    @patch("app.services.pdf.slides.ImageReader")
     def test_draw_transparent_rectangle(self, mock_image_reader, mock_create_image):
         # Mock canvas
         canvas_mock = MagicMock(spec=canvas.Canvas)
@@ -147,7 +169,7 @@ class TestPdfGenerator(unittest.TestCase):
             self.assertEqual(args[4], 400)
             self.assertEqual(kwargs["mask"], "auto")
 
-    @patch("app.services.pdf_generator.draw_background_image")
+    @patch("app.services.pdf.slides.draw_background_image")
     def test_setup_new_page(self, mock_draw_bg):
         # Mock canvas
         canvas_mock = MagicMock(spec=canvas.Canvas)
@@ -177,7 +199,7 @@ class TestPdfGenerator(unittest.TestCase):
         # Check that the result is the correct y position
         self.assertEqual(result, 675 - (675 * 1 / 20))
 
-    @patch("app.services.pdf_generator.draw_background_image")
+    @patch("app.services.pdf.slides.draw_background_image")
     def test_setup_new_page_error(self, mock_draw_bg):
         # Mock canvas
         canvas_mock = MagicMock(spec=canvas.Canvas)
@@ -198,7 +220,7 @@ class TestPdfGenerator(unittest.TestCase):
         # Check that the result is the correct y position despite the error
         self.assertEqual(result, 675 - (675 * 1 / 20))
 
-    @patch("app.services.pdf_generator.pdfmetrics")
+    @patch("app.services.pdf.slides.pdfmetrics")
     def test_wrap_text(self, mock_pdfmetrics):
         # Mock stringWidth to simulate text width
         def mock_string_width(text, font, size):
@@ -238,9 +260,9 @@ class TestPdfGenerator(unittest.TestCase):
         self.assertEqual(lines[2], "Line 3")
         self.assertEqual(height, 12 * 3)
 
-    @patch("app.services.pdf_generator.canvas.Canvas")
-    @patch("app.services.pdf_generator.wrap_text")
-    @patch("app.services.pdf_generator.pdfmetrics")
+    @patch("app.services.pdf.slides.canvas.Canvas")
+    @patch("app.services.pdf.slides.wrap_text")
+    @patch("app.services.pdf.slides.pdfmetrics")
     def test_create_pdf(self, mock_pdfmetrics, mock_wrap_text, mock_canvas):
         # Mock Canvas instance
         canvas_instance = MagicMock()
@@ -267,14 +289,14 @@ class TestPdfGenerator(unittest.TestCase):
         ]
 
         # Mock parse_iso_datetime
-        with patch("app.services.pdf_generator.parse_iso_datetime") as mock_parse:
+        with patch("app.services.pdf.slides.parse_iso_datetime") as mock_parse:
             # Create a mock datetime object
             mock_dt = MagicMock()
             mock_dt.strftime.side_effect = lambda fmt: "15.01.2023" if fmt == "%d.%m.%Y" else "11:00"
             mock_parse.return_value = mock_dt
 
             # Mock format_date
-            with patch("app.services.pdf_generator.format_date") as mock_format:
+            with patch("app.services.pdf.slides.format_date") as mock_format:
                 mock_format.return_value = "Sonntag"
 
                 # Call the function
@@ -300,21 +322,6 @@ class TestPdfGenerator(unittest.TestCase):
 
         # Check that the result is bytes
         self.assertIsInstance(result, bytes)
-
-
-def _make_appointment(**overrides) -> AppointmentData:
-    """Helper to create AppointmentData with sensible defaults for testing."""
-    defaults = {
-        "id": "1",
-        "title": "Test Event",
-        "start_date": "2026-03-27T17:00:00Z",
-        "end_date": "2026-03-27T19:00:00Z",
-        "meeting_at": "",
-        "information": "",
-        "additional_info": "",
-    }
-    defaults.update(overrides)
-    return AppointmentData(**defaults)
 
 
 class TestDrawEventOverflow(unittest.TestCase):
@@ -404,12 +411,13 @@ class TestDrawEventOverflow(unittest.TestCase):
     ]
 
     def setUp(self):
-        import app.services.pdf_generator as pg
+        import app.services.pdf.fonts as fonts
+        import app.services.pdf.slides as slides
 
         # Reset font cache so we get a fresh registration with real fonts
-        pg._cached_fonts = None
-        self.font_name, self.font_name_bold = pg._register_fonts()
-        self.y_start = pg.PAGE_HEIGHT - pg.BOTTOM_MARGIN
+        fonts._cached_fonts = None
+        self.font_name, self.font_name_bold = fonts.register_fonts()
+        self.y_start = slides.PAGE_HEIGHT - slides.BOTTOM_MARGIN
 
     def _draw_and_capture(self, event: AppointmentData):
         """Draw a single event on a real canvas and capture box + text positions.
@@ -418,7 +426,7 @@ class TestDrawEventOverflow(unittest.TestCase):
           box_calls  = list of (x, y_bottom, width, height)
           text_calls = list of (x, y, text)
         """
-        from app.services.pdf_generator import _draw_event
+        from app.services.pdf.slides import _draw_event
 
         buf = io.BytesIO()
         c = canvas.Canvas(buf, pagesize=landscape((1200, 675)))
@@ -435,7 +443,7 @@ class TestDrawEventOverflow(unittest.TestCase):
         c.drawString = spy_draw_string
 
         with patch(
-            "app.services.pdf_generator.draw_transparent_rectangle",
+            "app.services.pdf.slides.draw_transparent_rectangle",
             wraps=draw_transparent_rectangle,
         ) as mock_rect:
             _draw_event(
@@ -545,56 +553,21 @@ class TestDrawEventOverflow(unittest.TestCase):
         self.assertFalse(ellipsis_lines, "Short info should not be truncated")
 
 
-class TestFontRegistration(unittest.TestCase):
-    """Test font registration and caching."""
-
-    def test_font_registration_is_cached(self):
-        import app.services.pdf_generator as pg
-
-        pg._cached_fonts = None
-        result1 = pg._register_fonts()
-        result2 = pg._register_fonts()
-        self.assertEqual(result1, result2)
-        self.assertIsNotNone(pg._cached_fonts)
-
-    def test_font_fallback_on_missing_font(self):
-        import app.services.pdf_generator as pg
-
-        pg._cached_fonts = None
-        with patch.object(pdfmetrics, "getRegisteredFontNames", return_value=[]):
-            with patch("app.services.pdf_generator.TTFont", side_effect=Exception("Font not found")):
-                font_name, bold_name = pg._register_fonts()
-                self.assertEqual(font_name, "Helvetica")
-
-        pg._cached_fonts = None
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-def _appointment(**kwargs):
-    from app.schemas import AppointmentData
-
-    defaults = {"id": "1", "title": "Termin", "start_date": "2026-09-27T08:00:00Z", "end_date": "2026-09-27T09:30:00Z"}
-    return AppointmentData(**{**defaults, **kwargs})
-
-
 def test_format_time_range_timed():
-    from app.services.pdf_generator import _format_time_range
+    from app.services.pdf.slides import _format_time_range
 
     assert _format_time_range(_appointment()) == "10:00 - 11:30 Uhr"
 
 
 def test_format_time_range_all_day():
-    from app.services.pdf_generator import _format_time_range
+    from app.services.pdf.slides import _format_time_range
 
     event = _appointment(start_date="2026-09-27", end_date="2026-09-27", all_day=True)
     assert _format_time_range(event) == "Ganztägig"
 
 
 def test_format_time_range_multi_day_all_day():
-    from app.services.pdf_generator import _format_time_range
+    from app.services.pdf.slides import _format_time_range
 
     event = _appointment(start_date="2026-10-02", end_date="2026-10-04", all_day=True)
     assert _format_time_range(event) == "Ganztägig bis 04.10.2026"

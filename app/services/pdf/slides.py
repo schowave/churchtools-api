@@ -1,22 +1,18 @@
 import io
-from pathlib import Path
 
 import structlog
 from babel.dates import format_date
 from PIL import Image, ImageColor
-from reportlab.lib import colors
 from reportlab.lib.colors import HexColor, black
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
+from reportlab.lib.pagesizes import landscape
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-from app.schemas import AgendaItem, AppointmentData, EventSummary
-from app.utils import normalize_newlines, parse_iso_datetime
+from app.dates import parse_iso_datetime
+from app.schemas import AppointmentData
+from app.services.pdf.fonts import register_fonts
+from app.text import normalize_newlines
 
 logger = structlog.get_logger()
 
@@ -38,60 +34,6 @@ SCALE_FACTOR = BASE_FONT_SIZE / 27
 LINE_HEIGHT_FACTOR = 1.4
 LINE_SPACING_FACTOR = 1.5
 TOP_PADDING_FACTOR = 0.8
-
-# Preferred font (Bahnschrift for church display, Helvetica as fallback)
-PREFERRED_FONT = "Bahnschrift"
-FALLBACK_FONT = "Helvetica"
-FALLBACK_FONT_BOLD = "Helvetica-Bold"
-
-# Resolve fonts/ directory relative to project root (two levels up from this file)
-_FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "fonts"
-
-_cached_fonts = None
-
-
-def _register_fonts():
-    """Register preferred fonts with fallback to Helvetica.
-
-    Returns (font_name, bold_font_name). Results are cached after first call.
-    """
-    global _cached_fonts
-    if _cached_fonts is not None:
-        return _cached_fonts
-
-    font_name = PREFERRED_FONT
-    try:
-        if font_name not in pdfmetrics.getRegisteredFontNames():
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
-            except Exception as e:
-                logger.error("font_registration_failed", font=font_name, error=str(e))
-                font_name = FALLBACK_FONT
-
-        bold_font_name = font_name + "-Bold"
-        if bold_font_name not in pdfmetrics.getRegisteredFontNames():
-            try:
-                if font_name == PREFERRED_FONT:
-                    # Bahnschrift uses the same file for bold
-                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}.ttf")))
-                else:
-                    pdfmetrics.registerFont(TTFont(bold_font_name, str(_FONTS_DIR / f"{font_name}-Bold.ttf")))
-            except Exception as e:
-                logger.error("font_registration_failed", font=bold_font_name, error=str(e))
-                bold_font_name = FALLBACK_FONT_BOLD
-                if FALLBACK_FONT_BOLD not in pdfmetrics.getRegisteredFontNames():
-                    try:
-                        pdfmetrics.registerFont(TTFont(FALLBACK_FONT_BOLD, str(_FONTS_DIR / "helvetica-bold.ttf")))
-                    except Exception as e2:
-                        logger.error("font_registration_failed", font=FALLBACK_FONT_BOLD, error=str(e2))
-                        bold_font_name = FALLBACK_FONT
-    except Exception as e:
-        logger.error("font_registration_failed", error=str(e))
-        font_name = FALLBACK_FONT
-        bold_font_name = FALLBACK_FONT_BOLD
-
-    _cached_fonts = (font_name, bold_font_name)
-    return _cached_fonts
 
 
 def draw_background_image(canvas, image_stream, page_width, page_height):
@@ -184,7 +126,7 @@ def wrap_text(text, font_name, line_height, max_width):
     Preserves original line breaks and wraps text that exceeds max_width.
     """
     # Ensure fonts are registered (idempotent after first call)
-    _register_fonts()
+    register_fonts()
 
     wrapped_lines = []
     text_height = 0
@@ -360,7 +302,7 @@ def _draw_event(
 def create_pdf(
     appointments, date_color, background_color, description_color, alpha, image_stream=None, logo_stream=None
 ) -> bytes:
-    font_name, font_name_bold = _register_fonts()
+    font_name, font_name_bold = register_fonts()
 
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=landscape(PAGE_SIZE))
@@ -394,167 +336,4 @@ def create_pdf(
 
     c.save()
     logger.info("pdf_created", appointments=len(appointments))
-    return buffer.getvalue()
-
-
-def create_agenda_pdf(event_name: str, event_start: str, agenda_items: list[AgendaItem]) -> bytes:
-    """Create a tabular A4 PDF for a worship service agenda."""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
-    )
-
-    font_name, font_name_bold = _register_fonts()
-    styles = getSampleStyleSheet()
-
-    title_style = ParagraphStyle(
-        "AgendaTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
-    )
-    subtitle_style = ParagraphStyle(
-        "AgendaSubtitle", parent=styles["Normal"], fontName=font_name, fontSize=10, textColor=colors.grey, spaceAfter=12
-    )
-    cell_style = ParagraphStyle("AgendaCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
-    section_style = ParagraphStyle(
-        "AgendaSection",
-        parent=styles["Normal"],
-        fontName=font_name_bold,
-        fontSize=10,
-        leading=14,
-        textColor=colors.HexColor("#5E8B5A"),
-    )
-
-    start_dt = parse_iso_datetime(event_start)
-    date_str = start_dt.strftime("%d.%m.%Y")
-
-    elements = []
-    elements.append(Paragraph(f"Agenda — {event_name}", title_style))
-    elements.append(Paragraph(date_str, subtitle_style))
-
-    table_data = [["Zeit", "Titel", "Dauer", "Verantwortlich", "Notiz"]]
-    row_styles = []
-
-    for item in agenda_items:
-        if item.type == "header":
-            table_data.append([Paragraph(item.title, section_style), "", "", "", ""])
-            row_idx = len(table_data) - 1
-            row_styles.append(("SPAN", (0, row_idx), (4, row_idx)))
-            row_styles.append(("BACKGROUND", (0, row_idx), (4, row_idx), colors.HexColor("#F0F3ED")))
-            continue
-
-        time_str = ""
-        if item.start:
-            dt = parse_iso_datetime(item.start)
-            time_str = dt.strftime("%H:%M")
-
-        title = item.title
-        if item.type == "song" and item.song_key:
-            title += f" ({item.song_key})"
-            if item.song_arrangement:
-                title += f"\n{item.song_arrangement}"
-
-        table_data.append(
-            [
-                Paragraph(time_str, cell_style),
-                Paragraph(title.replace("\n", "<br/>"), cell_style),
-                Paragraph(item.duration_display, cell_style),
-                Paragraph(", ".join(item.responsible_names) if item.responsible_names else "", cell_style),
-                Paragraph(item.note or "", cell_style),
-            ]
-        )
-
-    if len(table_data) > 1:
-        col_widths = [45, 150, 40, 100, None]
-        available = A4[0] - 30 * mm
-        fixed = sum(w for w in col_widths if w is not None)
-        col_widths[-1] = available - fixed
-
-        table = Table(table_data, colWidths=col_widths, repeatRows=1)
-        base_style = [
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
-            ("FONTSIZE", (0, 0), (-1, -1), 9),
-            ("ALIGN", (0, 0), (0, -1), "LEFT"),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]
-        base_style.extend(row_styles)
-        table.setStyle(TableStyle(base_style))
-        elements.append(table)
-
-    doc.build(elements)
-    return buffer.getvalue()
-
-
-def create_services_pdf(date_range: str, events: list[EventSummary]) -> bytes:
-    """Create a tabular A4 PDF for service assignments across events."""
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=A4, topMargin=20 * mm, bottomMargin=15 * mm, leftMargin=15 * mm, rightMargin=15 * mm
-    )
-
-    font_name, font_name_bold = _register_fonts()
-    styles = getSampleStyleSheet()
-
-    title_style = ParagraphStyle(
-        "ServicesTitle", parent=styles["Heading1"], fontName=font_name_bold, fontSize=16, spaceAfter=6
-    )
-    cell_style = ParagraphStyle("ServicesCell", parent=styles["Normal"], fontName=font_name, fontSize=9, leading=12)
-    event_header_style = ParagraphStyle(
-        "ServicesEventHeader", parent=styles["Normal"], fontName=font_name_bold, fontSize=10, leading=14
-    )
-
-    elements = []
-    elements.append(Paragraph(f"Dienstplan — {date_range}", title_style))
-    elements.append(Spacer(1, 6))
-
-    for event in events:
-        start_dt = parse_iso_datetime(event.start_date)
-        event_label = f"{start_dt.strftime('%d.%m.%Y %H:%M')} — {event.name}"
-        elements.append(Paragraph(event_label, event_header_style))
-        elements.append(Spacer(1, 4))
-
-        if not event.services:
-            elements.append(Paragraph("Keine Dienste eingetragen", cell_style))
-            elements.append(Spacer(1, 10))
-            continue
-
-        table_data = [["Dienst", "Person", "Status"]]
-        for svc in event.services:
-            person = svc.person_name or "-- (offen)"
-            status_str = "Ja" if svc.is_accepted else "?"
-            table_data.append(
-                [
-                    Paragraph(svc.name, cell_style),
-                    Paragraph(person, cell_style),
-                    Paragraph(status_str, cell_style),
-                ]
-            )
-
-        available = A4[0] - 30 * mm
-        col_widths = [available * 0.35, available * 0.45, available * 0.20]
-
-        table = Table(table_data, colWidths=col_widths, repeatRows=1)
-        table.setStyle(
-            TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#5E8B5A")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-                    ("FONTNAME", (0, 0), (-1, 0), font_name_bold),
-                    ("FONTSIZE", (0, 0), (-1, -1), 9),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#D8DDD0")),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#FAFBF8")]),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                ]
-            )
-        )
-        elements.append(table)
-        elements.append(Spacer(1, 14))
-
-    doc.build(elements)
     return buffer.getvalue()

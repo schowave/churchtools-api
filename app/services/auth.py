@@ -2,7 +2,7 @@ import hashlib
 import time
 
 import httpx2
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
@@ -70,6 +70,12 @@ async def get_valid_login_token(request: Request, client: httpx2.AsyncClient) ->
         sessions.delete_session(session_id)
         return None
     return login_token
+
+
+async def require_auth(request: Request, client: httpx2.AsyncClient) -> None:
+    """Raise 401 unless ChurchTools accepts the login token."""
+    if not await get_valid_login_token(request, client):
+        raise HTTPException(status_code=401, detail="Nicht angemeldet")
 
 
 def _cookie_options(request: Request) -> dict:

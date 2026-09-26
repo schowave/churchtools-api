@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi.testclient import TestClient
 
-from app.dependencies import get_http_client
 from app.main import app
+from app.web import get_http_client
 
 client = TestClient(app, cookies={"csrf_token": "t"})
 

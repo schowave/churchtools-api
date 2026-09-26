@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.schemas import AppointmentData  # noqa: E402
-from app.services.pdf_generator import create_pdf  # noqa: E402
+from app.services.pdf.slides import create_pdf  # noqa: E402
 
 SAMPLE_APPOINTMENTS = [
     # 1. Normal short appointment

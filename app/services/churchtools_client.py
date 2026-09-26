@@ -5,8 +5,8 @@ import httpx2
 import structlog
 
 from app.config import settings
+from app.dates import parse_iso_datetime
 from app.schemas import AgendaItem, AppointmentData, EventService, EventSummary
-from app.utils import parse_iso_datetime
 
 logger = structlog.get_logger()
 

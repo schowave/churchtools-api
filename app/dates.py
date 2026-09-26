@@ -38,24 +38,6 @@ def get_date_range_from_form(start_date: str | None = None, end_date: str | None
     return start_date, end_date
 
 
-def normalize_newlines(text: str) -> str:
-    """
-    Normalizes line breaks in a text.
-    Replaces all types of line breaks (\r\n, \r) with \n.
-    Also removes special Unicode characters that may sometimes appear in text fields.
-    """
-    if text is None:
-        return ""
-    # First replace \r\n with \n
-    text = text.replace("\r\n", "\n")
-    # Then replace single \r with \n
-    text = text.replace("\r", "\n")
-    # Remove special Unicode characters that may sometimes appear in text fields
-    text = text.replace("\u2028", "\n")  # Line Separator
-    text = text.replace("\u2029", "\n")  # Paragraph Separator
-    return text
-
-
 def export_timestamp(now: datetime | None = None, tz: ZoneInfo | None = None) -> str:
     """Timestamp for export filenames in the configured timezone (the container runs in UTC)."""
     if tz is None:

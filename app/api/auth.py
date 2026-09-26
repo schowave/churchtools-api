@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import RedirectResponse, Response
 
 from app.config import settings
-from app.dependencies import get_http_client
 from app.services import sessions
 from app.services.auth import (
     clear_session_cookies,
@@ -13,7 +12,7 @@ from app.services.auth import (
     set_session_cookie,
 )
 from app.services.rate_limit import LoginRateLimiter
-from app.shared import templates
+from app.web import get_http_client, templates
 
 router = APIRouter()
 

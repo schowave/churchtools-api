@@ -9,8 +9,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import appointments, auth, events, health
-from app.config import settings
+from app.api import appointments, auth, events, health, images
+from app.config import APP_DIR, settings
 from app.logging_config import configure_logging
 from app.middleware.csrf import CSRFMiddleware
 
@@ -71,7 +71,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(CSRFMiddleware, exempt_paths=["/health"])
 
 # Include static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 
 # Make sure the directory for DB exists
 Path(settings.db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -99,4 +99,5 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, tags=["auth"])
 app.include_router(appointments.router, tags=["appointments"])
+app.include_router(images.router, tags=["images"])
 app.include_router(events.router, tags=["events"])

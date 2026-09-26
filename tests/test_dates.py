@@ -1,11 +1,11 @@
 import unittest
-from datetime import datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from app.utils import get_date_range_from_form, normalize_newlines, parse_iso_datetime
+from app.dates import export_timestamp, get_date_range_from_form, parse_iso_datetime
 
 
-class TestUtils(unittest.TestCase):
+class TestDates(unittest.TestCase):
     def test_parse_iso_datetime_with_z(self):
         # Test parsing ISO datetime with Z suffix (UTC)
         dt_str = "2023-01-15T14:30:00Z"
@@ -26,29 +26,6 @@ class TestUtils(unittest.TestCase):
         ny_tz = ZoneInfo("America/New_York")
         result = parse_iso_datetime(dt_str, tz=ny_tz)
         self.assertEqual(result.hour, 9)  # 14 UTC = 9 EST
-
-    def test_normalize_newlines(self):
-        # Test with Windows-style line endings
-        windows_text = "Line1\r\nLine2\r\nLine3"
-        expected = "Line1\nLine2\nLine3"
-        self.assertEqual(normalize_newlines(windows_text), expected)
-
-        # Test with Mac-style line endings
-        mac_text = "Line1\rLine2\rLine3"
-        self.assertEqual(normalize_newlines(mac_text), expected)
-
-        # Test with mixed line endings
-        mixed_text = "Line1\r\nLine2\rLine3\nLine4"
-        expected_mixed = "Line1\nLine2\nLine3\nLine4"
-        self.assertEqual(normalize_newlines(mixed_text), expected_mixed)
-
-        # Test with Unicode line separators
-        unicode_text = "Line1\u2028Line2\u2029Line3"
-        expected_unicode = "Line1\nLine2\nLine3"
-        self.assertEqual(normalize_newlines(unicode_text), expected_unicode)
-
-        # Test with None input
-        self.assertEqual(normalize_newlines(None), "")
 
     def test_get_date_range_from_form_with_values(self):
         # Test with provided values
@@ -77,10 +54,6 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(end_date.weekday(), 6)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def test_parse_iso_datetime_date_only_is_local_midnight(monkeypatch):
     # All-day appointments come as plain dates; they must stay on that local date,
     # independent of the server's system timezone.
@@ -97,3 +70,8 @@ def test_parse_iso_datetime_date_only_is_local_midnight(monkeypatch):
         time.tzset()
     assert (result.year, result.month, result.day, result.hour, result.minute) == (2026, 9, 27, 0, 0)
     assert result.tzinfo == berlin
+
+
+def test_export_timestamp_uses_configured_timezone():
+    utc_now = datetime(2026, 9, 27, 8, 0, 0, tzinfo=UTC)
+    assert export_timestamp(utc_now, tz=ZoneInfo("Europe/Berlin")) == "2026-09-27-10-00-00"

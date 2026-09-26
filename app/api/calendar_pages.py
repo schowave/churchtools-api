@@ -5,10 +5,10 @@ from fastapi import Request
 from fastapi.responses import Response
 
 from app.config import settings
+from app.dates import get_date_range_from_form
 from app.services.auth import get_valid_login_token, redirect_to_login
 from app.services.churchtools_client import AuthenticationError, fetch_calendars
-from app.shared import templates
-from app.utils import get_date_range_from_form
+from app.web import templates
 
 
 async def render_calendar_page(

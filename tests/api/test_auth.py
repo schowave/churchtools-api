@@ -6,7 +6,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.api.auth import login, login_page, logout, overview
-from app.config import settings
 
 
 @pytest.fixture
@@ -14,17 +13,6 @@ def templates_mock():
     templates_mock = MagicMock(spec=Jinja2Templates)
     with patch("app.api.auth.templates", templates_mock):
         yield templates_mock
-
-
-@pytest.fixture
-def config_mock():
-    values = {"CHURCHTOOLS_BASE": "test.church.tools", "CHURCHTOOLS_BASE_URL": "https://test.church.tools"}
-    with (
-        patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
-        patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
-        patch.object(settings, "version", "0.0.0-test"),
-    ):
-        yield values
 
 
 @pytest.mark.asyncio

@@ -8,6 +8,8 @@ from unittest.mock import AsyncMock, patch  # noqa: E402
 
 import pytest  # noqa: E402
 
+from app.config import settings  # noqa: E402
+
 
 @pytest.fixture(autouse=True)
 def _accept_login_tokens(request):
@@ -33,3 +35,14 @@ def _in_memory_sessions(request):
         patch("app.services.sessions.purge_expired_sessions"),
     ):
         yield
+
+
+@pytest.fixture
+def config_mock():
+    values = {"CHURCHTOOLS_BASE": "test.church.tools", "CHURCHTOOLS_BASE_URL": "https://test.church.tools"}
+    with (
+        patch.object(settings, "churchtools_base", values["CHURCHTOOLS_BASE"]),
+        patch.object(settings, "churchtools_base_url", values["CHURCHTOOLS_BASE_URL"]),
+        patch.object(settings, "version", "0.0.0-test"),
+    ):
+        yield values

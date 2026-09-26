@@ -6,9 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import auth as auth_api
-from app.dependencies import get_http_client
 from app.main import app
 from app.services.rate_limit import LoginRateLimiter
+from app.web import get_http_client
 
 
 def _response(status_code, payload=None):

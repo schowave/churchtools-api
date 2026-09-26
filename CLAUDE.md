@@ -15,11 +15,14 @@ The role of this file is to describe common mistakes and confusion points that a
 - `tests/conftest.py` also mocks the session store (session id == token) unless a test is marked `@pytest.mark.real_sessions`.
 - New Alembic migrations: `entrypoint.sh` stamps pre-alembic databases as `001`, never `head`, so later migrations still run.
 - Pages send a strict CSP (`script-src 'self'`, see `app/main.py`). No inline `<script>` blocks or `on*=` handlers in templates; `tests/test_template_rendering.py` enforces it. Put behaviour into the page's JS file.
-- ChurchTools does not reject invalid login tokens: `/api/whoami` (and likely other endpoints) answers with HTTP 200 as the anonymous user (`id: -1`). A cookie being present, or a ChurchTools call succeeding, proves nothing. Protected routes must use `get_valid_login_token` / `_require_auth` from `app/services/auth.py`, which checks `id > 0`.
+- ChurchTools does not reject invalid login tokens: `/api/whoami` (and likely other endpoints) answers with HTTP 200 as the anonymous user (`id: -1`). A cookie being present, or a ChurchTools call succeeding, proves nothing. Protected routes must use `get_valid_login_token` / `require_auth` from `app/services/auth.py`, which checks `id > 0`.
 - `tests/conftest.py` has an autouse fixture that treats every login token as valid. Tests for the real validation opt out with `@pytest.mark.real_token_validation`.
 - Uploaded images are validated with Pillow (PNG/JPEG only) and served with a content type sniffed from the bytes. Never derive the content type from the stored filename.
 - The Termin-Folien, Agenda and Dienstplan pages share `render_calendar_page` in `app/api/calendar_pages.py`. Tests that mock `fetch_calendars`, `get_date_range_from_form` or `templates` for these pages must patch `app.api.calendar_pages.*`, not the route modules.
 - PDF/JPEG generation is CPU-bound (JPEG shells out to pdftoppm): call it via `run_in_threadpool`, never directly in an async route, or the whole server stalls during exports.
 - Log with structlog events and fields (`logger.info("pdf_created", appointments=n)`), not f-strings.
 - The runtime image has no pip (removed in the Dockerfile; trivy flagged its vendored packages). Install-time steps belong in the builder stage.
+- Resolve files inside the package from `APP_DIR` (`app/config.py`), never from relative paths like `"app/static"`: those break when the process starts outside the repo root. Fonts for the PDFs live in `app/resources/fonts/`.
+- Tests mirror `app/` (`tests/api/`, `tests/services/`, `tests/services/pdf/`, `tests/middleware/`); cross-cutting tests (security, template rendering, error handling) stay in `tests/`. Shared fixtures such as `config_mock` live in `tests/conftest.py`.
+- Logo and background routes live in `app/api/images.py`; tests must patch `app.api.images.*` for them, while `/api/generate` still reads images via `app.api.appointments.*`.
 - The HTTP client is `httpx2` (maintained continuation of httpx by pydantic, same API). Do not re-add `httpx`.

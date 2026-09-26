@@ -5,10 +5,13 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Package directory; templates, static files and fonts are resolved from here, not from the CWD.
+APP_DIR = Path(__file__).resolve().parent
+
 
 def _read_version() -> str:
     try:
-        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        pyproject = APP_DIR.parent / "pyproject.toml"
         with open(pyproject, "rb") as f:
             return tomllib.load(f)["project"]["version"]
     except Exception:

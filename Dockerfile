@@ -42,14 +42,13 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 RUN python -m pip uninstall -y pip
 
 # Copy custom fonts and rebuild font cache
-COPY fonts/ /usr/share/fonts/custom/
+COPY app/resources/fonts/ /usr/share/fonts/custom/
 RUN fc-cache -fv
 
 WORKDIR /app
 
-# Copy application source, config, migrations, and fonts
+# Copy application source (including fonts), config and migrations
 COPY app/ ./app/
-COPY fonts/ ./fonts/
 COPY alembic/ ./alembic/
 COPY alembic.ini ./
 COPY entrypoint.sh ./

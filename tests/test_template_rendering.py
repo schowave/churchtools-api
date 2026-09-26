@@ -7,9 +7,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.config import settings
-from app.dependencies import get_http_client
 from app.main import app
 from app.schemas import ColorSettings
+from app.web import get_http_client
 
 client = TestClient(app)
 authed_client = TestClient(app, cookies={settings.cookie_session: "token"})

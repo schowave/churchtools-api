@@ -8,7 +8,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from app.api.calendar_pages import render_calendar_page
-from app.dependencies import get_http_client
+from app.dates import export_timestamp
 from app.services.auth import get_valid_login_token
 from app.services.churchtools_client import (
     AuthenticationError,
@@ -16,8 +16,9 @@ from app.services.churchtools_client import (
     fetch_event,
     fetch_events,
 )
-from app.services.pdf_generator import create_agenda_pdf, create_services_pdf
-from app.utils import export_timestamp
+from app.services.pdf.agenda import create_agenda_pdf
+from app.services.pdf.services import create_services_pdf
+from app.web import get_http_client
 
 logger = structlog.get_logger()
 router = APIRouter()

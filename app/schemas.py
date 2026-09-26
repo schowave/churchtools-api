@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, computed_field, field_validator
 
-from app.utils import parse_iso_datetime
+from app.dates import parse_iso_datetime
 
 _HEX_COLOR_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
