@@ -1,7 +1,7 @@
-{# Main navigation for logged-in pages. Set `active` via {% with %}: overview, appointments, agenda, services, profile #}
+{# Main navigation for logged-in pages. Set `active` via {% with %}: appointments, agenda, services, profile #}
 {% set nav_items = [("appointments", "/appointments", "Termin-Folien"), ("agenda", "/agenda", "Agenda"), ("services", "/services", "Dienstplan")] %}
 <nav class="app-nav" aria-label="Hauptmenü">
-    <a href="/overview" class="app-nav-brand"{% if active == "overview" %} aria-current="page"{% endif %}>ChurchTools Folien</a>
+    <a href="/appointments" class="app-nav-brand">ChurchTools Folien</a>
     <div class="app-nav-links">
         {% for key, href, label in nav_items %}
         <a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>
@@ -13,7 +13,6 @@
             Menü
         </summary>
         <div class="app-nav-dropdown">
-            <a href="/overview"{% if active == "overview" %} aria-current="page"{% endif %}>Startseite</a>
             {% for key, href, label in nav_items %}
             <a href="{{ href }}"{% if active == key %} aria-current="page"{% endif %}>{{ label }}</a>
             {% endfor %}

@@ -160,14 +160,14 @@ def test_login_sets_opaque_session_cookie(session_db, churchtools):
     assert f"Max-Age={int(sessions.SESSION_LIFETIME.total_seconds())}" in set_cookie
     assert sessions.get_session_token(session_id) == "ct-login-token"
 
-    assert client.get("/overview").status_code == 200
+    assert client.get("/profile").status_code == 200
 
 
 def test_unknown_session_id_redirects_and_clears_cookies(session_db, churchtools):
     client = TestClient(
         app, cookies={settings.cookie_session: "forged", "login_token": "legacy"}, follow_redirects=False
     )
-    response = client.get("/overview")
+    response = client.get("/profile")
 
     assert response.status_code == 303
     cleared = response.headers.get_list("set-cookie")
@@ -187,7 +187,7 @@ def test_logout_ends_server_session(session_db, churchtools):
     forget.assert_called_once_with("ct-login-token")
     cleared = next(c for c in response.headers.get_list("set-cookie") if c.startswith(f"{settings.cookie_session}="))
     assert "HttpOnly" in cleared and "SameSite" in cleared
-    assert client.get("/overview").status_code == 303
+    assert client.get("/profile").status_code == 303
 
 
 def test_session_expiry(session_db):

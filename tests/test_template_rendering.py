@@ -34,12 +34,6 @@ def test_login_page_renders():
     assert "<form" in response.text
 
 
-def test_overview_page_renders():
-    response = authed_client.get("/overview")
-    assert response.status_code == 200
-    assert "Termin-Folien" in response.text
-
-
 def test_services_page_renders():
     calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
     with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
@@ -71,8 +65,9 @@ def test_first_visit_login_succeeds_with_rendered_form_token():
 
 def test_pages_show_installed_version():
     login = client.get("/")
-    overview = authed_client.get("/overview")
-    for response in (login, overview):
+    with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=[])):
+        services = authed_client.get("/services")
+    for response in (login, services):
         assert f'class="app-version" title="Installierte Version">v{settings.version}<' in response.text
 
 
@@ -123,14 +118,14 @@ def test_templates_contain_no_inline_scripts():
 def test_logged_in_pages_show_main_navigation():
     calendars = [{"id": 1, "name": "Gottesdienste", "isPublic": True}]
     with patch("app.api.calendar_pages.fetch_calendars", AsyncMock(return_value=calendars)):
-        pages = {path: authed_client.get(path).text for path in ("/overview", "/agenda", "/services")}
+        pages = {path: authed_client.get(path).text for path in ("/agenda", "/services")}
     pages["/appointments"] = _render_appointments(has_images=False)
 
     for path, html in pages.items():
         assert 'aria-label="Hauptmenü"' in html, path
         assert 'href="/profile"' in html, path
         # The current page is marked in both the inline links and the mobile menu
-        assert html.count(f'href="{path}" aria-current="page"') == 2 or path == "/overview", path
+        assert html.count(f'href="{path}" aria-current="page"') == 2, path
 
 
 def test_login_page_has_no_navigation():

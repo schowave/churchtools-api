@@ -24,6 +24,9 @@ router = APIRouter()
 
 login_rate_limiter = LoginRateLimiter()
 
+# Where users land after login; most sessions start with the slides
+START_PAGE = "/appointments"
+
 
 def _client_key(request: Request) -> str:
     return request.client.host if request.client else "unknown"
@@ -37,7 +40,7 @@ def _login_error(request: Request, message: str, status_code: int = 200) -> Resp
 @router.get("/")
 async def login_page(request: Request) -> Response:
     if request.cookies.get(settings.cookie_session):
-        return RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url=START_PAGE, status_code=status.HTTP_303_SEE_OTHER)
 
     context = {"base_url": settings.churchtools_base, "version": settings.version}
     if request.query_params.get("hinweis") == "abgelaufen":
@@ -94,7 +97,7 @@ async def login(
         logger.warning("login_unexpected_response", error=type(exc).__name__)
         return _login_error(request, "Unerwartete Antwort von ChurchTools. Anmeldung nicht möglich.", status_code=502)
 
-    redirect = RedirectResponse(url="/overview", status_code=status.HTTP_303_SEE_OTHER)
+    redirect = RedirectResponse(url=START_PAGE, status_code=status.HTTP_303_SEE_OTHER)
     # The browser only gets a random session id; the token stays on the server
     set_session_cookie(redirect, request, await run_in_threadpool(sessions.create_session, login_token))
     return redirect
@@ -122,13 +125,9 @@ async def logout(request: Request, client: httpx2.AsyncClient = Depends(get_http
 
 
 @router.get("/overview")
-async def overview(request: Request, client: httpx2.AsyncClient = Depends(get_http_client)) -> Response:
-    if not await get_valid_login_token(request, client):
-        return redirect_to_login(request)
-
-    return templates.TemplateResponse(
-        request, "overview.html", {"base_url": settings.churchtools_base, "version": settings.version}
-    )
+async def overview() -> RedirectResponse:
+    """The former start page; kept as a redirect for bookmarks."""
+    return RedirectResponse(url=START_PAGE, status_code=status.HTTP_301_MOVED_PERMANENTLY)
 
 
 @router.get("/profile")
@@ -141,7 +140,7 @@ async def profile(request: Request, client: httpx2.AsyncClient = Depends(get_htt
         user = await fetch_current_user(login_token, client)
     except AuthenticationError:
         return redirect_to_login(request)
-    except (httpx2.HTTPError, ValueError, KeyError) as exc:
+    except (httpx2.HTTPError, ValueError, KeyError, TypeError) as exc:
         # The page still has to offer logout when ChurchTools is down
         logger.warning("profile_user_fetch_failed", error=type(exc).__name__)
         user = None
