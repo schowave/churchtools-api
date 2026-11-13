@@ -1,30 +1,54 @@
-# ChurchTools API
+# ChurchTools Folien
 
 [![Test and Build](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml/badge.svg)](https://github.com/schowave/churchtools-api/actions/workflows/test-and-build.yml)
 [![Docker Image](https://img.shields.io/docker/v/schowave/churchtools?sort=semver&label=Docker%20Hub)](https://hub.docker.com/r/schowave/churchtools)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/github/license/schowave/churchtools-api)](LICENSE)
 
-A web application for creating styled announcement slides from [ChurchTools](https://www.church.tools/) calendar events — exported as PDF or JPEG for use in church services.
+Turn the appointments in your [ChurchTools](https://www.church.tools/) calendars into announcement slides for the service, and print agendas and rotas, without copying anything by hand. Log in with your ChurchTools account, pick a week and export PDF or JPEG.
 
 <p align="center">
-  <img src="docs/images/termin-folien.png" alt="Termin-Folien" width="220">
-  <img src="docs/images/agenda.png" alt="Agenda" width="220">
-  <img src="docs/images/dienstplan.png" alt="Dienstplan" width="220">
+  <img src="docs/images/demo.gif" alt="Loading a week of appointments, adding a custom text, adjusting the slide design and exporting the slides as PDF" width="580">
 </p>
-<p align="center">
-  <img src="docs/images/folie.jpg" alt="Beispiel-Folie" width="600">
-</p>
+
+## Contents
+
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Security and privacy](#security-and-privacy)
+- [Development](#development)
+- [License](#license)
 
 ## Features
 
-- **Termin-Folien** — styled announcement slides from calendar appointments, exported as PDF or JPEG (ZIP), with custom colors, logo, and background image
-- **Agenda** — service rundowns (songs, items, responsible persons) per event, exportable as PDF
-- **Dienstplan** — who serves in which role per event, exportable as PDF per event
-- **Calendar selection** — choose one or more public calendars from your ChurchTools instance
+**Termin-Folien** (announcement slides). Loads the appointments of the chosen calendars and date range and lays them out as 16:9 slides, as many per slide as fit. You can:
 
+- leave out single appointments
+- replace the ChurchTools description with your own text for the slide; it is stored and comes back the next time the appointment is loaded
+- set the box, date and text colors and the box opacity, and upload a background image and a logo, with a live preview
+- export a PDF, or a ZIP with one JPEG per slide for presentation software that does not take PDFs
 
-## Quick Start
+<p align="center">
+  <img src="docs/images/folie.jpg" alt="Example slide: two appointments with date, time, place, title and description on a light box over a green background image" width="720">
+</p>
+
+**Agenda.** Shows the service rundown of each event (songs with key, items with start time, duration and responsible persons) and exports it as PDF.
+
+**Dienstplan** (rota). Shows who serves in which role per event, highlights pending and unfilled services, and exports a PDF per event.
+
+<p align="center">
+  <img src="docs/images/agenda.png" alt="Agenda page: rundown of a family service with sections, times, songs and responsible persons" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/images/dienstplan.png" alt="Dienstplan page: services of two events with accepted, pending and unfilled roles" width="300">
+</p>
+
+The interface is in German and works on phones as well as on desktops.
+
+## Quick start
+
+You need a ChurchTools instance and a login for it. The app reads the public calendars of that instance and the events you have access to.
 
 ### Docker (recommended)
 
@@ -36,9 +60,11 @@ docker run -d \
   schowave/churchtools:latest
 ```
 
-Open [http://localhost:5005](http://localhost:5005)
+Open [http://localhost:5005](http://localhost:5005) and log in with your ChurchTools credentials.
 
-### From Source
+### From source
+
+Requires [mise](https://mise.jdx.dev/), which installs Python and uv.
 
 ```bash
 git clone https://github.com/schowave/churchtools-api.git
@@ -50,6 +76,8 @@ mise run run
 ```
 
 ## Configuration
+
+All settings are environment variables.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
@@ -74,23 +102,7 @@ People without access get a clear message at login; sessions of people who lose 
 
 ## Deployment
 
-### Synology NAS
-
-1. Create a project folder on your NAS (e.g. `/volume1/docker/churchtools/`)
-2. Add the `docker-compose.yml` from this repository
-3. Create a `.env` file with your configuration:
-
-   ```env
-   CHURCHTOOLS_BASE=your-instance.church.tools
-   ```
-
-4. In **Container Manager** → **Project** → **Create**, point to the folder and start
-
-The included [Watchtower](https://containrrr.dev/watchtower/) service monitors Docker Hub and automatically updates the container when a new release is published.
-
-### Other Platforms
-
-The Docker image `schowave/churchtools` is built for `linux/amd64`. It works on any x86_64 platform that supports Docker or Podman.
+The Docker image `schowave/churchtools` is built for `linux/amd64` and runs on any x86_64 host with Docker or Podman. Mount a volume at `/app/data`: it holds the database with the design settings, uploaded images and custom texts.
 
 ```yaml
 # docker-compose.yml
@@ -103,8 +115,25 @@ services:
       - ./data:/app/data
     environment:
       - CHURCHTOOLS_BASE=your-instance.church.tools
+      - DB_PATH=/app/data/churchtools.db
     restart: unless-stopped
 ```
+
+### Synology NAS
+
+1. Create a project folder on your NAS (e.g. `/volume1/docker/churchtools/`).
+2. Copy [`docker-compose.yml`](docker-compose.yml) from this repository into it.
+3. Create a `.env` file next to it:
+
+   ```env
+   CHURCHTOOLS_BASE=your-instance.church.tools
+   ```
+
+4. In **Container Manager** → **Project** → **Create**, point to the folder and start the project.
+
+### Automatic updates
+
+[`docker-compose-watchtower.yml`](docker-compose-watchtower.yml) runs [Watchtower](https://github.com/nicholas-fedor/watchtower). It checks Docker Hub every five minutes and updates containers labelled `com.centurylinklabs.watchtower.enable=true`, which the app's `docker-compose.yml` sets. New releases then go live without manual steps.
 
 ### Behind a reverse proxy
 
@@ -115,18 +144,12 @@ When the app runs behind a reverse proxy (Synology reverse proxy, Traefik, nginx
 
 Do not set `*` if port 5005 is reachable directly: clients could then fake their IP address and bypass the login rate limit.
 
-The container starts as root only to hand the data volume to the unprivileged `app` user, then runs the app as that user.
+## Security and privacy
 
-## Releases
-
-Releases are managed via GitHub Actions:
-
-1. Go to **Actions** → **Release** → **Run workflow**
-2. Either enter a version number (e.g. `3.1.0`) or leave empty to auto-increment the patch version (e.g. `3.0.2` → `3.0.3`)
-3. The workflow runs tests, updates `pyproject.toml`, creates a git tag, builds the Docker image (linux/amd64), and pushes to Docker Hub
-4. Watchtower picks up the new image automatically on connected hosts
-
-> Requires GitHub Secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
+- The app logs in against your ChurchTools instance; it has no user accounts of its own. The ChurchTools login token stays on the server, encrypted with a key that only the user's session cookie can unlock.
+- Every page is served with a strict Content Security Policy, and fonts are self-hosted, so visitors' browsers contact no third parties.
+- The container starts as root only to hand the data volume to the unprivileged `app` user, then runs the app as that user.
+- Each release image is scanned with [trivy](https://trivy.dev/) before it is pushed to Docker Hub.
 
 ## Development
 
@@ -155,3 +178,16 @@ Local JPEG export needs poppler (`brew install poppler` / `apt install poppler-u
 Dependencies are declared in `pyproject.toml`. After changing them, run `mise run lock` so the Docker image picks up the new pins.
 
 CI runs lint, tests, the dependency audit, and the image scan on every push to `main` and on pull requests.
+
+### Releasing
+
+1. Go to **Actions** → **Release** → **Run workflow**.
+2. Enter a version number (e.g. `3.1.0`), or leave it empty to increment the patch version (e.g. `3.0.2` → `3.0.3`).
+3. The workflow runs lint, tests and the dependency audit, updates `pyproject.toml`, builds, smoke-tests and scans the Docker image (linux/amd64), and only then creates the git tag, pushes the image to Docker Hub and creates the GitHub release.
+4. Watchtower picks up the new image on connected hosts.
+
+The workflow needs the GitHub secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`.
+
+## License
+
+[Apache License 2.0](LICENSE)
