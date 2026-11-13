@@ -69,6 +69,10 @@ podman run --rm -p 5005:5005 -v ./data:/app/data --env-file .env \
   -e DB_PATH=/app/data/churchtools.db churchtools-local
 """
 
+[tasks.readme-media]
+description = "Regenerate the README demo GIF and screenshots in docs/images from sample data"
+run = "scripts/readme_media/make.sh"
+
 [tasks.login]
 description = "Log in via browser against the running app and save the session to .auth/state.json"
 run = [

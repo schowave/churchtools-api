@@ -169,6 +169,7 @@ Tooling is managed with [mise](https://mise.jdx.dev/) (`mise.toml`): it pins Pyt
 | `mise run login` | Log in via browser against the running app and save the session to `.auth/` for scripted checks |
 | `mise run login-clear` | Delete the saved session (contains your ChurchTools login token) |
 | `mise run preview` | Render a sample slide PDF to `app/saved_files/preview.pdf` |
+| `mise run readme-media` | Regenerate the demo GIF and screenshots in `docs/images` from invented sample data (needs ffmpeg, ImageMagick, poppler) |
 | `mise run lock` | Regenerate `requirements.txt` (pinned, hashed runtime deps for the Docker image) |
 | `mise run build` | Build container image locally (podman) |
 | `mise run run-docker` | Build and run the container locally with `./data` as volume |
