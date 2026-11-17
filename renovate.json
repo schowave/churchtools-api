@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Patch/minor updates merge themselves once CI is green; majors wait for a human.",
+  "description": "Patch/minor and major updates merge themselves once CI is green (majors in their own PRs).",
   "extends": ["config:recommended"],
   "schedule": ["before 6am on monday"],
   "timezone": "Europe/Berlin",
@@ -15,9 +15,9 @@
       "automerge": true
     },
     {
-      "description": "Major updates wait for a human",
+      "description": "Major updates in their own PRs, merged by themselves once CI is green",
       "matchUpdateTypes": ["major"],
-      "automerge": false
+      "automerge": true
     }
   ]
 }
