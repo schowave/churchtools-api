@@ -20,8 +20,10 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Final stage
 FROM python:3.14-slim
 
-# Install runtime dependencies only
+# Install runtime dependencies only. The upgrade pulls Debian security fixes
+# that the python base image has not been rebuilt with yet (the CI image scan fails otherwise).
 RUN apt-get update && \
+    apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
     poppler-utils \
     fontconfig \
