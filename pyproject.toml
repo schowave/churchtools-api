@@ -3,7 +3,7 @@ name = "churchtools-api"
 version = "7.6.0"
 requires-python = ">=3.14"
 dependencies = [
-    "fastapi==0.141.1",
+    "fastapi==0.162.7",
     "uvicorn==0.54.0",
     "alembic==1.20.0",
     "sqlalchemy==2.1.1",
