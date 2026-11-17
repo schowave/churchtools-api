@@ -11,6 +11,7 @@
     {
       "description": "Patch and minor updates merge by themselves once CI is green",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "non-major dependencies",
       "automerge": true
     },
     {
