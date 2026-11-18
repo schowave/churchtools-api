@@ -13,7 +13,7 @@ run = "uv pip install -e '.[dev]'"
 
 [tasks.lock]
 description = "Regenerate requirements.txt (pinned runtime deps for the Docker image)"
-run = "uv pip compile pyproject.toml --python-version=3.14 --upgrade --generate-hashes --output-file=requirements.txt"
+run = "uv pip compile pyproject.toml --python-version=3.15 --upgrade --generate-hashes --output-file=requirements.txt"
 
 [tasks.migrate]
 description = "Run database migrations"

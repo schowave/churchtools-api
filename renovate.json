@@ -19,6 +19,10 @@
     "description": "pip-compile reads pyproject.toml itself as the source of requirements.txt; pep621 alone would bump pyproject.toml without recompiling requirements.txt.",
     "enabled": false
   },
+  "poetry": {
+    "description": "Current Renovate also reads PEP 621 [project] tables with the poetry manager; it would propose the same pyproject.toml updates a second time without recompiling requirements.txt.",
+    "enabled": false
+  },
   "packageRules": [
     {
       "description": "Patch and minor updates merge by themselves once CI is green",
