@@ -13,7 +13,7 @@ dependencies = [
     "httpx2==2.13.1",
     "jinja2==3.1.6",
     "pdf2image==1.17.0",
-    "python-dateutil==2.9.0.post0",
+    "python-dateutil==4.0.0",
     "babel==2.18.0",
     "reportlab==5.0.1",
     "structlog==26.1.0",
