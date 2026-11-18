@@ -6,7 +6,7 @@
   "timezone": "Europe/Berlin",
   "lockFileMaintenance": { "enabled": true, "automerge": true },
   "automergeType": "pr",
-  "platformAutomerge": false,
+  "platformAutomerge": true,
   "packageRules": [
     {
       "description": "Patch and minor updates merge by themselves once CI is green",
