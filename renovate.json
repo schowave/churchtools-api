@@ -7,6 +7,18 @@
   "lockFileMaintenance": { "enabled": true, "automerge": true },
   "automergeType": "pr",
   "platformAutomerge": true,
+  "pip-compile": {
+    "description": "requirements.txt is a lock file compiled from pyproject.toml by `uv pip compile` (see its header). Renovate bumps pyproject.toml and re-runs that command, so pins and hashes stay consistent.",
+    "managerFilePatterns": ["/(^|/)requirements\\.txt$/"]
+  },
+  "pip_requirements": {
+    "description": "requirements.txt is compiled, never edited as plain requirements (that breaks the hashes); the pip-compile manager owns it.",
+    "enabled": false
+  },
+  "pep621": {
+    "description": "pip-compile reads pyproject.toml itself as the source of requirements.txt; pep621 alone would bump pyproject.toml without recompiling requirements.txt.",
+    "enabled": false
+  },
   "packageRules": [
     {
       "description": "Patch and minor updates merge by themselves once CI is green",
