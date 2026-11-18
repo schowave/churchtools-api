@@ -1,4 +1,4 @@
-FROM python:3.14-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ COPY requirements.txt ./
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Final stage
-FROM python:3.14-slim
+FROM python:3.15-slim
 
 # Install runtime dependencies only. The upgrade pulls Debian security fixes
 # that the python base image has not been rebuilt with yet (the CI image scan fails otherwise).
