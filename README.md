@@ -157,6 +157,8 @@ Tooling is managed with [mise](https://mise.jdx.dev/) (`mise.toml`): it pins Pyt
 
 | Command | Description |
 |---|---|
+| `mise run setup` | Prepare a fresh clone so `check` can run (currently: `install`) |
+| `mise run check` | Everything CI checks before a push: lint, format check, audit, tests with coverage |
 | `mise run install` | Install app and dev dependencies into `.venv` |
 | `mise run run` | Run migrations and start dev server with auto-reload |
 | `mise run test` | Run test suite |
