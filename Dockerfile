@@ -37,7 +37,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages and scripts from builder
-COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
+# (all of /usr/local/lib, so the path does not depend on the Python minor version)
+COPY --from=builder /usr/local/lib/ /usr/local/lib/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # pip is not needed at runtime; removing it drops its vendored dependencies from the image
