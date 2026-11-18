@@ -11,6 +11,14 @@ _.python.venv = { path = ".venv", create = true }
 description = "Install app and dev dependencies into .venv"
 run = "uv pip install -e '.[dev]'"
 
+[tasks.setup]
+description = "Prepare a fresh clone so `mise run check` can run (tools via mise, deps)"
+depends = ["install"]
+
+[tasks.check]
+description = "Everything that must be green before a push (same as CI): lint, format check, dependency audit, tests with coverage"
+depends = ["lint", "audit", "cov"]
+
 [tasks.lock]
 description = "Regenerate requirements.txt (pinned runtime deps for the Docker image)"
 run = "uv pip compile pyproject.toml --python-version=3.15 --upgrade --generate-hashes --output-file=requirements.txt"

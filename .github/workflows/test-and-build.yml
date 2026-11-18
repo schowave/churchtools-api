@@ -16,17 +16,11 @@ jobs:
     - name: Set up tools (mise)
       uses: jdx/mise-action@v5
 
-    - name: Install dependencies
-      run: mise run install
+    - name: Setup
+      run: mise run setup
 
-    - name: Lint
-      run: mise run lint
-
-    - name: Audit dependencies
-      run: mise run audit
-
-    - name: Run tests
-      run: mise run cov
+    - name: Check (lint, format, audit, tests with coverage)
+      run: mise run check
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v7

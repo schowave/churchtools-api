@@ -2,7 +2,7 @@ The role of this file is to describe common mistakes and confusion points that a
 
 ## Tooling
 
-- Tools and tasks live in `mise.toml` (no Makefile). Use `mise run test`, `mise run lint`, `mise run format`. The venv is `.venv`, auto-activated by mise.
+- Tools and tasks live in `mise.toml` (no Makefile). `mise run setup` prepares a fresh clone, `mise run check` runs everything CI checks (lint, format check, audit, tests) and must be green before a push. Also `mise run test`, `mise run lint`, `mise run format`. The venv is `.venv`, auto-activated by mise.
 - `requirements.txt` is generated (`mise run lock`) and holds only runtime deps for the Docker image, with hashes (pip verifies them in the Docker build). Declare dependencies in `pyproject.toml`, never edit `requirements.txt` by hand. Renovate (pip-compile manager) re-runs the command in its header, so keep options there in `--option=value` form (as `mise run lock` writes them).
 - The release workflow builds and scans (trivy) the image before tagging and pushing. Keep that order: Watchtower deploys whatever lands on Docker Hub as `latest`.
 - ruff >= 0.16 also formats Python code blocks in Markdown files, so `mise run lint` can fail on `.md` changes.
