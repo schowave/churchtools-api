@@ -15,7 +15,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt
+# Isolated venv: the runtime stage copies only /opt/venv, independent of the Python minor
+# version and without builder leftovers under /usr/local. pip is dropped, it is not needed at runtime.
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt && \
+    /opt/venv/bin/pip uninstall -y pip
 
 # Final stage
 FROM python:3.15-slim
@@ -36,13 +40,12 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy Python packages and scripts from builder
-# (all of /usr/local/lib, so the path does not depend on the Python minor version)
-COPY --from=builder /usr/local/lib/ /usr/local/lib/
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
+# Python packages and their scripts (uvicorn, alembic) from the builder venv
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # pip is not needed at runtime; removing it drops its vendored dependencies from the image
-RUN python -m pip uninstall -y pip
+RUN /usr/local/bin/python -m pip uninstall -y pip
 
 # Copy custom fonts and rebuild font cache
 COPY app/resources/fonts/ /usr/share/fonts/custom/
